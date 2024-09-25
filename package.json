@@ -31,6 +31,9 @@
     "@nx/vite": "19.7.3",
     "@nx/web": "19.7.3",
     "@nx/workspace": "19.7.3",
+    "@swc-node/register": "~1.9.1",
+    "@swc/core": "~1.5.7",
+    "@swc/helpers": "~0.5.11",
     "@tsconfig/node20": "^20.1.4",
     "@tsconfig/strictest": "^2.0.2",
     "@types/jest": "^29.2.4",
@@ -57,6 +60,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.332.0",
     "@aws-sdk/client-ssm": "^3.332.0",
+    "@aws-sdk/util-stream-node": "^3.374.0",
     "axios": "^1.2.1",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0"

@@ -2,24 +2,31 @@
   "extends": ["@tsconfig/node20/tsconfig", "@tsconfig/strictest/tsconfig"],
   "compileOnSave": false,
   "compilerOptions": {
-      "rootDir": ".",
-      "sourceMap": true,
-      "declaration": false,
-      "emitDecoratorMetadata": true,
-      "experimentalDecorators": true,
-      "importHelpers": true,
-      "target": "es2015",
-      "module": "Node16",
-      "lib": ["es2023", "dom"],
-      "skipLibCheck": true,
-      "skipDefaultLibCheck": true,
-      "baseUrl": ".",
-      "exactOptionalPropertyTypes": false,
-      "paths": {
-        "@aligent/chunk-by": ["libs/chunk-by/src/index.ts"],
-        "@aligent/fetch-ssm-params": ["libs/fetch-ssm-params/src/index.ts"]
-      },
-      "types": ["node", "vitest", "vitest/globals"]
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "Node16",
+    "lib": ["es2023", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "exactOptionalPropertyTypes": false,
+    "paths": {
+      "@aligent/chunk-by": ["libs/chunk-by/src/index.ts"],
+      "@aligent/fetch-ssm-params": ["libs/fetch-ssm-params/src/index.ts"],
+      "@aligent/get-aws-id-from-arn": ["libs/get-aws-id-from-arn/src/index.ts"],
+      "@aligent/has-properties-defined": [
+        "libs/has-properties-defined/src/index.ts"
+      ],
+      "@aligent/remap": ["libs/remap/src/index.ts"],
+      "@aligent/retry-wrapper": ["libs/retry-wrapper/src/index.ts"],
+      "@aligent/s3": ["libs/s3/src/index.ts"]
+    },
+    "types": ["node", "vitest", "vitest/globals"]
   },
   "exclude": ["node_modules", "tmp"]
 }

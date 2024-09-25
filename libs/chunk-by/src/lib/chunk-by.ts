@@ -7,7 +7,7 @@
  * chunkBy([1, 2, 3, 4, 5, 6, 7], 2) // [[1, 2], [3, 4], [5, 6], [7]]
  * ```
  */
-function chunkBy<ArrayItem>(source: ArrayItem[], chunkSize: number) {
+export function chunkBy<ArrayItem>(source: ArrayItem[], chunkSize: number) {
   if (chunkSize <= 0) {
     throw new Error(`Cannot create chunks of size ${chunkSize} (0 or less)`);
   }
@@ -17,5 +17,3 @@ function chunkBy<ArrayItem>(source: ArrayItem[], chunkSize: number) {
     return source.slice(i * chunkSize, (i + 1) * chunkSize);
   });
 }
-
-export default chunkBy;
