@@ -1,4 +1,4 @@
-import { SimplifyIntersection } from '../remap/remap';
+import { SimplifyIntersection } from '../remap/remap.js';
 
 /**
  * Ensure that the given properties are defined on the object.

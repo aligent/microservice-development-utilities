@@ -1,4 +1,4 @@
-import hasDefinedProperties from './hasPropertiesDefined';
+import hasDefinedProperties from './has-properties-defined.js';
 
 interface Foo {
   bar?: number;

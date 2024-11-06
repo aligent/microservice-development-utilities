@@ -25,7 +25,7 @@ type ObjectMap = readonly ((
  * @example without a transformer function
  * ```
  * const map = [ ['foo', 'bar'] ] as const;
- * 
+ *
  * type Foo = GetKeyType<'foo', { foo: number }, (typeof map)[number]>;
  * //   ^ Foo = number
  * ```
@@ -33,7 +33,7 @@ type ObjectMap = readonly ((
  * @example with a transformer function
  * ```
  * const map = [ ['foo', 'bar', String] ] as const;
- * 
+ *
  * type Foo = GetKeyType<'foo', { foo: number }, (typeof map)[number]>;
  * //   ^ Foo = string
  * ```
@@ -110,7 +110,7 @@ type Length<T extends any[] | readonly any[]> =
  * //   ^ Foo = [any, any, any]
  * ```
  */
-type BuildTuple<L extends number, T extends any[] = []> = 
+type BuildTuple<L extends number, T extends any[] = []> =
     T extends { length: L } ? T : BuildTuple<L, [...T, any]>;
 
 /**
@@ -121,7 +121,7 @@ type BuildTuple<L extends number, T extends any[] = []> =
  * //   ^ Foo = 10
  * ```
  */
-type Add<A extends number, B extends number> = 
+type Add<A extends number, B extends number> =
     Length<[...BuildTuple<A>, ...BuildTuple<B>]>;
 
 /**
@@ -208,6 +208,6 @@ function remap<
   return out as any;
 }
 
-export { Remap, ObjectMap };
+export type { Remap, ObjectMap };
 
 export default remap;

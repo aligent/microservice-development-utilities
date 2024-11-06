@@ -1,4 +1,4 @@
-import remap from './remap';
+import remap from './remap.js';
 
 describe('remap', () => {
   it('remaps an object with one value', () => {

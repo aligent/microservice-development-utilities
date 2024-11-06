@@ -1,4 +1,4 @@
-import getAwsIdFromArn from './getAwsIdFromArn';
+import getAwsIdFromArn from './get-aws-id-from-arn.js';
 
 describe('getAWsIdFromArn', () => {
   it('should return the short execution ID when given a valid ARN', () => {

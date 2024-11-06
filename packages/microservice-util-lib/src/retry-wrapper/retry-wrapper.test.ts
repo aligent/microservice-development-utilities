@@ -1,4 +1,4 @@
-import retryWrapper from './retryWrapper';
+import retryWrapper from './retry-wrapper.js';
 
 describe('retryWrapper', () => {
   it('returns function\'s result', async () => {

@@ -23,6 +23,12 @@
                 "assets": ["packages/microservice-util-lib/*.md"]
             }
         },
+        "docs": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "typedoc --options typedoc.config.js src/index.ts"
+            }
+        },
         "nx-release-publish": {
             "options": {
                 "packageRoot": "dist/{projectRoot}"

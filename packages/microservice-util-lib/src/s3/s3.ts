@@ -6,7 +6,7 @@ import {
   S3Client
 } from '@aws-sdk/client-s3';
 import hash from 'object-hash';
-import chunkBy from '../chunkBy/chunkBy';
+import chunkBy from '../chunk/chunk';
 
 /** A data access object for an S3 bucket */
 class S3Dao {

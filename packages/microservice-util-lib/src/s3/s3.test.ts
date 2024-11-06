@@ -1,4 +1,4 @@
-import S3Dao from './s3';
+import S3Dao from './s3.js';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { mockClient } from 'aws-sdk-client-mock';
 import { sdkStreamMixin } from '@aws-sdk/util-stream-node';

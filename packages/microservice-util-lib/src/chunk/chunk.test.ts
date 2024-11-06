@@ -1,4 +1,4 @@
-import chunkBy from './chunkBy';
+import chunkBy from './chunk.js';
 
 describe('chunkBy', () => {
   it('should split up an array into sub-arrays of a certain size', () => {

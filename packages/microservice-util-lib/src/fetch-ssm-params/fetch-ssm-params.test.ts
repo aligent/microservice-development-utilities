@@ -1,4 +1,4 @@
-import fetchSsmParams from './fetchSsmParams';
+import fetchSsmParams from './fetch-ssm-params.js';
 import { mockClient } from 'aws-sdk-client-mock';
 import {
   GetParameterCommand,
@@ -32,7 +32,7 @@ describe('fetchSsmParams', () => {
     expect(ssmMock).toHaveReceivedCommandTimes(GetParametersCommand, 0);
   });
 
-  it('should fetch a multiple parameters if more than one is supplied', 
+  it('should fetch a multiple parameters if more than one is supplied',
     async () => {
       try {
         await fetchSsmParams('', '', '');

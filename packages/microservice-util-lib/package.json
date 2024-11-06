@@ -2,7 +2,11 @@
   "name": "@aligent/microservice-util-libs",
   "version": "0.0.1",
   "dependencies": {
-    "tslib": "^2.3.0"
+    "@aws-sdk/client-s3": "^3.682.0",
+    "@aws-sdk/client-ssm": "^3.682.0",
+    "axios": "^1.7.7",
+    "lodash": "^4.17.21",
+    "object-hash": "^3.0.0"
   },
   "type": "module",
   "main": "./src/index.js",
