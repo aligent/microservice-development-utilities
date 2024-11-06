@@ -2,8 +2,15 @@
 node_modules
 jspm_packages
 
-# Serverless directories
-.serverless
+# Yarn Berry
+# https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 # ESBuild directories
 .build
@@ -12,14 +19,14 @@ jspm_packages
 vscode
 .vscode
 
-# Localstack directories
-.localstack
-
-# Jest coverage output
+# Test coverage output
 coverage
 
-# Environment Variables
-config.json
-config.*.json
-
+# Distribution
 dist/
+
+
+
+.nx/cache
+.nx/workspace-data
+vite.config.*.timestamp*

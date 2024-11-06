@@ -1,0 +1,40 @@
+{
+    "name": "microservice-util-lib",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "packages/microservice-util-lib/src",
+    "projectType": "library",
+    "release": {
+        "version": {
+            "generatorOptions": {
+                "packageRoot": "dist/{projectRoot}",
+                "currentVersionResolver": "git-tag"
+            }
+        }
+    },
+    "tags": [],
+    "targets": {
+        "build": {
+            "executor": "@nx/js:tsc",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/packages/microservice-util-lib",
+                "main": "packages/microservice-util-lib/src/index.ts",
+                "tsConfig": "packages/microservice-util-lib/tsconfig.lib.json",
+                "assets": ["packages/microservice-util-lib/*.md"]
+            }
+        },
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "dist/{projectRoot}"
+            }
+        },
+        "lint": {
+            "executor": "nx:run-commands",
+            "options": {
+                "cwd": "{projectRoot}",
+                "color": true,
+                "command": "eslint . --max-warnings 0"
+            }
+        }
+    }
+}
