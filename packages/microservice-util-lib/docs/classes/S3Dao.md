@@ -31,8 +31,8 @@ A data access object for an S3 bucket
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name     | Type     | Description                                                 |
+| :------- | :------- | :---------------------------------------------------------- |
 | `bucket` | `string` | the location of the bucket that objects should be stored in |
 
 #### Defined in
@@ -49,7 +49,7 @@ A data access object for an S3 bucket
 
 [s3/s3.ts:14](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/s3/s3.ts#lines-14)
 
-___
+---
 
 ### <a id="s3" name="s3"></a> s3
 
@@ -69,8 +69,8 @@ Delete an object from the S3 bucket
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name            | Type                    | Description          |
+| :-------------- | :---------------------- | :------------------- |
 | `objectDetails` | `GetObjectCommandInput` | the object to delete |
 
 #### Returns
@@ -81,35 +81,35 @@ Delete an object from the S3 bucket
 
 [s3/s3.ts:96](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/s3/s3.ts#lines-96)
 
-___
+---
 
 ### <a id="fetchchunks" name="fetchchunks"></a> fetchChunks
 
-▸ **fetchChunks**<`T`\>(`chunks`): `AsyncGenerator`<{ `chunk`: `T` ; `s3Object`: `GetObjectCommandInput`  }, `Awaited`<`T`\>, `unknown`\>
+▸ **fetchChunks**<`T`\>(`chunks`): `AsyncGenerator`<{ `chunk`: `T` ; `s3Object`: `GetObjectCommandInput` }, `Awaited`<`T`\>, `unknown`\>
 
 Generator to fetch chunked data, chunk by chunk
 
 #### Type parameters
 
 | Name |
-| :------ |
-| `T` |
+| :--- |
+| `T`  |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name     | Type                      | Description               |
+| :------- | :------------------------ | :------------------------ |
 | `chunks` | `GetObjectCommandInput`[] | the list of object chunks |
 
 #### Returns
 
-`AsyncGenerator`<{ `chunk`: `T` ; `s3Object`: `GetObjectCommandInput`  }, `Awaited`<`T`\>, `unknown`\>
+`AsyncGenerator`<{ `chunk`: `T` ; `s3Object`: `GetObjectCommandInput` }, `Awaited`<`T`\>, `unknown`\>
 
 #### Defined in
 
 [s3/s3.ts:77](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/s3/s3.ts#lines-77)
 
-___
+---
 
 ### <a id="fetchdata" name="fetchdata"></a> fetchData
 
@@ -120,13 +120,13 @@ Fetch an object from the S3 bucket
 #### Type parameters
 
 | Name |
-| :------ |
-| `T` |
+| :--- |
+| `T`  |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name            | Type                    | Description                                           |
+| :-------------- | :---------------------- | :---------------------------------------------------- |
 | `objectDetails` | `GetObjectCommandInput` | the object which describes the location of the object |
 
 #### Returns
@@ -139,7 +139,7 @@ the body of the object
 
 [s3/s3.ts:67](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/s3/s3.ts#lines-67)
 
-___
+---
 
 ### <a id="storechunked" name="storechunked"></a> storeChunked
 
@@ -149,15 +149,15 @@ Store an array of object as individual chunks in S3
 
 #### Type parameters
 
-| Name | Type |
-| :------ | :------ |
-| `T` | extends `any`[] |
+| Name | Type            |
+| :--- | :-------------- |
+| `T`  | extends `any`[] |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `data` | `T` | the data to store |
+| Name        | Type     | Description                                        |
+| :---------- | :------- | :------------------------------------------------- |
+| `data`      | `T`      | the data to store                                  |
 | `chunkSize` | `number` | the number of entries that should be in each chunk |
 
 #### Returns
@@ -170,7 +170,7 @@ an array of objects which can be used to fetch the chunks
 
 [s3/s3.ts:57](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/s3/s3.ts#lines-57)
 
-___
+---
 
 ### <a id="storedata" name="storedata"></a> storeData
 
@@ -185,14 +185,14 @@ the hash of the data
 #### Type parameters
 
 | Name |
-| :------ |
-| `T` |
+| :--- |
+| `T`  |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `data` | `T` | the data to store |
+| Name    | Type     | Description                       |
+| :------ | :------- | :-------------------------------- |
+| `data`  | `T`      | the data to store                 |
 | `name?` | `string` | the name to call the object in S3 |
 
 #### Returns

@@ -1,6 +1,6 @@
 # Microservices Utilities Library
 
-This library includes utility functions to simplify & standardise common 
+This library includes utility functions to simplify & standardise common
 MicroServices tasks.
 
 ## Documentation

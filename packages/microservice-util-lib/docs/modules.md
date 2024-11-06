@@ -38,7 +38,7 @@ A list of keys to keys, with an optional transformer function
 
 [remap/remap.ts:15](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/remap/remap.ts#lines-15)
 
-___
+---
 
 ### <a id="remap" name="remap"></a> Remap
 
@@ -46,10 +46,10 @@ ___
 
 #### Type parameters
 
-| Name | Type |
-| :------ | :------ |
+| Name       | Type                                        |
+| :--------- | :------------------------------------------ |
 | `MapArray` | extends [`ObjectMap`](modules.md#objectmap) |
-| `Original` | extends `Object` |
+| `Original` | extends `Object`                            |
 
 #### Defined in
 
@@ -66,21 +66,21 @@ Split an array into chunks of a certain size
 **`Example`**
 
 ```ts
-chunkBy([1, 2, 3, 4, 5, 6, 7], 2) // [[1, 2], [3, 4], [5, 6], [7]]
+chunkBy([1, 2, 3, 4, 5, 6, 7], 2); // [[1, 2], [3, 4], [5, 6], [7]]
 ```
 
 #### Type parameters
 
-| Name |
-| :------ |
+| Name        |
+| :---------- |
 | `ArrayItem` |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `source` | `ArrayItem`[] | the array to split up |
-| `chunkSize` | `number` | the size of each chunk. (The final chunk will be whatever is remaining) |
+| Name        | Type          | Description                                                             |
+| :---------- | :------------ | :---------------------------------------------------------------------- |
+| `source`    | `ArrayItem`[] | the array to split up                                                   |
+| `chunkSize` | `number`      | the size of each chunk. (The final chunk will be whatever is remaining) |
 
 #### Returns
 
@@ -90,7 +90,7 @@ chunkBy([1, 2, 3, 4, 5, 6, 7], 2) // [[1, 2], [3, 4], [5, 6], [7]]
 
 [chunkBy/chunkBy.ts:10](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/chunkBy/chunkBy.ts#lines-10)
 
-___
+---
 
 ### <a id="fetchssmparams" name="fetchssmparams"></a> fetchSsmParams
 
@@ -100,8 +100,8 @@ Fetch one SSM parameter
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name    | Type     | Description                   |
+| :------ | :------- | :---------------------------- |
 | `param` | `string` | key of the parameter to fetch |
 
 #### Returns
@@ -118,8 +118,8 @@ Fetch a list of SSM parameters
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name        | Type       | Description                     |
+| :---------- | :--------- | :------------------------------ |
 | `...params` | `string`[] | list of parameter keys to fetch |
 
 #### Returns
@@ -130,7 +130,7 @@ Fetch a list of SSM parameters
 
 [fetchSsmParams/fetchSsmParams.ts:21](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/fetchSsmParams/fetchSsmParams.ts#lines-21)
 
-___
+---
 
 ### <a id="getawsidfromarn" name="getawsidfromarn"></a> getAwsIdFromArn
 
@@ -145,13 +145,15 @@ when the provided ARN is empty
 **`Example`**
 
 ```ts
-getAwsIdFromArn('arn:aws:states:ap-southeast-2:123123123:execution:prj-int-entity-ac-dc-dev-machine-name:this-is-the-id')
+getAwsIdFromArn(
+  'arn:aws:states:ap-southeast-2:123123123:execution:prj-int-entity-ac-dc-dev-machine-name:this-is-the-id'
+);
 ```
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
+| Name          | Type     | Description                 |
+| :------------ | :------- | :-------------------------- |
 | `resourceArn` | `string` | the ARN of the AWS resource |
 
 #### Returns
@@ -164,7 +166,7 @@ the ID (if present in the ARN) of the AWS resource/execution
 
 [getAwsIdFromArn/getAwsIdFromArn.ts:11](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/getAwsIdFromArn/getAwsIdFromArn.ts#lines-11)
 
-___
+---
 
 ### <a id="hasdefinedproperties" name="hasdefinedproperties"></a> hasDefinedProperties
 
@@ -179,26 +181,26 @@ type Foo = { a?: number; b?: number };
 const foo: Foo = { a: 1, b: 2 };
 if (hasDefinedProperties(foo, 'a')) {
   console.log(foo);
- //          ^? const bar: {
- //               a: number;
- //               b?: number;
- //             }
+  //          ^? const bar: {
+  //               a: number;
+  //               b?: number;
+  //             }
 }
 ```
 
 #### Type parameters
 
-| Name | Type |
-| :------ | :------ |
-| `T` | extends `Object` |
-| `K` | extends `string` \| `number` \| `symbol` |
+| Name | Type                                     |
+| :--- | :--------------------------------------- |
+| `T`  | extends `Object`                         |
+| `K`  | extends `string` \| `number` \| `symbol` |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `obj` | `object` \| `T` | The object to check. |
-| `...keys` | `K`[] | The keys to check. |
+| Name      | Type            | Description          |
+| :-------- | :-------------- | :------------------- |
+| `obj`     | `object` \| `T` | The object to check. |
+| `...keys` | `K`[]           | The keys to check.   |
 
 #### Returns
 
@@ -210,7 +212,7 @@ obj is SimplifyIntersection<Required<Pick<T, K\>\> & Omit<T, K\>\>
 
 [hasPropertiesDefined/hasPropertiesDefined.ts:22](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/hasPropertiesDefined/hasPropertiesDefined.ts#lines-22)
 
-___
+---
 
 ### <a id="remap-1" name="remap-1"></a> remap
 
@@ -221,51 +223,52 @@ Map one object's values to another structure
 **`Example`**
 
 without a transformer function
+
 ```ts
 const map = [
   ['foo', 'baz'],
-  ['bar', 'qux.0']
+  ['bar', 'qux.0'],
 ] as const;
-const obj = { foo: 'hi', bar: 7 }
+const obj = { foo: 'hi', bar: 7 };
 remap(obj, map); // { baz: 'hi', qux: [7] }
 ```
 
 **`Example`**
 
 with a transformer function
+
 ```ts
 const map = [
- ['foo', 'baz'],
- ['bar', 'qux.0', (x: number) => x + 1]
+  ['foo', 'baz'],
+  ['bar', 'qux.0', (x: number) => x + 1],
 ] as const;
-const obj = { foo: 'hi', bar: 7 }
+const obj = { foo: 'hi', bar: 7 };
 remap(obj, map); // { baz: 'hi', qux: [8] }
 ```
 
 **`Example`**
 
 with an empty initial key
+
 ```ts
-const map = [
-  ['', 'baz', (x: { foo: number, bar: number }) => x.foo + x.bar]
-]
-const obj = { foo: 3, bar: 7 }
+const map = [['', 'baz', (x: { foo: number; bar: number }) => x.foo + x.bar]];
+const obj = { foo: 3, bar: 7 };
 remap(obj, map); // { baz: 10 }
 ```
 
 #### Type parameters
 
-| Name | Type |
-| :------ | :------ |
-| `Original` | extends `Object` |
+| Name       | Type                                                                            |
+| :--------- | :------------------------------------------------------------------------------ |
+| `Original` | extends `Object`                                                                |
 | `MapArray` | extends readonly readonly [`string`, `string`, (...`args`: `any`[]) => `any`][] |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `object` | `Original` | the object to map from |
-| `map` | `MapArray` | the keys for the mapping |
+| Name     | Type       | Description              |
+| :------- | :--------- | :----------------------- |
+| `object` | `Original` | the object to map from   |
+| `map`    | `MapArray` | the keys for the mapping |
 
 #### Returns
 
@@ -277,7 +280,7 @@ the remapped object
 
 [remap/remap.ts:198](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/remap/remap.ts#lines-198)
 
-___
+---
 
 ### <a id="retrywrapper" name="retrywrapper"></a> retryWrapper
 
@@ -290,21 +293,21 @@ Retry an async function if it fails
 ```ts
 retryWrapper(someAsyncFunction, {
   retries: 3,
-  onRetry: (_, error) => console.error(error)
+  onRetry: (_, error) => console.error(error),
 });
 ```
 
 #### Type parameters
 
 | Name |
-| :------ |
-| `T` |
+| :--- |
+| `T`  |
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `fn` | () => `Promise`<`T`\> | the function to be retried |
+| Name     | Type                                       | Description                   |
+| :------- | :----------------------------------------- | :---------------------------- |
+| `fn`     | () => `Promise`<`T`\>                      | the function to be retried    |
 | `config` | [`RetryConfig`](interfaces/RetryConfig.md) | the configuration for retries |
 
 #### Returns

@@ -19,21 +19,17 @@ import { SimplifyIntersection } from '../remap/remap.js';
  * }
  * ```
  */
-function hasDefinedProperties<
-  T extends { [key: string]: any },
-  K extends keyof T
->(
-  obj: T | object,
-  ...keys: K[]
+function hasDefinedProperties<T extends { [key: string]: any }, K extends keyof T>(
+    obj: T | object,
+    ...keys: K[]
 ): obj is SimplifyIntersection<Required<Pick<T, K>> & Omit<T, K>> {
-
-  for (const key of keys) {
-    if ((obj as T)[key] === undefined || (obj as T)[key] === null) {
-      return false;
+    for (const key of keys) {
+        if ((obj as T)[key] === undefined || (obj as T)[key] === null) {
+            return false;
+        }
     }
-  }
 
-  return true;
+    return true;
 }
 
 export default hasDefinedProperties;

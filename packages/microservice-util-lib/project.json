@@ -29,17 +29,17 @@
                 "command": "typedoc --options typedoc.config.js src/index.ts"
             }
         },
-        "nx-release-publish": {
-            "options": {
-                "packageRoot": "dist/{projectRoot}"
-            }
-        },
         "lint": {
             "executor": "nx:run-commands",
             "options": {
                 "cwd": "{projectRoot}",
                 "color": true,
                 "command": "eslint . --max-warnings 0"
+            }
+        },
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "dist/{projectRoot}"
             }
         }
     }

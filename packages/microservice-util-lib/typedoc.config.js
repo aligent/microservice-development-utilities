@@ -6,7 +6,7 @@ const config = {
     githubPages: false,
     plugin: ['typedoc-plugin-markdown'],
     entryFileName: 'modules.md',
-    useHTMLAnchors: true
+    useHTMLAnchors: true,
 };
 
 export default config;

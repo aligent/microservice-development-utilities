@@ -9,11 +9,11 @@ import getAwsIdFromArn from './get-aws-id-from-arn/get-aws-id-from-arn.js';
 export type { Remap, ObjectMap, RetryConfig };
 
 export {
-  chunkBy,
-  remap,
-  retryWrapper,
-  fetchSsmParams,
-  S3Dao,
-  hasDefinedProperties,
-  getAwsIdFromArn
+    chunkBy,
+    remap,
+    retryWrapper,
+    fetchSsmParams,
+    S3Dao,
+    hasDefinedProperties,
+    getAwsIdFromArn,
 };

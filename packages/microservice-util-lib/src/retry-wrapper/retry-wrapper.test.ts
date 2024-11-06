@@ -1,111 +1,111 @@
 import retryWrapper from './retry-wrapper.js';
 
 describe('retryWrapper', () => {
-  it('returns function\'s result', async () => {
-    const result = await retryWrapper(async () => 3, {
-      retries: 1
-    });
-    expect(result).toBe(3);
-  });
-
-  it('retries the function the correct amount of times', async () => {
-    const fn = jest.fn(async () => {
-      throw new Error('Test Error');
+    it("returns function's result", async () => {
+        const result = await retryWrapper(async () => 3, {
+            retries: 1,
+        });
+        expect(result).toBe(3);
     });
 
-    try {
-      await retryWrapper(fn, { retries: 3 });
-    } catch {
-      expect(fn).toHaveBeenCalledTimes(4);
-    }
-  });
+    it('retries the function the correct amount of times', async () => {
+        const fn = jest.fn(async () => {
+            throw new Error('Test Error');
+        });
 
-  it('errors if the function returns an error every time', async () => {
-    const fn = jest.fn(async () => {
-      throw new Error('Test Error');
+        try {
+            await retryWrapper(fn, { retries: 3 });
+        } catch {
+            expect(fn).toHaveBeenCalledTimes(4);
+        }
     });
 
-    try {
-      await retryWrapper(fn, { retries: 3 });
-    } catch (ex) {
-      expect(ex).toBeTruthy();
-    }
-  });
+    it('errors if the function returns an error every time', async () => {
+        const fn = jest.fn(async () => {
+            throw new Error('Test Error');
+        });
 
-  it('retries after error', async () => {
-    let count = 0;
-    const fn = jest.fn(async () => {
-      if (count < 2) {
-        count++;
-        throw new Error('Test Error');
-      }
-      return true;
+        try {
+            await retryWrapper(fn, { retries: 3 });
+        } catch (ex) {
+            expect(ex).toBeTruthy();
+        }
     });
 
-    expect(await retryWrapper(fn, { retries: 3 })).toBe(true);
-    expect(fn).toHaveBeenCalledTimes(3);
-  });
+    it('retries after error', async () => {
+        let count = 0;
+        const fn = jest.fn(async () => {
+            if (count < 2) {
+                count++;
+                throw new Error('Test Error');
+            }
+            return true;
+        });
 
-  it('adds a delay between tries', async () => {
-    const fn = jest.fn(async () => {
-      throw new Error('Test Error');
+        expect(await retryWrapper(fn, { retries: 3 })).toBe(true);
+        expect(fn).toHaveBeenCalledTimes(3);
     });
 
-    const retries = 3;
-    const delay = 300;
+    it('adds a delay between tries', async () => {
+        const fn = jest.fn(async () => {
+            throw new Error('Test Error');
+        });
 
-    const startTime = Date.now();
+        const retries = 3;
+        const delay = 300;
 
-    try {
-      await retryWrapper(fn, {
-        retries,
-        delay
-      });
-      // eslint-disable-next-line no-empty
-    } catch {}
+        const startTime = Date.now();
 
-    const totalTime = Date.now() - startTime;
+        try {
+            await retryWrapper(fn, {
+                retries,
+                delay,
+            });
+            // eslint-disable-next-line no-empty
+        } catch {}
 
-    expect(totalTime).toBeGreaterThanOrEqual((retries + 1) * delay);
-  });
+        const totalTime = Date.now() - startTime;
 
-  it('calls the onRetry function when a retry happens', async () => {
-    const onRetry = jest.fn();
-    const fn = jest.fn(async () => {
-      throw new Error('Test Error');
+        expect(totalTime).toBeGreaterThanOrEqual((retries + 1) * delay);
     });
 
-    try {
-      await retryWrapper(fn, {
-        retries: 1,
-        onRetry
-      });
-      // eslint-disable-next-line no-empty
-    } catch {}
+    it('calls the onRetry function when a retry happens', async () => {
+        const onRetry = jest.fn();
+        const fn = jest.fn(async () => {
+            throw new Error('Test Error');
+        });
 
-    expect(onRetry).toHaveBeenCalledTimes(1);
-  });
+        try {
+            await retryWrapper(fn, {
+                retries: 1,
+                onRetry,
+            });
+            // eslint-disable-next-line no-empty
+        } catch {}
 
-  it('accurately counts retries', async () => {
-    const onRetry = jest.fn();
-    const err = new Error('Test Error');
-    const fn = jest.fn(async () => {
-      throw err;
+        expect(onRetry).toHaveBeenCalledTimes(1);
     });
 
-    try {
-      await retryWrapper(fn, {
-        retries: 3,
-        onRetry
-      });
-      // eslint-disable-next-line no-empty
-    } catch {}
+    it('accurately counts retries', async () => {
+        const onRetry = jest.fn();
+        const err = new Error('Test Error');
+        const fn = jest.fn(async () => {
+            throw err;
+        });
 
-    expect(onRetry).toHaveBeenLastCalledWith(3, err, {
-      retries: 0,
-      onRetry,
-      delay: 0,
-      backoffAmount: 0
+        try {
+            await retryWrapper(fn, {
+                retries: 3,
+                onRetry,
+            });
+            // eslint-disable-next-line no-empty
+        } catch {}
+
+        expect(onRetry).toHaveBeenLastCalledWith(3, err, {
+            retries: 0,
+            onRetry,
+            delay: 0,
+            backoffAmount: 0,
+        });
     });
-  });
 });

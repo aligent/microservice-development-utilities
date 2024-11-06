@@ -29,7 +29,7 @@ The amount to increase the delay by each retry (in ms)
 
 [retryWrapper/retryWrapper.ts:17](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/retryWrapper/retryWrapper.ts#lines-17)
 
-___
+---
 
 ### <a id="delay" name="delay"></a> delay
 
@@ -45,7 +45,7 @@ The base delay between retries (in ms)
 
 [retryWrapper/retryWrapper.ts:12](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/retryWrapper/retryWrapper.ts#lines-12)
 
-___
+---
 
 ### <a id="onretry" name="onretry"></a> onRetry
 
@@ -59,11 +59,11 @@ A callback to run before each retry
 
 ##### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `retries` | `number` | the number of retries so far (will start at 1) |
-| `error` | `Error` | the error from the last attempt |
-| `config` | [`RetryConfig`](RetryConfig.md) | the configuration supplied to the retryWrapper |
+| Name      | Type                            | Description                                    |
+| :-------- | :------------------------------ | :--------------------------------------------- |
+| `retries` | `number`                        | the number of retries so far (will start at 1) |
+| `error`   | `Error`                         | the error from the last attempt                |
+| `config`  | [`RetryConfig`](RetryConfig.md) | the configuration supplied to the retryWrapper |
 
 ##### Returns
 
@@ -73,7 +73,7 @@ A callback to run before each retry
 
 [retryWrapper/retryWrapper.ts:24](https://bitbucket.org/aligent/microservice-util-lib/src/0dfe425/src/retryWrapper/retryWrapper.ts#lines-24)
 
-___
+---
 
 ### <a id="retries" name="retries"></a> retries
 
