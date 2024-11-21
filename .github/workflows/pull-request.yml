@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - '**' # Trigger on all branches
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  code-quality:
+    name: 🕵️‍♀️ Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Fetch target
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Derive appropriate SHAs for base and head for `nx affected` commands
+        uses: nrwl/nx-set-shas@v4
+
+      - name: ⚙️ Run Tests
+        run: npx nx affected -t lint test --parallel=2
+
+      - name: ⚙️ Run Build
+        run: npx nx affected -t build
