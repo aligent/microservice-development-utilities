@@ -24,7 +24,7 @@
     "object-hash": "^3.0.0"
   },
   "devDependencies": {
-    "@aligent/ts-code-standards": "^1.4.1",
+    "@aligent/ts-code-standards": "^3.0.0",
     "@nx/eslint": "20.0.12",
     "@nx/eslint-plugin": "20.0.12",
     "@nx/js": "20.0.12",
