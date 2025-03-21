@@ -1,16 +1,11 @@
 {
-  "extends": "@aligent/ts-code-standards/tsconfigs-base",
-  "compileOnSave": false,
-  "compilerOptions": {
-    "exactOptionalPropertyTypes": false,
-    "noUncheckedSideEffectImports": true,
-    "types": [
-      "vitest/globals",
-      "vitest/importMeta",
-      "vite/client",
-      "node",
-      "vitest"
-    ]
-  },
-  "exclude": ["node_modules", "tmp"]
+    "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "compileOnSave": false,
+    "compilerOptions": {
+        "baseUrl": ".",
+        "exactOptionalPropertyTypes": false,
+        "noUncheckedSideEffectImports": true,
+        "types": ["vitest/globals", "vitest/importMeta", "vite/client", "node", "vitest"]
+    },
+    "exclude": ["node_modules", "tmp"]
 }

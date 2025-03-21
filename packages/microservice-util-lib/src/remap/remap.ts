@@ -10,7 +10,7 @@ export type SimplifyIntersection<A> = A extends object
     : A;
 
 /** A list of keys to keys, with an optional transformer function */
-type ObjectMap = readonly (readonly [string, string, ((...args: any[]) => any)?])[];
+type ObjectMap = ReadonlyArray<readonly [string, string, ((...args: any[]) => any)?]>;
 
 /**
  * Given a Key, a base Object and an ObjectMap, this will return the
@@ -193,6 +193,6 @@ function remap<Original extends { [key: string]: any }, MapArray extends ObjectM
     return out as any;
 }
 
-export type { Remap, ObjectMap };
+export type { ObjectMap, Remap };
 
 export default remap;

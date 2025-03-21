@@ -17,7 +17,7 @@ async function fetchSsmParams(param: string): Promise<Parameter | undefined>;
  * Fetch a list of SSM parameters
  * @param params list of parameter keys to fetch
  */
-async function fetchSsmParams(...params: string[]): Promise<(Parameter | undefined)[]>;
+async function fetchSsmParams(...params: string[]): Promise<Array<Parameter | undefined>>;
 
 /**
  * Fetch SSM Parameters

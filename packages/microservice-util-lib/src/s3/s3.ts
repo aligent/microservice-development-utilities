@@ -5,8 +5,8 @@ import {
     PutObjectCommand,
     S3Client,
 } from '@aws-sdk/client-s3';
-import chunkBy from '../chunk-by/chunk-by';
 import hash from 'object-hash';
+import chunkBy from '../chunk-by/chunk-by';
 
 /** A data access object for an S3 bucket */
 class S3Dao {

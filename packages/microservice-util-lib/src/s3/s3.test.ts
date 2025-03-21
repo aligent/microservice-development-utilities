@@ -1,8 +1,8 @@
 import { GetObjectCommand, GetObjectCommandOutput, S3Client } from '@aws-sdk/client-s3';
+import { sdkStreamMixin } from '@smithy/util-stream';
+import { mockClient } from 'aws-sdk-client-mock';
 import { Readable } from 'stream';
 import S3Dao from './s3';
-import { mockClient } from 'aws-sdk-client-mock';
-import { sdkStreamMixin } from '@smithy/util-stream';
 
 const s3Mock = mockClient(S3Client);
 

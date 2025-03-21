@@ -14,26 +14,22 @@
     "plugins": [
         {
             "plugin": "@nx/eslint/plugin",
-            "options": {
-                "targetName": "lint"
-            }
+            "options": {}
         },
         {
             "plugin": "@nx/vite/plugin",
-            "options": {
-                "buildTargetName": "build",
-                "testTargetName": "test",
-                "serveTargetName": "serve",
-                "previewTargetName": "preview",
-                "serveStaticTargetName": "serve-static",
-                "typecheckTargetName": "check-types"
-            }
+            "options": {}
         }
     ],
     "targetDefaults": {
         "@nx/vite:test": {
             "cache": true,
             "inputs": ["default", "^production"]
+        },
+        "@nx/js:tsc": {
+            "cache": true,
+            "dependsOn": ["^build"],
+            "inputs": ["production", "^production"]
         }
     },
     "release": {

@@ -2,17 +2,13 @@
   "name": "@aligent/microservice-util-lib",
   "version": "1.0.0",
   "description": "A set of utility functions for Aligent Microservices",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "typings": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "docs",
-    "!**/*.tsbuildinfo"
-  ],
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aligent/microservice-development-utilities.git"
+    "url": "https://github.com/aligent/microservice-development-utilities.git",
+    "directory": "packages/microservice-util-lib"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.687.0",
@@ -22,5 +18,5 @@
     "object-hash": "^3.0.0"
   },
   "author": "Aligent",
-  "license": "ISC"
+  "license": "MIT"
 }
