@@ -10,8 +10,8 @@
     "directory": "packages/nx-serverless"
   },
   "dependencies": {
-    "@nx/devkit": "20.0.12",
-    "nx": "20.0.12"
+    "@nx/devkit": "20.6.4",
+    "nx": "20.6.4"
   },
   "generators": "./generators.json",
   "author": "Aligent",
