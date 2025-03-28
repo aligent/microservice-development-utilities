@@ -1,0 +1,22 @@
+{
+  "name": "@aligent/nx-openapi",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligent/microservice-development-utilities.git",
+    "directory": "packages/nx-openapi"
+  },
+  "dependencies": {
+    "openapi-typescript": "^7.5.2",
+    "enquirer": "^2.3.6",
+    "@nx/devkit": "19.8.3",
+    "@redocly/openapi-core": "^1.27.2",
+    "vitest": "2.0.0"
+  },
+  "generators": "./generators.json",
+  "author": "Aligent",
+  "license": "MIT"
+}
