@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@nx/devkit": "20.0.12",
-    "nx": "20.0.12"
+    "nx": "20.7.0"
   },
   "generators": "./generators.json",
   "author": "Aligent",
