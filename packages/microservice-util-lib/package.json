@@ -11,8 +11,8 @@
     "directory": "packages/microservice-util-lib"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.687.0",
-    "@aws-sdk/client-ssm": "^3.687.0",
+    "@aws-sdk/client-s3": "^3.782.0",
+    "@aws-sdk/client-ssm": "^3.782.0",
     "axios": "^1.7.7",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0"
