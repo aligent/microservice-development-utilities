@@ -4,7 +4,7 @@ The `@aligent/nx-serverless` package provides Nx generators and plugin for serve
 
 ## Generators
 
-- We support the following types of generators: `init` and `service`
+- We support the following types of generators: `init`, `service`, `link` and `unlink`
 
 ### Init generator
 
@@ -45,6 +45,23 @@ The `@aligent/nx-serverless` package provides Nx generators and plugin for serve
 - To generate a notification service, run the command:
   ```bash
     nx generate @aligent/nx-serverless:service <service-name> notification
+  ```
+
+### Link generator
+
+- The Link generator is used to establish dependencies between projects in your workspace. It updates the `implicitDependencies` of the target projects to include the specified dependency projects.
+- This ensures that the target projects are aware of their dependencies, which can help in managing build and deployment workflows.
+- To use this generator, run the command and follow the prompt:
+  ```bash
+    nx generate @aligent/nx-serverless:link
+  ```
+
+### Unlink generator
+
+- The Unlink generator is used to remove dependencies between projects in your workspace. It updates the `implicitDependencies` of the target projects by removing the specified dependency projects.
+- To use this generator, run the command and follow the prompt:
+  ```bash
+    nx generate @aligent/nx-serverless:unlink
   ```
 
 ## Plugins
