@@ -10,7 +10,7 @@
     "directory": "packages/nx-openapi"
   },
   "dependencies": {
-    "@nx/devkit": "20.7.0",
+    "@nx/devkit": "20.7.1",
     "@redocly/openapi-core": "^1.34.1",
     "openapi-typescript": "^7.6.1",
     "enquirer": "^2.3.6"
