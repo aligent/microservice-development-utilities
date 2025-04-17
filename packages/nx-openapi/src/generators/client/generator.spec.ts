@@ -1,4 +1,4 @@
-import { Tree, readProjectConfiguration } from '@nx/devkit';
+import { Tree, addProjectConfiguration, readProjectConfiguration } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { clientGenerator } from './generator';
 import { ClientGeneratorSchema } from './schema';
@@ -7,26 +7,83 @@ describe('client generator', () => {
     let tree: Tree;
     beforeEach(() => {
         tree = createTreeWithEmptyWorkspace();
-        tree.root = ''; // Trees root is automatically /virtual/ but that breaks the unit tests
     });
 
     it('should generate a client successfully', async () => {
         const options: ClientGeneratorSchema = {
             name: 'test',
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
-            skipValidate: true, // Validation breaks this unit test for some reason (TODO: figure out wtf is going on here)
+            skipValidate: false,
+            override: false,
         };
         await clientGenerator(tree, options);
-        const config = readProjectConfiguration(tree, 'test');
-        expect(config).toBeDefined();
-    }, 10000);
 
-    it('should error if schema file is not found', async () => {
+        expect(readProjectConfiguration(tree, 'test')).toBeDefined();
+        expect(tree.exists('clients/test/schema.yaml')).toBe(true);
+        expect(tree.exists('clients/test/generated/index.ts')).toBe(true);
+    });
+
+    it('should throw an error if schemaPath does point to a supported file type', async () => {
         const options: ClientGeneratorSchema = {
             name: 'test',
-            schemaPath: './unit-test-schemas/missing.yaml',
-            skipValidate: true,
+            schemaPath: `${__dirname}/unit-test-schemas/random.xml`,
+            skipValidate: false,
+            override: false,
         };
-        expect(clientGenerator(tree, options)).rejects.toThrowError();
+        await expect(clientGenerator(tree, options)).rejects.toThrowError();
+    });
+
+    it('should throw an error if schema file is not found', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/missing.yaml`,
+            skipValidate: true,
+            override: false,
+        };
+        await expect(clientGenerator(tree, options)).rejects.toThrowError();
+    });
+
+    it('should not write schema to disk if the project exists and override is false', async () => {
+        addProjectConfiguration(tree, 'test', {
+            root: 'clients/test',
+            projectType: 'library',
+            sourceRoot: 'clients/test/src',
+            targets: {},
+            tags: ['client', 'test'],
+        });
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+        };
+
+        await clientGenerator(tree, options);
+
+        expect(tree.exists('clients/test/schema.yaml')).toBe(false);
+        expect(tree.exists('clients/test/generated/index.ts')).toBe(false);
+    });
+
+    it('should throw error when validation failed (has problem with severity `error`)', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/invalid.yaml`,
+            skipValidate: false,
+            override: false,
+        };
+
+        await expect(clientGenerator(tree, options)).rejects.toThrowError();
+    });
+
+    it('should throw error when validation failed due to unsupported specification', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/unsupported.yaml`,
+            skipValidate: false,
+            override: false,
+        };
+
+        await expect(clientGenerator(tree, options)).rejects.toThrowError();
     });
 });

@@ -15,20 +15,16 @@
         },
         "schemaPath": {
             "type": "string",
-            "description": "Path to the schema. If using the --remote flag then you must specify a valid remote URL. If not you must specify a local file.",
+            "description": "Absolute path to the schema. Specify a valid HTTP url or a local file.",
             "$default": {
                 "$source": "argv",
                 "index": 1
             },
-            "x-prompt": "Schema path (URL to schema if using --remote): "
-        },
-        "remote": {
-            "type": "boolean",
-            "description": "Specify whether you would like to fetch remotely."
+            "x-prompt": "Absolute schema path (a valid HTTP url or a local file): "
         },
         "configPath": {
             "type": "string",
-            "description": "path to the redocly config file responsible for auth. For more information: https://openapi-ts.dev/cli#auth."
+            "description": "Path to the redocly config file responsible for auth. For more information: https://openapi-ts.dev/cli#auth."
         },
         "importPath": {
             "type": "string",
@@ -36,7 +32,13 @@
         },
         "skipValidate": {
             "type": "boolean",
-            "description": "Skip validation in the generation process"
+            "description": "Skip validation in the generation process",
+            "default": false
+        },
+        "override": {
+            "type": "boolean",
+            "description": "Override existing project schema",
+            "default": false
         }
     },
     "required": ["name", "schemaPath"]

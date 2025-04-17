@@ -1,124 +1,114 @@
-// @ts-expect-error This is ignored because openapi-typescript has issues with CJS support. https://arethetypeswrong.github.io/?p=openapi-typescript%407.5.2
+import { logger, Tree } from '@nx/devkit';
+import { lint, loadConfig } from '@redocly/openapi-core';
+import { readFileSync } from 'fs';
 import openapiTS, { astToString } from 'openapi-typescript';
 
-import { Tree } from '@nx/devkit';
-import { loadConfig } from '@redocly/openapi-core';
-import { spawn } from 'child_process';
-
 /**
- * Generates the open api types using openapi-typescript,
- * @returns Generated type contents
+ * Generates TypeScript types from an OpenAPI schema
+ * and writes the generated types to a specified destination.
+ *
+ * @param {Tree} tree - The file system tree representing the current project.
+ * @param {string} schemaPath - The path to the OpenAPI schema file.
+ * @param {string} typeDest - The destination path for the generated TypeScript types.
+ * @returns {Promise<void>} A promise that resolves when the types are successfully generated.
+ * @throws {Error} If the schema cannot be read or the types cannot be generated.
  */
 export async function generateOpenApiTypes(
     tree: Tree,
     schemaPath: string,
-    remote = false,
-    configPath?: string
-) {
-    // Parse schema into type definition
-    let contents;
-    if (remote) {
-        console.log('Getting remote schema...');
-        contents = await generateTypesFromRemoteSchema(schemaPath, configPath);
-    } else {
-        console.log('Getting local schema... (use --remote to get remote schema)');
-        contents = await generateTypesFromLocalSchema(tree.root, schemaPath);
+    typeDest: string
+): Promise<void> {
+    logger.info(`Generating types from ${schemaPath}`);
+    const schema = tree.read(schemaPath);
+
+    if (!schema) {
+        throw new Error(`Failed to read schema at ${schemaPath}`);
     }
 
-    return contents;
+    const ast = await openapiTS(schema);
+
+    tree.write(typeDest, astToString(ast));
 }
 
-function parseUrlString(url: string): URL {
-    const parsed = new URL(url);
-
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-        throw new Error(`${parsed.href} is an invalid remote url.`);
-    }
-    return parsed;
-}
-
+// We do not want to test this function.
+// It only download/copy the schema to a specified destination.
+/* v8 ignore start */
 /**
- * Gets the remote schema from an endpoint url. Uses configured authorization or passed in via the user
- * @param url Remote url to fetch the schema from
- * @param configPath The path to a local 'redocly' config file. This will be passed into the requests, mainly to specify auth details if required.
- * @returns a string representation of the remote schema
+ * Copies the OpenAPI schema from the source to a specified destination.
+ *
+ * This function supports both local and remote schemas. If the schema is remote (HTTP/HTTPS),
+ * it fetches the schema from the URL. If the schema is local, it reads the schema from the file system.
+ *
+ * @param {Tree} tree - The file system tree representing the current project.
+ * @param {string} destination - The destination path where the schema will be copied.
+ * @param {string} schemaPath - The path to the schema file (local or remote).
+ * @returns {Promise<void>} A promise that resolves when the schema is successfully copied.
+ * @throws {Error} If the schema cannot be read or is empty.
  */
-/* v8 ignore start */ // Ignored because these are just wrappers around the ts gen library. No point testing
-export async function generateTypesFromRemoteSchema(url: string, configPath?: string) {
-    const parsedUrl = parseUrlString(url);
-    if (configPath) {
-        const config = await loadConfig({ configPath });
-        console.log('Loaded Config: ', config);
-        console.log('Generating types...');
-        const ast = await openapiTS(parsedUrl, {
-            redocly: config,
-        });
-        return astToString(ast);
-    } else {
-        const ast = await openapiTS(parsedUrl);
-        return astToString(ast);
-    }
-}
+export async function copySchema(
+    tree: Tree,
+    destination: string,
+    schemaPath: string
+): Promise<void> {
+    const isRemoteSchema = schemaPath.startsWith('http://') || schemaPath.startsWith('https://');
 
-/**
- * Grabs schema data from local directory. The schemaPath is evaluated relative to the root of the template project,
- * not the root of the generator.
- * @param rootDir Root directory of the project tree
- * @param schemaPath Path of the schema relative to the root of the entire project.
- * @returns a string representation of the schema contents.
- */
-async function generateTypesFromLocalSchema(rootDir: string, schemaPath: string) {
-    try {
-        console.log('Generating types...');
-        const ast = await openapiTS(`file:///${rootDir}/${schemaPath}`);
-        return astToString(ast);
-    } catch (e) {
-        throw new Error(
-            `Failed to generate local file at path ${rootDir}/${schemaPath} (did you mean to pass --remote?)` +
-                e
-        );
+    let schema: Buffer | null;
+
+    // TODO: MI-203 - Support private schema endpoint
+    if (isRemoteSchema) {
+        const response = await fetch(schemaPath);
+        schema = Buffer.from(await response.arrayBuffer());
+    } else {
+        schema = readFileSync(schemaPath);
     }
+
+    if (!schema || !schema.length) {
+        throw new Error(`Failed to read schema at ${schemaPath}`);
+    }
+
+    tree.write(destination, schema);
 }
 /* v8 ignore end */
 
 /**
- * Copies the original schema from the source to newly generated client
+ * Validates an OpenAPI schema using the Redocly OpenAPI linter.
+ *
+ * This function uses the `@redocly/openapi-core` library to lint the schema at the specified path.
+ * It logs warnings and errors based on the severity of the issues found in the schema.
+ *
+ * @param {string} path - The path to the OpenAPI schema file.
+ * @returns {Promise<boolean>} A promise that resolves to `true` if validation errors are found, otherwise `false`.
  */
-export async function copySchema(tree: Tree, name: string, schemaPath: string, remote?: boolean) {
-    let schemaBuffer;
-    if (remote) {
-        const response = await fetch(schemaPath);
-        schemaBuffer = Buffer.from(await response.arrayBuffer());
-    } else {
-        schemaBuffer = tree.read(schemaPath);
-    }
+export async function validateSchema(path: string): Promise<boolean> {
+    let hasError = false;
+    try {
+        // TODO: MI-203 - Support private schema endpoint
+        const config = await loadConfig();
+        const results = await lint({ ref: path, config });
 
-    if (!schemaBuffer) {
-        throw new Error(`Failed to read schema at ${schemaPath}`);
-    }
+        results.forEach(result => {
+            const location = result.location.map(({ pointer, reportOnKey }) => ({
+                pointer,
+                reportOnKey,
+            }));
 
-    const ext = schemaPath.split('.').pop() || 'yaml';
-    const destination = `clients/${name}/schema.${ext}`;
-
-    tree.write(destination, schemaBuffer);
-
-    return destination;
-}
-
-// This is ignored by coverage because its relying on a third party package to do the validation step
-/* v8 ignore start */
-export async function validateSchema(schemaPath: string) {
-    return new Promise((resolve, reject) => {
-        const child = spawn('npx', ['@redocly/cli', 'lint', schemaPath], {
-            stdio: ['pipe', 'inherit', 'inherit'],
-        });
-
-        child.on('close', code => {
-            if (code === 0) {
-                resolve(`Validation completed`);
-            } else {
-                reject(new Error(`Validation failed with code ${code}`));
+            if (result.severity === 'warn') {
+                logger.warn(
+                    JSON.stringify({ location, message: result.message, severity: result.severity })
+                );
+                return;
             }
+
+            logger.error(
+                JSON.stringify({ location, message: result.message, severity: result.severity })
+            );
+            hasError = true;
         });
-    });
+    } catch (e) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        logger.error(`Failed to validate schema: ${message}`);
+        hasError = true;
+    }
+
+    return hasError;
 }

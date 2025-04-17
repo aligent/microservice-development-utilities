@@ -19,16 +19,17 @@ To build with flags (without needing to prompt):
 Run `nx g @aligent/nx-openapi:client` with optional flags:
 
 - `--name` Name of the api client.
-- `--schemaPath` Path to the schema. If using the --remote flag then you must specify a valid remote URL. If not you must specify a local file.
-- `--remote` Specify whether you would like to fetch remotely.
+- `--schemaPath` Absolute path to the schema. This can be a valid HTTP URL or a local file.
+- `--importPath` The package name used to import the client. Defaults to `@clients/{name}` if not supplied
 - `--configPath` path to the redocly config file responsible for authentication when fetching a schema remotely. For more information: https://openapi-ts.dev/cli#auth.
 - `--skipValidate` If passed, this will skip schema pre-validation. Only do this if you have good reason to - not validating the schema beforehand may produce unpredictable results (either things may not generate at all or they may generate something that is incorrect).
+- `--override` Override the schema (and the generated type) of an existing client.
 
 **:rotating_light: Do not edit the files in the `/generated` folder after generating a client. These files are generated using the OpenAPI Schema and editing them may put you at risk of no longer conforming to the specifications of the API you are using! :rotating_light:**
 
 ### Regenerating types for an existing client
 
-To regenerate an existing client run the same generator command again (as above). If the client already exists in the Nx project, after confirmation it will have its types file regenerated from either the existing schema or a newly provided one.
+To regenerate an existing client run the same generator command again (as above) and pass in `--override` flag. If the client already exists, its types file will be regenerated from the provided one.
 
 ## Development
 
@@ -59,7 +60,7 @@ graph LR;
   GR-->G;
   G-->W[Write generated .ts file to tree];
   W-->NX[Nx generator uses tree to build directory];
-  NX-->C[Cleanup];
+  NX-->C[Clean up];
 ```
 
 ## What gets generated?
