@@ -10,8 +10,8 @@
     "directory": "packages/nx-openapi"
   },
   "dependencies": {
-    "@nx/devkit": "20.7.0",
-    "@redocly/openapi-core": "^1.34.1",
+    "@nx/devkit": "20.8.0",
+    "@redocly/openapi-core": "^1.34.2",
     "openapi-typescript": "^7.6.1"
   },
   "generators": "./generators.json",
