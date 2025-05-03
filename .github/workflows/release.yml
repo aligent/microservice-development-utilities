@@ -38,7 +38,7 @@ jobs:
         shell: bash
 
       - name: Check version plan exists
-        run: npx nx release plan:check
+        run: npx nx release plan:check --verbose
         shell: bash
 
       - name: Independently release new package versions

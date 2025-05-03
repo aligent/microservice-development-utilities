@@ -15,7 +15,9 @@
     "@aws-sdk/client-ssm": "^3.687.0",
     "axios": "^1.7.7",
     "lodash": "^4.17.21",
-    "object-hash": "^3.0.0"
+    "oauth-sign": "^0.9.0",
+    "object-hash": "^3.0.0",
+    "openapi-fetch": "^0.13.5"
   },
   "author": "Aligent",
   "license": "MIT"

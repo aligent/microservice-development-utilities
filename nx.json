@@ -37,6 +37,11 @@
         }
     },
     "release": {
+        "changelog": {
+            "workspaceChangelog": {
+                "createRelease": "github"
+            }
+        },
         "versionPlans": true,
         "projects": ["packages/*"],
         "projectsRelationship": "independent",

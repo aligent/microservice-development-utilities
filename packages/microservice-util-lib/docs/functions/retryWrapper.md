@@ -1,6 +1,6 @@
-[**@aligent/microservice-util-lib**](../modules.md) • **Docs**
+[**@aligent/microservice-util-lib**](../modules.md)
 
----
+***
 
 [@aligent/microservice-util-lib](../modules.md) / retryWrapper
 
@@ -8,19 +8,27 @@
 
 > **retryWrapper**\<`T`\>(`fn`, `config`): `Promise`\<`T`\>
 
+Defined in: [retry-wrapper/retry-wrapper.ts:78](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L78)
+
 Retry an async function if it fails
 
 ## Type Parameters
 
-• **T**
+### T
+
+`T`
 
 ## Parameters
 
-• **fn**
+### fn
+
+() => `Promise`\<`T`\>
 
 the function to be retried
 
-• **config**: [`RetryConfig`](../interfaces/RetryConfig.md)
+### config
+
+[`RetryConfig`](../interfaces/RetryConfig.md)
 
 the configuration for retries
 
@@ -33,10 +41,6 @@ the configuration for retries
 ```ts
 retryWrapper(someAsyncFunction, {
   retries: 3,
-  onRetry: (_, error) => console.error(error),
+  onRetry: (_, error) => console.error(error)
 });
 ```
-
-## Defined in
-
-[retry-wrapper/retry-wrapper.ts:78](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L78)

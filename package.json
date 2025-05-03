@@ -50,6 +50,8 @@
     "jiti": "2.4.2",
     "jsonc-eslint-parser": "^2.4.0",
     "nx": "20.7.0",
+    "oauth-sign": "^0.9.0",
+    "openapi-fetch": "^0.13.5",
     "prettier": "^3.3.3",
     "typedoc": "^0.28.0",
     "typedoc-plugin-markdown": "^4.5.1",
