@@ -1,6 +1,6 @@
-[**@aligent/microservice-util-lib**](../modules.md) • **Docs**
+[**@aligent/microservice-util-lib**](../modules.md)
 
----
+***
 
 [@aligent/microservice-util-lib](../modules.md) / chunkBy
 
@@ -8,19 +8,27 @@
 
 > **chunkBy**\<`ArrayItem`\>(`source`, `chunkSize`): `ArrayItem`[][]
 
+Defined in: [chunk-by/chunk-by.ts:10](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/chunk-by/chunk-by.ts#L10)
+
 Split an array into chunks of a certain size
 
 ## Type Parameters
 
-• **ArrayItem**
+### ArrayItem
+
+`ArrayItem`
 
 ## Parameters
 
-• **source**: `ArrayItem`[]
+### source
+
+`ArrayItem`[]
 
 the array to split up
 
-• **chunkSize**: `number`
+### chunkSize
+
+`number`
 
 the size of each chunk. (The final chunk will be whatever is remaining)
 
@@ -31,9 +39,5 @@ the size of each chunk. (The final chunk will be whatever is remaining)
 ## Example
 
 ```ts
-chunkBy([1, 2, 3, 4, 5, 6, 7], 2); // [[1, 2], [3, 4], [5, 6], [7]]
+chunkBy([1, 2, 3, 4, 5, 6, 7], 2) // [[1, 2], [3, 4], [5, 6], [7]]
 ```
-
-## Defined in
-
-[chunk-by/chunk-by.ts:10](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/chunk-by/chunk-by.ts#L10)

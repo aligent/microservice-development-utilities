@@ -36,11 +36,11 @@ jobs:
       - name: Derive appropriate SHAs for base and head for `nx affected` commands
         uses: nrwl/nx-set-shas@dbe0650947e5f2c81f59190a38512cf49126fe6b # v4
 
-      - name: Check for version plan
-        uses: npm nx release plan:check
-
       - name: ⚙️ Run Tests
         run: npx nx affected -t lint test --parallel=2
 
       - name: ⚙️ Run Build
         run: npx nx affected -t build
+
+      - name: 🕵️‍♀️ Check for version plan
+        run: npx nx release plan:check --verbose

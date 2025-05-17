@@ -1,19 +1,21 @@
-[**@aligent/microservice-util-lib**](../modules.md) • **Docs**
+[**@aligent/microservice-util-lib**](../modules.md)
 
----
+***
 
 [@aligent/microservice-util-lib](../modules.md) / Remap
 
 # Type Alias: Remap\<MapArray, Original\>
 
-> **Remap**\<`MapArray`, `Original`\>: `SimplifyIntersection`\<`ConstructTypeFromProperties`\<`MapArray`, `Original`\>\>
+> **Remap**\<`MapArray`, `Original`\> = `SimplifyIntersection`\<`ConstructTypeFromProperties`\<`MapArray`, `Original`\>\>
+
+Defined in: [remap/remap.ts:145](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/remap/remap.ts#L145)
 
 ## Type Parameters
 
-• **MapArray** _extends_ [`ObjectMap`](ObjectMap.md)
+### MapArray
 
-• **Original** _extends_ `object`
+`MapArray` *extends* [`ObjectMap`](ObjectMap.md)
 
-## Defined in
+### Original
 
-[remap/remap.ts:143](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/remap/remap.ts#L143)
+`Original` *extends* `object`

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script adapted from https://github.com/kaczor6418/git-hooks-example/blob/master/git-hooks/pre-commit
 
-# Support using VSCode to commit
+# Support using VSCode to push
 # This loads nvm.sh and sets the correct PATH before running hook
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -38,7 +38,7 @@ done
 
 # Report overall success or failure
 if [ ${#failures[@]} -ne 0 ]; then
-  echo -e "\n🚩${RED} Couldn't commit changes dues to the following errors: ${NO_COLOUR}"
+  echo -e "\n🚩${RED} Couldn't push changes dues to the following errors: ${NO_COLOUR}"
 
   for report in "${failures[@]}"; do
     echo -e $report;

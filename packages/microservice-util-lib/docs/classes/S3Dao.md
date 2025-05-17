@@ -1,48 +1,54 @@
-[**@aligent/microservice-util-lib**](../modules.md) • **Docs**
+[**@aligent/microservice-util-lib**](../modules.md)
 
----
+***
 
 [@aligent/microservice-util-lib](../modules.md) / S3Dao
 
 # Class: S3Dao
 
+Defined in: [s3/s3.ts:12](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L12)
+
 A data access object for an S3 bucket
 
 ## Constructors
 
-<a id="constructors" name="constructors"></a>
+<a id="constructor"></a>
 
-### new S3Dao()
+### Constructor
 
-> **new S3Dao**(`bucket`): [`S3Dao`](S3Dao.md)
+> **new S3Dao**(`bucket`): `S3Dao`
+
+Defined in: [s3/s3.ts:19](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L19)
 
 #### Parameters
 
-• **bucket**: `string`
+##### bucket
+
+`string`
 
 the location of the bucket that objects should be stored in
 
 #### Returns
 
-[`S3Dao`](S3Dao.md)
-
-#### Defined in
-
-[s3/s3.ts:19](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/s3/s3.ts#L19)
+`S3Dao`
 
 ## Methods
 
-<a id="deletedata" name="deletedata"></a>
+<a id="deletedata"></a>
 
 ### deleteData()
 
 > **deleteData**(`objectDetails`): `Promise`\<`DeleteObjectCommandOutput`\>
 
+Defined in: [s3/s3.ts:100](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L100)
+
 Delete an object from the S3 bucket
 
 #### Parameters
 
-• **objectDetails**: `GetObjectCommandInput`
+##### objectDetails
+
+`GetObjectCommandInput`
 
 the object to delete
 
@@ -50,63 +56,59 @@ the object to delete
 
 `Promise`\<`DeleteObjectCommandOutput`\>
 
-#### Defined in
+***
 
-[s3/s3.ts:100](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/s3/s3.ts#L100)
-
----
-
-<a id="fetchchunks" name="fetchchunks"></a>
+<a id="fetchchunks"></a>
 
 ### fetchChunks()
 
-> **fetchChunks**\<`T`\>(`chunks`): `AsyncGenerator`\<`object`, `Awaited`\<`T`\>, `unknown`\>
+> **fetchChunks**\<`T`\>(`chunks`): `AsyncGenerator`\<\{ `chunk`: `T`; `s3Object`: `undefined` \| `GetObjectCommandInput`; \}, `Awaited`\<`T`\>, `unknown`\>
+
+Defined in: [s3/s3.ts:81](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L81)
 
 Generator to fetch chunked data, chunk by chunk
 
 #### Type Parameters
 
-• **T**
+##### T
+
+`T`
 
 #### Parameters
 
-• **chunks**: `GetObjectCommandInput`[]
+##### chunks
+
+`GetObjectCommandInput`[]
 
 the list of object chunks
 
 #### Returns
 
-`AsyncGenerator`\<`object`, `Awaited`\<`T`\>, `unknown`\>
+`AsyncGenerator`\<\{ `chunk`: `T`; `s3Object`: `undefined` \| `GetObjectCommandInput`; \}, `Awaited`\<`T`\>, `unknown`\>
 
-##### chunk
+***
 
-> **chunk**: `T`
-
-##### s3Object
-
-> **s3Object**: `undefined` \| `GetObjectCommandInput`
-
-#### Defined in
-
-[s3/s3.ts:81](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/s3/s3.ts#L81)
-
----
-
-<a id="fetchdata" name="fetchdata"></a>
+<a id="fetchdata"></a>
 
 ### fetchData()
 
 > **fetchData**\<`T`\>(`objectDetails`): `Promise`\<`T`\>
 
+Defined in: [s3/s3.ts:66](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L66)
+
 Fetch an object from the S3 bucket
 
 #### Type Parameters
 
-• **T**
+##### T
+
+`T`
 
 #### Parameters
 
-• **objectDetails**: `GetObjectCommandInput`
+##### objectDetails
+
+`GetObjectCommandInput`
 
 the object which describes the location of the object
 
@@ -116,31 +118,35 @@ the object which describes the location of the object
 
 the body of the object
 
-#### Defined in
+***
 
-[s3/s3.ts:66](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/s3/s3.ts#L66)
-
----
-
-<a id="storechunked" name="storechunked"></a>
+<a id="storechunked"></a>
 
 ### storeChunked()
 
 > **storeChunked**\<`T`\>(`data`, `chunkSize`): `Promise`\<`GetObjectCommandInput`[]\>
 
+Defined in: [s3/s3.ts:56](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L56)
+
 Store an array of object as individual chunks in S3
 
 #### Type Parameters
 
-• **T** _extends_ `any`[]
+##### T
+
+`T` *extends* `unknown`[]
 
 #### Parameters
 
-• **data**: `T`
+##### data
+
+`T`
 
 the data to store
 
-• **chunkSize**: `number`
+##### chunkSize
+
+`number`
 
 the number of entries that should be in each chunk
 
@@ -150,31 +156,35 @@ the number of entries that should be in each chunk
 
 an array of objects which can be used to fetch the chunks
 
-#### Defined in
+***
 
-[s3/s3.ts:56](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/s3/s3.ts#L56)
-
----
-
-<a id="storedata" name="storedata"></a>
+<a id="storedata"></a>
 
 ### storeData()
 
 > **storeData**\<`T`\>(`data`, `name`?): `Promise`\<`GetObjectCommandInput`\>
 
+Defined in: [s3/s3.ts:30](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/s3/s3.ts#L30)
+
 Store data in an S3 bucket
 
 #### Type Parameters
 
-• **T**
+##### T
+
+`T`
 
 #### Parameters
 
-• **data**: `T`
+##### data
+
+`T`
 
 the data to store
 
-• **name?**: `string`
+##### name?
+
+`string`
 
 the name to call the object in S3
 
@@ -189,7 +199,3 @@ an object which can be used to fetch the data
 ```ts
 the hash of the data
 ```
-
-#### Defined in
-
-[s3/s3.ts:30](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/s3/s3.ts#L30)

@@ -1,6 +1,6 @@
-[**@aligent/microservice-util-lib**](../modules.md) • **Docs**
+[**@aligent/microservice-util-lib**](../modules.md)
 
----
+***
 
 [@aligent/microservice-util-lib](../modules.md) / getAwsIdFromArn
 
@@ -8,11 +8,15 @@
 
 > **getAwsIdFromArn**(`resourceArn`): `string`
 
+Defined in: [get-aws-id-from-arn/get-aws-id-from-arn.ts:11](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/get-aws-id-from-arn/get-aws-id-from-arn.ts#L11)
+
 Get the AWS ID from its resource ARN
 
 ## Parameters
 
-• **resourceArn**: `string`
+### resourceArn
+
+`string`
 
 the ARN of the AWS resource
 
@@ -29,11 +33,5 @@ when the provided ARN is empty
 ## Example
 
 ```ts
-getAwsIdFromArn(
-  'arn:aws:states:ap-southeast-2:123123123:execution:prj-int-entity-ac-dc-dev-machine-name:this-is-the-id'
-);
+getAwsIdFromArn('arn:aws:states:ap-southeast-2:123123123:execution:prj-int-entity-ac-dc-dev-machine-name:this-is-the-id')
 ```
-
-## Defined in
-
-[get-aws-id-from-arn/get-aws-id-from-arn.ts:11](https://github.com/aligent/microservice-development-utilities/blob/6029aa3ed377277764d6a6f496cad1ea8d56a51e/packages/microservice-util-lib/src/get-aws-id-from-arn/get-aws-id-from-arn.ts#L11)
