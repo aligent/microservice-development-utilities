@@ -10,7 +10,7 @@
     "directory": "packages/nx-serverless"
   },
   "dependencies": {
-    "@nx/devkit": "20.8.1",
+    "@nx/devkit": "21.1.2",
     "nx": "20.8.1",
     "@nx/js": "20.8.1"
   },
