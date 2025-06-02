@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@nx/devkit": "20.8.1",
-    "nx": "20.8.1",
+    "nx": "21.1.2",
     "@nx/js": "20.8.1"
   },
   "generators": "./generators.json",
