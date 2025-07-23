@@ -64,5 +64,8 @@
   "nx": {
     "name": "microservice-development-utilities",
     "includedScripts": []
+  },
+  "overrides": {
+    "form-data@<=4.0.4": "4.0.4"
   }
 }
