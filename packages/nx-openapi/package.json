@@ -13,7 +13,7 @@
     "@nx/devkit": "20.8.1",
     "@redocly/openapi-core": "^1.34.2",
     "openapi-typescript": "^7.6.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "generators": "./generators.json",
   "author": "Aligent",
