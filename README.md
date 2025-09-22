@@ -14,29 +14,31 @@ Each of the packages in the monorepo have separate versioning and independent np
 
 ### Step-by-Step Guide
 
-1. Start by creating a new branch from the latest `main` branch.
+1. Start by creating a new `releases/*` branch from the latest `main` branch.
 
-2. Create a new version plan: Run the following command to generate a version plan based on your changes:
+2. Check if a version plan exist. 
+   - The version plan is a `version-plan-*.md` file in `.nx/version-plans` folder.
+   - If the a version plan is already created, go to step #3.
+   - If not exists, create a new version plan. You can use the following command to generate a version plan based on your changes:
 
-   ```bash
-   npm run release-plan
-   ```
+      ```bash
+      npm run release-plan
+      ```
+      Follow the prompts to select the type of change (patch, minor, major, etc.) and provide a description for each affected package. This will create a version plan file in the repository.
 
-   Follow the prompts to select the type of change (patch, minor, major, etc.) and provide a description for each affected package. This will create a version plan file in the repository.
+3. Double check your release plan then commit and push your changes to the newly created `releases/*` branch.
+    - Ensure your change contains only one version plan file.
+    - This will trigger the `release` workflow. The workflow will:
+      - Detect the version plan file.
+      - Release a new version without publishing to NPM.
+      - Push the necessary changes to your `releases/*` branch.
+      - Remove the version plan file after a successful releasing.
+      - Open a "Publish" pull request targeting the `main` branch.
 
-3. Merge to `main`:
+4. Once the "Publish" PR is approved, merge into `main`.
+   - The `publish` workflow will build and publish the released packages to NPM.
 
-   - Commit your changes, including the version plan file.
-   - Open a pull request targeting the `main` branch.
-   - Ensure your PR contains only one version plan file.
-   - Once approved, merge your branch into `main`.
-
-4. Manually run the `release` Pipeline
-   - After merging, trigger the `release` pipeline manually (via Github Action UI).
-   - The pipeline will:
-     - Detect the version plan file.
-     - Build and publish the affected packages to npm.
-     - Remove the version plan file after a successful publish.
+5. For First Releases only, you need to trigger the `publish` workflow manually (via Github Action UI) and pass in `--first-release` flag. For mor information, please check Nx documentation on [Publishing First Releases](https://nx.dev/reference/core-api/nx/documents/release#publish)
 
 ### Notes
 

@@ -1,9 +1,6 @@
-name: CI
+name: Pull request check
 
-on:
-  pull_request:
-    branches:
-      - '**' # Trigger on all branches
+on: [pull_request]
 
 permissions:
   actions: read
@@ -12,6 +9,7 @@ permissions:
 jobs:
   code-quality:
     name: 🕵️‍♀️ Code Quality Check
+    if: ${{ !startsWith(github.head_ref, 'releases/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -21,9 +19,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Fetch target
-        env:
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: git fetch origin ${{ env.BASE_REF }}
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -42,3 +38,6 @@ jobs:
 
       - name: ⚙️ Run Build
         run: npx nx affected -t build
+
+      - name: ⚙️ Run release plan check
+        run: npx nx release plan:check --verbose

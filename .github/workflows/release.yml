@@ -1,36 +1,29 @@
-name: Publish to NPM
+name: Release new version
 
 on:
-  # Run manually using Github UI
-  workflow_dispatch:
-    inputs:
-      publish-options:
-        description: 'Additional flags to pass to `nx release publish` command'
-        required: false
-        default: ''
+  push:
+    branches:
+      - releases/**
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  build-and-publish:
-    name: Build and publish
+  check-and-release:
+    name: Check plan and Release new version
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.ref_name }}
 
-      - name: Fetch target
-        run: git fetch origin ${{ env.BASE_REF }}
-        env:
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
-
-      - name: Config git user
+      - name: Configure Git
         run: |
-          git config --global user.name "Automated NPM Release"
-          git config --global user.email "${{ secrets.DEVOPS_GITHUB_EMAIL }}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -41,23 +34,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        shell: bash
 
-      - name: Check for version plan
-        run: npx nx release plan:check --verbose --verbose
-        shell: bash
+      - name: ⚙️ Check for version plan
+        run: npx nx release plan:check --verbose
 
-      - name: Release new version
-        run: npx nx release --verbose
-        shell: bash
+      - name: 📝 Release new version (skip publish)
+        run: npx nx release --skip-publish --verbose
 
-      - name: Publish versioned package
-        run: npx nx release publish --verbose ${{ inputs.publish-options }}
-        shell: bash
+      - name: 📤 Create publish pull request
+        run: |
+          gh pr create --base main --head ${{ github.ref_name }} \
+          --title "Chore: Publish packages" \
+          --body $'Automated publish PR created by Nx Release workflow.\n- Version bumps\n- Updated changelogs'
         env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-
-      - name: Push version changes
-        run: git push
-        env:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
