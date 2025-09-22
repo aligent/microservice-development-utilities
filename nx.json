@@ -44,10 +44,10 @@
     },
     "release": {
         "changelog": {
-            "workspaceChangelog": {
-                "createRelease": "github"
-            },
-            "projectChangelogs": true
+            "projectChangelogs": {
+                "createRelease": "github",
+                "file": false
+            }
         },
         "versionPlans": true,
         "projects": ["packages/*"],
