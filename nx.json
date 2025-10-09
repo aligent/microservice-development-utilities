@@ -44,8 +44,9 @@
     },
     "release": {
         "changelog": {
-            "workspaceChangelog": {
-                "createRelease": "github"
+            "projectChangelogs": {
+                "createRelease": "github",
+                "file": false
             }
         },
         "versionPlans": true,
