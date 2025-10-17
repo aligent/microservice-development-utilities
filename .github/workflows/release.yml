@@ -40,6 +40,8 @@ jobs:
 
       - name: 📝 Release new version (skip publish)
         run: npx nx release --skip-publish --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📤 Create publish pull request
         run: |
