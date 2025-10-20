@@ -32,7 +32,6 @@
         },
         "nx-release-publish": {
             "options": {
-                "buildTarget": "build",
                 "packageRoot": "dist/microservice-util-lib"
             }
         }
