@@ -35,11 +35,6 @@
                     }
                 ]
             }
-        },
-        "nx-release-publish": {
-            "options": {
-                "packageRoot": "dist/nx-serverless"
-            }
         }
     },
     "tags": ["nx", "plugin", "serverless"]
