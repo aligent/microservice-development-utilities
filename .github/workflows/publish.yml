@@ -40,4 +40,4 @@ jobs:
         run: npx nx release publish --verbose ${{ inputs.publish-options }}
         shell: bash
         env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

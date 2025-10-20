@@ -38,7 +38,7 @@
             "inputs": ["production", "^production"]
         },
         "nx-release-publish": {
-            "dependsOn": ["build"],
+            "dependsOn": ["^build"],
             "inputs": ["production", "^production"]
         }
     },

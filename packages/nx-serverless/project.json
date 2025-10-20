@@ -38,6 +38,7 @@
         },
         "nx-release-publish": {
             "options": {
+                "buildTarget": "build",
                 "packageRoot": "dist/nx-serverless"
             }
         }
