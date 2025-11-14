@@ -19,9 +19,13 @@ export interface RetryContext {
  * Returns true if the request should be retried.
  *
  * @param {RetryContext} context - The retry context containing attempt information.
+ * @param {boolean} idempotentOnly - Whether to retry only when the HTTP method is an idempotent methods.
  * @returns {boolean | Promise<boolean>} Whether to retry the request.
  */
-export type RetryConditionFn = (context: RetryContext) => boolean | Promise<boolean>;
+export type RetryConditionFn = (
+    context: RetryContext,
+    idempotentOnly: boolean
+) => boolean | Promise<boolean>;
 
 /**
  * Function type for custom retry delay calculation.
@@ -68,6 +72,9 @@ export type OnRetryFn = (context: RetryContext) => void | Promise<void>;
  * @property {number[]} [retryOn]
  * - Array of HTTP status codes that should trigger a retry.
  * - If not specified, defaults to 5xx, 429 and 408 errors.
+ * @property {boolean} [idempotentOnly]
+ * - Whether to retry only when the HTTP method is an idempotent methods.
+ * - If not specified, defaults to true and retry only on GET, HEAD, OPTIONS, PUT or DELETE method.
  * @property {typeof fetch} [fetch]
  * - Custom fetch function to use for retries. Defaults to the global fetch function.
  * - Useful for testing or using a custom fetch implementation.
@@ -81,15 +88,17 @@ export interface RetryConfig {
     shouldResetTimeout?: boolean;
     onRetry?: OnRetryFn;
     retryOn?: number[];
+    idempotentOnly?: boolean;
     fetch?: typeof fetch;
 }
 
 export type NormalisedConfig = Omit<
     RetryConfig,
-    'retries' | 'retryCondition' | 'retryDelay' | 'fetch'
+    'retries' | 'retryCondition' | 'retryDelay' | 'idempotentOnly' | 'fetch'
 > & {
     retries: number;
     retryCondition: RetryConditionFn;
     retryDelay: RetryDelayFn;
+    idempotentOnly: boolean;
     fetch: typeof fetch;
 };

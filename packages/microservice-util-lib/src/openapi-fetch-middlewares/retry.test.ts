@@ -32,7 +32,7 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch,
             });
-            client.use(retryMiddleware({}));
+            client.use(retryMiddleware());
 
             await client.GET('/test');
 
@@ -167,7 +167,7 @@ describe('retry middleware', () => {
             expect(mockFetch).toHaveBeenCalledTimes(1);
         });
 
-        it('should retry POST requests when included in retryMethods', async () => {
+        it('should not retry POST requests when idempotentOnly is not false', async () => {
             mockFetch
                 .mockResolvedValueOnce(
                     new Response(JSON.stringify({ error: 'Internal Server Error' }), {
@@ -196,8 +196,8 @@ describe('retry middleware', () => {
 
             const response = await client.POST('/test');
 
-            expect(mockFetch).toHaveBeenCalledTimes(2);
-            expect(response.response.status).toBe(200);
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            expect(response.response.status).toBe(500);
         });
 
         it('should use custom retry condition', async () => {
@@ -503,8 +503,8 @@ describe('retry middleware', () => {
     describe('onError handling', () => {
         it('should retry on network errors', async () => {
             mockFetch
-                .mockRejectedValueOnce(new Error('Network error'))
-                .mockRejectedValueOnce(new Error('Network error'))
+                .mockRejectedValueOnce(new TypeError('fetch failed'))
+                .mockRejectedValueOnce(new TypeError('fetch failed'))
                 .mockResolvedValueOnce(
                     new Response(JSON.stringify({ message: 'success' }), {
                         status: 200,
@@ -526,7 +526,7 @@ describe('retry middleware', () => {
         });
 
         it('should throw error after exhausting retries on network errors', async () => {
-            const networkError = new Error('Network error');
+            const networkError = new TypeError('fetch failed');
             mockFetch.mockRejectedValue(networkError);
 
             const client = createClient<paths>({
@@ -535,7 +535,7 @@ describe('retry middleware', () => {
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 
-            await expect(client.GET('/test')).rejects.toThrow('Network error');
+            await expect(client.GET('/test')).rejects.toThrow('fetch failed');
 
             // Initial request + 3 retries = 4 total calls
             expect(mockFetch).toHaveBeenCalledTimes(4);
@@ -564,7 +564,7 @@ describe('retry middleware', () => {
         it('should call onRetry callback for network errors', async () => {
             const onRetryCallback = vi.fn();
 
-            mockFetch.mockRejectedValueOnce(new Error('Network error')).mockResolvedValueOnce(
+            mockFetch.mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(
                 new Response(JSON.stringify({ message: 'success' }), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' },
@@ -600,7 +600,7 @@ describe('retry middleware', () => {
         it('should use custom retry condition with network errors', async () => {
             const customRetryCondition = vi.fn().mockReturnValue(false);
 
-            mockFetch.mockRejectedValueOnce(new Error('Network error')).mockResolvedValueOnce(
+            mockFetch.mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(
                 new Response(JSON.stringify({ message: 'success' }), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' },
@@ -627,15 +627,16 @@ describe('retry middleware', () => {
             expect(customRetryCondition).toHaveBeenCalledWith(
                 expect.objectContaining({
                     attempt: 2,
-                    error: null,
                     response: expect.any(Response),
-                })
+                    error: null,
+                }),
+                true
             );
         });
 
         it('should handle mixed network errors and HTTP errors', async () => {
             mockFetch
-                .mockRejectedValueOnce(new Error('Network error'))
+                .mockRejectedValueOnce(new TypeError('fetch failed'))
                 .mockResolvedValueOnce(
                     new Response(JSON.stringify({ error: 'Internal Server Error' }), {
                         status: 500,
@@ -660,6 +661,21 @@ describe('retry middleware', () => {
             // Initial request (network error) + 2 retries (500 error, then success)
             expect(mockFetch).toHaveBeenCalledTimes(3);
             expect(response.response.status).toBe(200);
+        });
+
+        it('should not retry and throw error on non-network errors', async () => {
+            mockFetch.mockRejectedValue(new Error('not a fetch error'));
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch,
+            });
+            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+
+            await expect(client.GET('/test')).rejects.toThrow('not a fetch error');
+
+            // Initial request only
+            expect(mockFetch).toHaveBeenCalledTimes(1);
         });
     });
 

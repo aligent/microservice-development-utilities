@@ -1,5 +1,8 @@
 import type { Middleware } from 'openapi-fetch';
 import type { NormalisedConfig, RetryConfig, RetryContext, RetryDelayFn } from './types/retry';
+import { isNetworkError } from './utils/is-network-error';
+
+const IDEMPOTENT_HTTP_METHODS: string[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'] as const;
 
 /**
  * Default retry condition function.
@@ -8,18 +11,28 @@ import type { NormalisedConfig, RetryConfig, RetryContext, RetryDelayFn } from '
  * - 5xx server errors
  * - 429 Too Many Requests
  * - 408 Request Timeout
+ * - Idempotent methods only
  *
  * @param {RetryContext} context - The retry context.
+ * @param {boolean} idempotentOnly - Whether to retry only when the HTTP method is an idempotent methods.
  * @returns {boolean} Whether the request should be retried.
  */
-function defaultRetryCondition(context: RetryContext): boolean {
-    // Retry on network errors (throw by fetch)
-    if (context.error || !context.response) {
+function defaultRetryCondition(context: RetryContext, idempotentOnly: boolean): boolean {
+    const { request, response, error } = context;
+
+    if (!IDEMPOTENT_HTTP_METHODS.includes(request.method) && idempotentOnly) {
+        return false;
+    }
+
+    if (isNetworkError(error)) {
         return true;
     }
 
-    const { status } = context.response;
-    return status >= 500 || status === 429 || status === 408;
+    if (response) {
+        return response.status >= 500 || response.status === 429 || response.status === 408;
+    }
+
+    return false;
 }
 
 /**
@@ -54,8 +67,10 @@ function linearDelay(attempt: number, baseDelay: number, maxDelay: number): numb
  * @param {RetryConfig} config - The retry configuration.
  * @returns {RetryDelayFn} The retry delay function.
  */
-function getRetryDelayFn(config: RetryConfig): RetryDelayFn {
-    const { baseDelay = 100, maxDelay = 30000, retryDelay } = config;
+function getRetryDelayFn(config?: RetryConfig): RetryDelayFn {
+    const baseDelay = config?.baseDelay ?? 100;
+    const maxDelay = config?.maxDelay ?? 30000;
+    const retryDelay = config?.retryDelay;
 
     if (typeof retryDelay === 'function') {
         return retryDelay;
@@ -130,55 +145,53 @@ function shouldRetryOnStatus(status: number, retryOn: number[]): boolean {
  *     },
  * });
  */
-function retryMiddleware(config: RetryConfig): Middleware {
+function retryMiddleware(config?: RetryConfig): Middleware {
     const normalisedConfig: NormalisedConfig = {
         ...config,
-        retries: config.retries ?? 3,
-        retryCondition: config.retryCondition ?? defaultRetryCondition,
+        retries: config?.retries ?? 3,
+        retryCondition: config?.retryCondition ?? defaultRetryCondition,
         retryDelay: getRetryDelayFn(config),
-        fetch: config.fetch ?? fetch,
+        idempotentOnly: config?.idempotentOnly ?? true,
+        fetch: config?.fetch ?? fetch,
     };
 
     return {
         async onResponse({ request, response }) {
-            return await retryManager(normalisedConfig, {
-                attempt: 1,
-                request,
-                response,
-                error: null,
-            });
-        },
-        async onError({ request, error }) {
-            return await retryManager(normalisedConfig, {
-                attempt: 1,
-                request,
-                response: null,
-                error: error as Error,
-            });
-        },
-    };
-}
+            const context = { attempt: 1, request, response, error: null };
 
-async function retryManager(config: NormalisedConfig, context: RetryContext) {
-    if (context.response) {
-        // If retryOn is specified, only use that list
-        if (config.retryOn && config.retryOn.length > 0) {
-            if (!shouldRetryOnStatus(context.response.status, config.retryOn)) {
+            // If retryOn is specified, only use that list
+            if (config?.retryOn && config.retryOn.length > 0) {
+                if (!shouldRetryOnStatus(response.status, config.retryOn)) {
+                    return context.response;
+                }
+
+                return await performRetries(normalisedConfig, context);
+            }
+
+            // Otherwise, check if we should retry based on retry condition
+            const shouldRetry = await normalisedConfig.retryCondition(
+                context,
+                normalisedConfig.idempotentOnly
+            );
+            if (!shouldRetry) {
                 return context.response;
             }
 
-            return await performRetries(config, context);
-        }
+            return await performRetries(normalisedConfig, context);
+        },
+        async onError({ request, error }) {
+            if (!isNetworkError(error)) {
+                throw error;
+            }
 
-        // Otherwise, check if we should retry based on retry condition
-        const shouldRetry = await config.retryCondition(context);
-        if (!shouldRetry) {
-            return context.response;
-        }
-    }
-
-    // Always retry on network errors (error thrown by fetch)
-    return await performRetries(config, context);
+            return await performRetries(normalisedConfig, {
+                attempt: 1,
+                request,
+                response: null,
+                error,
+            });
+        },
+    };
 }
 
 /**
@@ -220,7 +233,7 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
             return response;
         }
 
-        const shouldRetry = await config.retryCondition(context);
+        const shouldRetry = await config.retryCondition(context, config.idempotentOnly);
         if (!shouldRetry) {
             return response;
         }
