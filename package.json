@@ -22,7 +22,7 @@
     "@aws-sdk/client-ssm": "^3.922.0",
     "@redocly/openapi-core": "^1.34.2",
     "object-hash": "^3.0.0",
-    "openapi-typescript": "^7.10.1"
+    "openapi-typescript": "7.7.3"
   },
   "devDependencies": {
     "@aligent/ts-code-standards": "^3.0.0",
@@ -53,6 +53,7 @@
     "typedoc": "^0.28.14",
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.9.3",
+    "verdaccio": "^6.2.1",
     "vite": "^6.4.1",
     "vitest": "3.1.2"
   },
@@ -63,6 +64,26 @@
   ],
   "nx": {
     "name": "microservice-development-utilities",
-    "includedScripts": []
+    "includedScripts": [],
+    "targets": {
+      "start-local-registry": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": [
+            "verdaccio --listen 4873 --config .verdaccio/config.yml",
+            "npm set registry http://localhost:4873/ --location project"
+          ]
+        }
+      },
+      "stop-local-registry": {
+        "executor": "nx:run-commands",
+        "options": {
+          "commands": [
+            "npm set registry https://registry.npmjs.org/ --location project",
+            "kill $(lsof -t -i:4873)"
+          ]
+        }
+      }
+    }
   }
 }
