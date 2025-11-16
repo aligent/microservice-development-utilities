@@ -7,7 +7,7 @@ const IDEMPOTENT_HTTP_METHODS: string[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DEL
 /**
  * Default retry condition function.
  * Retries on:
- * - Network errors (when error is present)
+ * - Network errors
  * - 5xx server errors
  * - 429 Too Many Requests
  * - 408 Request Timeout
