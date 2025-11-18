@@ -13,11 +13,25 @@ import {
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
 } from './openapi-fetch-middlewares/authentications';
+import {
+    RetryConfig as RetryMiddlewareConfig,
+    retryMiddleware,
+} from './openapi-fetch-middlewares/retry';
 import remap, { ObjectMap, Remap } from './remap/remap';
 import retryWrapper, { RetryConfig } from './retry-wrapper/retry-wrapper';
 import S3Dao from './s3/s3';
 
-export type { ApiKey, Basic, OAuth10a, OAuth20, ObjectMap, Remap, RetryConfig, S3Dao };
+export type {
+    ApiKey,
+    Basic,
+    OAuth10a,
+    OAuth20,
+    ObjectMap,
+    Remap,
+    RetryConfig,
+    RetryMiddlewareConfig,
+    S3Dao,
+};
 
 export {
     apiKeyAuthMiddleware,
@@ -29,5 +43,6 @@ export {
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
     remap,
+    retryMiddleware,
     retryWrapper,
 };

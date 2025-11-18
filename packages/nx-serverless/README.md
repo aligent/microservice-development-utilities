@@ -1,5 +1,7 @@
 # Nx Serverless
 
+## [Obsolete] This package will be removed and replaced by a CDK generator. It's still here for referencing purpose only.
+
 The `@aligent/nx-serverless` package provides Nx generators and plugin for serverless development.
 
 ## Generators
