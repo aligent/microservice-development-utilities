@@ -20,11 +20,11 @@ describe('client generator', () => {
 
         expect(readProjectConfiguration(tree, 'clients')).toBeDefined();
         expect(tree.exists('clients/src/test/schema.yaml')).toBe(true);
-        expect(tree.exists('clients/src/test/types.ts')).toBe(true);
+        expect(tree.exists('clients/src/test/generated-types.ts')).toBe(true);
         expect(tree.exists('clients/src/test/client.ts')).toBe(true);
     });
 
-    it('should generate a client in an existing project succesfully', async () => {
+    it('should generate a client in an existing project successfully', async () => {
         addProjectConfiguration(tree, 'test', {
             root: 'clients',
             projectType: 'library',
@@ -43,7 +43,7 @@ describe('client generator', () => {
         await clientGenerator(tree, options);
 
         expect(tree.exists('clients/src/test/schema.yaml')).toBe(true);
-        expect(tree.exists('clients/src/test/types.ts')).toBe(true);
+        expect(tree.exists('clients/src/test/generated-types.ts')).toBe(true);
         expect(tree.exists('clients/src/test/client.ts')).toBe(true);
     });
 

@@ -6,7 +6,7 @@ import {
 } from '../../helpers/generate-openapi-types';
 import {
     addTsConfigPath,
-    appendtoIndexFile,
+    appendToIndexFile,
     attemptToAddProjectConfiguration,
 } from '../../helpers/utilities';
 import { ClientGeneratorSchema } from './schema';
@@ -31,7 +31,7 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     const projectRoot = `clients`;
     const apiClientDest = `${projectRoot}/src/${name}`;
     const schemaDest = `${apiClientDest}/schema.${ext}`;
-    const typesDest = `${apiClientDest}/types.ts`;
+    const typesDest = `${apiClientDest}/generated-types.ts`;
 
     const isNewProject = attemptToAddProjectConfiguration(tree, projectRoot);
 
@@ -58,7 +58,7 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     );
 
     // Append to index file for imports
-    appendtoIndexFile(tree, projectRoot, name);
+    appendToIndexFile(tree, projectRoot, name);
 
     await formatFiles(tree);
 }

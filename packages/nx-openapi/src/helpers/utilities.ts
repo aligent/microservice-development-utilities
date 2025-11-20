@@ -84,11 +84,10 @@ export function addTsConfigPath(tree: Tree, importPath: string, lookupPaths: str
  * @param {Tree} tree - The file system tree representing the current project.
  * @param {string} clientName - The name of the client to export.
  */
-export function appendtoIndexFile(tree: Tree, projectRoot: string, clientName: string) {
+export function appendToIndexFile(tree: Tree, projectRoot: string, clientName: string) {
     const indexPath = `${projectRoot}/src/index.ts`;
-    const newExport = `export * as ${clientName}Client from "./${clientName}/client"`;
+    const newLine = `\nexport * as ${clientName}Client from "./${clientName}/client";`;
 
     const indexContent = tree.read(indexPath, 'utf-8');
-    const newLine = '\n' + newExport + ';';
     tree.write(indexPath, indexContent + newLine);
 }

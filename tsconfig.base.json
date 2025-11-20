@@ -5,8 +5,7 @@
         "baseUrl": ".",
         "exactOptionalPropertyTypes": false,
         "noUncheckedSideEffectImports": true,
-        "types": ["vitest/globals", "vitest/importMeta", "vite/client", "node", "vitest"],
-        "paths": {}
+        "types": ["vitest/globals", "vitest/importMeta", "vite/client", "node", "vitest"]
     },
     "exclude": ["node_modules", "tmp"]
 }
