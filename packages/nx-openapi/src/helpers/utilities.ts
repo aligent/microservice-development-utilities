@@ -12,14 +12,14 @@ import { addProjectConfiguration, Tree, updateJson } from '@nx/devkit';
  * @returns {boolean} `true` if the project configuration was added successfully, `false` if the project already exists.
  * @throws {Error} If an error occurs that is not related to the project already existing.
  */
-export function attemptToAddProjectConfiguration(tree: Tree, name: string, projectRoot: string) {
+export function attemptToAddProjectConfiguration(tree: Tree, projectRoot: string) {
     try {
-        addProjectConfiguration(tree, name, {
+        addProjectConfiguration(tree, 'clients', {
             root: projectRoot,
             projectType: 'library',
             sourceRoot: `${projectRoot}/src`,
             targets: {},
-            tags: ['client', name],
+            tags: ['clients'],
         });
         return true;
     } catch (err) {
@@ -73,4 +73,23 @@ export function addTsConfigPath(tree: Tree, importPath: string, lookupPaths: str
 
         return json;
     });
+}
+
+
+/**
+ * Appends a new export statement to the index file.
+ *
+ * This function reads the content of the index file and appends a new export statement
+ * for the specified client.
+ *
+ * @param {Tree} tree - The file system tree representing the current project.
+ * @param {string} clientName - The name of the client to export.
+ */
+export function appendtoIndexFile(tree: Tree, projectRoot: string, clientName: string) {
+    const indexPath = `${projectRoot}/src/index.ts`
+    const newExport = `export * as ${clientName}Client from "./${clientName}/client"`
+
+    const indexContent = tree.read(indexPath, 'utf-8');
+    const newLine = '\n' + newExport + ';';
+    tree.write(indexPath, indexContent + newLine);
 }
