@@ -34,11 +34,6 @@
             "type": "boolean",
             "description": "Skip validation in the generation process",
             "default": false
-        },
-        "override": {
-            "type": "boolean",
-            "description": "Override existing project schema",
-            "default": false
         }
     },
     "required": ["name", "schemaPath"]
