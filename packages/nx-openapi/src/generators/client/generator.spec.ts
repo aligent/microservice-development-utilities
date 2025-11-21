@@ -9,7 +9,7 @@ describe('client generator', () => {
         tree = createTreeWithEmptyWorkspace();
     });
 
-    it('should generate a client successfully', async () => {
+    it('should generate a client without an initial folder successfully', async () => {
         const options: ClientGeneratorSchema = {
             name: 'test',
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
@@ -18,9 +18,33 @@ describe('client generator', () => {
         };
         await clientGenerator(tree, options);
 
-        expect(readProjectConfiguration(tree, 'test')).toBeDefined();
-        expect(tree.exists('clients/test/schema.yaml')).toBe(true);
-        expect(tree.exists('clients/test/generated/index.ts')).toBe(true);
+        expect(readProjectConfiguration(tree, 'clients')).toBeDefined();
+        expect(tree.exists('clients/src/test/schema.yaml')).toBe(true);
+        expect(tree.exists('clients/src/test/generated-types.ts')).toBe(true);
+        expect(tree.exists('clients/src/test/client.ts')).toBe(true);
+    });
+
+    it('should generate a client in an existing project successfully', async () => {
+        addProjectConfiguration(tree, 'test', {
+            root: 'clients',
+            projectType: 'library',
+            sourceRoot: 'clients/src/',
+            targets: {},
+            tags: ['clients'],
+        });
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+        };
+
+        await clientGenerator(tree, options);
+
+        expect(tree.exists('clients/src/test/schema.yaml')).toBe(true);
+        expect(tree.exists('clients/src/test/generated-types.ts')).toBe(true);
+        expect(tree.exists('clients/src/test/client.ts')).toBe(true);
     });
 
     it('should throw an error if schemaPath does point to a supported file type', async () => {
@@ -41,28 +65,6 @@ describe('client generator', () => {
             override: false,
         };
         await expect(clientGenerator(tree, options)).rejects.toThrowError();
-    });
-
-    it('should not write schema to disk if the project exists and override is false', async () => {
-        addProjectConfiguration(tree, 'test', {
-            root: 'clients/test',
-            projectType: 'library',
-            sourceRoot: 'clients/test/src',
-            targets: {},
-            tags: ['client', 'test'],
-        });
-
-        const options: ClientGeneratorSchema = {
-            name: 'test',
-            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
-            skipValidate: true,
-            override: false,
-        };
-
-        await clientGenerator(tree, options);
-
-        expect(tree.exists('clients/test/schema.yaml')).toBe(false);
-        expect(tree.exists('clients/test/generated/index.ts')).toBe(false);
     });
 
     it('should throw error when validation failed (has problem with severity `error`)', async () => {

@@ -37,7 +37,7 @@
         },
         "override": {
             "type": "boolean",
-            "description": "Override existing project schema",
+            "description": "Override existing files during generation",
             "default": false
         }
     },

@@ -22,6 +22,7 @@ jspm_packages
 *.launch
 .settings/
 *.sublime-workspace
+*.zed
 
 # IDE - VSCode
 .vscode/*

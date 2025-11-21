@@ -4,13 +4,17 @@ import {
     generateOpenApiTypes,
     validateSchema,
 } from '../../helpers/generate-openapi-types';
-import { addTsConfigPath, attemptToAddProjectConfiguration } from '../../helpers/utilities';
+import {
+    addTsConfigPath,
+    appendToIndexFile,
+    attemptToAddProjectConfiguration,
+} from '../../helpers/utilities';
 import { ClientGeneratorSchema } from './schema';
 
 const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
 
 export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema) {
-    const { name, schemaPath, importPath = `@clients/${name}`, skipValidate, override } = options;
+    const { name, schemaPath, importPath = `@clients`, skipValidate, override } = options;
 
     const ext = schemaPath.split('.').pop() || '';
     if (!VALID_EXTENSIONS.includes(ext)) {
@@ -24,24 +28,24 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         }
     }
 
-    const projectRoot = `clients/${name}`;
-    const schemaDest = `${projectRoot}/schema.${ext}`;
-    const typesDest = `${projectRoot}/generated/index.ts`;
+    const projectRoot = `clients`;
+    const apiClientDest = `${projectRoot}/src/${name}`;
+    const schemaDest = `${apiClientDest}/schema.${ext}`;
+    const typesDest = `${apiClientDest}/generated-types.ts`;
 
-    const isNewProject = attemptToAddProjectConfiguration(tree, name, projectRoot);
-
-    if (!isNewProject && !override) {
-        logger.info(
-            `Project ${name} already exists. Use --override to override the existing schema.`
+    if (!override && tree.exists(apiClientDest)) {
+        throw new Error(
+            `Directory "${name}" already exists. If you want to override the current api client in this directory use "--override"`
         );
-        return;
     }
 
-    await copySchema(tree, schemaDest, schemaPath);
+    const isNewProject = attemptToAddProjectConfiguration(tree, projectRoot);
 
+    await copySchema(tree, schemaDest, schemaPath);
     await generateOpenApiTypes(tree, schemaDest, typesDest);
 
     if (isNewProject) {
+        logger.info('No clients currently exist. Generating a clients folder...');
         logger.info(`Creating new project at ${projectRoot}`);
 
         // Generate other files
@@ -50,6 +54,17 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         // Add the project to the tsconfig paths so it can be imported by namespace
         addTsConfigPath(tree, importPath, [joinPathFragments(projectRoot, './src', 'index.ts')]);
     }
+
+    // Generate the files for the specific new client
+    generateFiles(
+        tree,
+        joinPathFragments(__dirname, './client-specific-files'),
+        apiClientDest,
+        options
+    );
+
+    // Append to index file for imports
+    appendToIndexFile(tree, projectRoot, name);
 
     await formatFiles(tree);
 }
