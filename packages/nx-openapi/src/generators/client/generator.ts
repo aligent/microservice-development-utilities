@@ -14,7 +14,7 @@ import { ClientGeneratorSchema } from './schema';
 const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
 
 export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema) {
-    const { name, schemaPath, importPath = `@clients`, skipValidate } = options;
+    const { name, schemaPath, importPath = `@clients`, skipValidate, override } = options;
 
     const ext = schemaPath.split('.').pop() || '';
     if (!VALID_EXTENSIONS.includes(ext)) {
@@ -32,6 +32,10 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     const apiClientDest = `${projectRoot}/src/${name}`;
     const schemaDest = `${apiClientDest}/schema.${ext}`;
     const typesDest = `${apiClientDest}/generated-types.ts`;
+
+    if (!override && tree.exists(apiClientDest)) {
+        throw new Error(`Directory "${name}" already exists. If you want to override the current api client in this directory use "--override"`)
+    }
 
     const isNewProject = attemptToAddProjectConfiguration(tree, projectRoot);
 

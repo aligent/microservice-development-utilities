@@ -52,7 +52,7 @@
         "versionPlans": {
             "ignorePatternsForPlanCheck": ["packages/nx-serverless/*"]
         },
-        "projects": ["packages/*"],
+        "projects": ["packages/*", "!nx-serverless"],
         "projectsRelationship": "independent",
         "releaseTagPattern": "release/{projectName}/{version}"
     }
