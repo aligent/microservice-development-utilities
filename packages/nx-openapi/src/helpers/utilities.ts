@@ -9,7 +9,7 @@ import { addProjectConfiguration, Tree, updateJson } from '@nx/devkit';
  * @param {Tree} tree - The file system tree representing the current project.
  * @param {string} name - The name of the project to add.
  * @param {string} projectRoot - The root directory of the project.
- * @returns {boolean} `true` if the project configuration was added successfully, `false` if the project already exists.
+ * @returns - Whether project configuration was added successfully, or it already exists.
  * @throws {Error} If an error occurs that is not related to the project already existing.
  */
 export function attemptToAddProjectConfiguration(tree: Tree, projectRoot: string) {
@@ -86,8 +86,24 @@ export function addTsConfigPath(tree: Tree, importPath: string, lookupPaths: str
  */
 export function appendToIndexFile(tree: Tree, projectRoot: string, clientName: string) {
     const indexPath = `${projectRoot}/src/index.ts`;
-    const newLine = `\nexport * as ${clientName}Client from "./${clientName}/client";`;
+    const newLine = `export * from "./${clientName}/client";\n`;
 
     const indexContent = tree.read(indexPath, 'utf-8');
     tree.write(indexPath, indexContent + newLine);
+}
+
+/**
+ * Convert a lower-case alphanumeric string (may include hyphens) into a PascalCase string.
+ *
+ * @param input - The input string to convert.
+ * @example:
+ *  - "my-client" -> "MyClient"
+ */
+export function toClassName(input: string): string {
+    return input
+        .trim()
+        .toLowerCase()
+        .split('-')
+        .map(c => c.charAt(0).toUpperCase() + c.slice(1))
+        .join('');
 }

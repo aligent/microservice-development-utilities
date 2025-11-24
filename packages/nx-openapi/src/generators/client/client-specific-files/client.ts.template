@@ -1,23 +1,53 @@
-// The following is an example file generated to demonstrate how to use your newly generated types
-import { paths } from './types';
-import createClient from 'openapi-fetch';
+/**
+ * Example client demonstrating how to use the generated API types.
+ * Adjust middlewares usage according to your need.
+ *
+ * - Check out Aligent's middlewares: https://github.com/aligent/microservice-development-utilities
+ * - For more information about openapi-fetch middlewares: https://openapi-ts.dev/openapi-fetch/middleware-auth#middleware
+ */
+import {
+    apiKeyAuthMiddleware,
+    fetchSsmParams,
+    retryMiddleware,
+} from '@aligent/microservice-util-lib';
+import createClient, { Client, ClientOptions } from 'openapi-fetch';
+import { paths } from './generated-types';
 
-// This type is an example of what is initialised using the types generated in the paths interface which is created when generation occurs.
-// Its worth looking into that paths interface, to see the the types that were generated for your client.
-type ExampleResponse =
-    paths['/customers']['get']['responses']['200']['content']['application/json'];
+export class <%= className %> {
+    private credential: string | null = null;
+    public readonly client: Client<paths, `${string}/${string}`>;
 
-// Using openapi-fetch we can create a fully typed REST client by passing in paths as a generic.
-// If you wish however, you can use any api client you want (axios, basic fetch etc.) and use the paths separately to maintain type safety in your client.
-// Keep this variable exported. It will need to be to make sure all other services in your application can access and use the client.
-export const client = createClient<paths>({
-    baseUrl: '',
-    signal: AbortSignal.timeout(10000),
-});
+    constructor(options: ClientOptions, credentialPath: string) {
+        this.client = createClient<paths>(options);
 
-// Client getters are then fully typed. Try deleting '/customers' and seeing what routes you can use!
-const response = client.GET('/customers', {
-    params: {
-        query: {},
-    },
-});
+        /**
+         * The order in which middleware are registered matters.
+         * - For requests, onRequest() will be called in the order registered
+         * - For responses, onResponse() will be called in reverse order.
+         */
+        this.client.use(
+            apiKeyAuthMiddleware({
+                header: 'Authorization',
+                value: async () => {
+                    if (!this.credential) {
+                        const param = await fetchSsmParams(credentialPath);
+                        if (!param?.Value) {
+                            throw new Error('Unable to fetch API client credential');
+                        }
+
+                        this.credential = param.Value;
+                    }
+
+                    return `Bearer ${this.credential}`;
+                },
+            })
+        );
+
+        this.client.use(
+            retryMiddleware({
+                onRetry: ({ attempt, error }) =>
+                    console.log(`Retrying...${attempt} due to ${String(error)}`),
+            })
+        );
+    }
+}

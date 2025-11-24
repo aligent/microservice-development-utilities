@@ -6,6 +6,7 @@
     "properties": {
         "name": {
             "type": "string",
+            "pattern": "^[a-z0-9-]+$",
             "description": "Name of the api client.",
             "$default": {
                 "$source": "argv",
