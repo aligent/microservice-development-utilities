@@ -1,0 +1,29 @@
+# Generated OpenAPI REST API Clients
+
+This folder contains TypeScript API clients generated from OpenAPI specifications using Nx generators and `openapi-typescript`. Each client exposes strongly typed request and response types under `generated-types` and a ready-to-use `openapi-fetch` client class.
+
+## Usage
+- Import the generated client into your code.
+- Instantiate the client with appropriate ClientOptions (base URL, fetch implementation, etc.) and call the typed endpoints.
+
+## Example
+```typescript
+import { MyApiClient } from '@clients'; // Adjust the import name as necessary
+
+const client = new MyApiClient(
+    { baseUrl: 'https://my-api-client.base-url', signal: AbortSignal.timeout(30000) },
+    '/my/api/client/access-token/path'
+).client;
+
+// Example of calling a typed endpoint
+async function fetchData() {
+    try {
+        const response = await client.GET('/path/to/endpoint'); // Replace with actual endpoint method
+        console.log(response);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+}
+
+fetchData();
+```

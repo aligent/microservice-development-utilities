@@ -82,7 +82,6 @@ export async function copySchema(
 export async function validateSchema(path: string): Promise<boolean> {
     let hasError = false;
     try {
-        // TODO: MI-203 - Support private schema endpoint
         const config = await loadConfig();
         const results = await lint({ ref: path, config });
 
