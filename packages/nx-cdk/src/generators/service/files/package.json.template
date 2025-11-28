@@ -1,6 +1,5 @@
 {
-  "name": "@services/<%= name %>",
-  "version": "0.0.1",
+  "name": "<%= name %>",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

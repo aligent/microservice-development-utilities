@@ -42,7 +42,8 @@ export const PACKAGE_JSON = {
         esbuild: '~0.25.8', // TODO Do we need this package now that we're using rsbuild instead
         'esbuild-visualizer': '^0.7.0',
         eslint: '^9.32.0',
-        'eslint-config-prettier': '10.1.8',
+        'eslint-config-prettier': '^10.1.8',
+        'eslint-plugin-import': '^2.32.0',
         'fast-glob': '^3.3.3',
         jiti: '2.5.1',
         'jsonc-eslint-parser': '^2.4.0',

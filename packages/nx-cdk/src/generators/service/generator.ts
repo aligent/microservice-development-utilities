@@ -1,4 +1,5 @@
 import { formatFiles, generateFiles, Tree, updateJson, writeJson } from '@nx/devkit';
+import { join } from 'path';
 import { constructProjectTsConfigFiles } from '../helpers/utilities';
 import { ServiceGeneratorSchema } from './schema';
 
@@ -61,7 +62,7 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
         tree.write(`${SERVICES_FOLDER}/.gitkeep`, '');
     }
 
-    generateFiles(tree, 'files', projectRoot, { ...options, template: '' });
+    generateFiles(tree, join(__dirname, 'files'), projectRoot, { ...options, template: '' });
 
     // Generate service's tsconfigs
     const { tsConfig, tsConfigLib, tsConfigSpec } = constructProjectTsConfigFiles('service');

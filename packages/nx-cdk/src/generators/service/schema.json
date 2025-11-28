@@ -16,5 +16,5 @@
             "patternErrorMessage": "Service name cannot contain '[Ss]tack' or '[Ss]ervice'"
         }
     },
-    "required": ["brand", "name"]
+    "required": ["name"]
 }
