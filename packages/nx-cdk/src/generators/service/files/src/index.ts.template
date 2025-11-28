@@ -9,7 +9,7 @@ import path from 'node:path';
 * CDK will generate new CloudFormation template and deploy if you change stack name
 */
 export const <%= stack %>Name = '<%= name %>' as const;
-type ServiceName = typeof <%= stack %>Name | (string & {});
+type Name = typeof <%= stack %>Name | (string & {});
 
 export interface <%= stack %>StackProps extends StackProps {
     description: string;
@@ -23,7 +23,7 @@ export interface <%= stack %>StackProps extends StackProps {
  * Use 'resolve' helpers below when referencing lambda handlers, step function files etc.
  */
 export class <%= stack %>Stack extends Stack {
-    constructor(scope: Construct, id: ServiceName, props?: <%= stack %>StackProps) {
+    constructor(scope: Construct, id: Name, props?: <%= stack %>StackProps) {
         super(scope, id, props);
 
         const STAGE = Stage.of(this)?.stageName;
