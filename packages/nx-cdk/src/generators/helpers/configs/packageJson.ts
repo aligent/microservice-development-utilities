@@ -18,11 +18,11 @@ export const PACKAGE_JSON = {
     },
     dependencies: {},
     devDependencies: {
-        // '@aligent/cdk-constructs': '^0.0.1', FIXME: this one seems to be a private package
+        '@aligent/step-function-from-file': '^0.3.2',
         '@aligent/ts-code-standards': '^4.1.0',
         '@nx/eslint': '21.5.2',
         '@nx/eslint-plugin': '21.5.2',
-        '@nx/js': '21.5.2', // TODO we may want to remove this package, double check if it's actually needed
+        // '@nx/js': '21.5.2', // TODO double check if it's actually needed
         '@nx/rsbuild': '21.5.2',
         '@nx/vite': '21.5.2',
         '@rsbuild/core': '^1.5.6',
@@ -39,7 +39,7 @@ export const PACKAGE_JSON = {
         'aws-cdk-lib': '^2.230.0',
         'cdk-nag': '^2.37.55',
         constructs: '^10.4.3',
-        esbuild: '~0.25.8', // TODO: Do we need this package now that we're using rsbuild instead
+        esbuild: '~0.25.8', // TODO Do we need this package now that we're using rsbuild instead
         'esbuild-visualizer': '^0.7.0',
         eslint: '^9.32.0',
         'eslint-config-prettier': '10.1.8',
@@ -47,7 +47,7 @@ export const PACKAGE_JSON = {
         jiti: '2.5.1',
         'jsonc-eslint-parser': '^2.4.0',
         nx: '21.5.2',
-        // open: '^10.2.0', TODO Double check what is this and why it's here?
+        // open: '^10.2.0', // TODO Double check what is this and why it's here?
         prettier: '^3.6.2',
         'store-parameters': '^1.0.6',
         tslib: '^2.8.1',

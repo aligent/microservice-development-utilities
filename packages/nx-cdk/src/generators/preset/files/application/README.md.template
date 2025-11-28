@@ -4,9 +4,12 @@ This application manages the deployment of microservices and their shared infras
 
 ## Architecture
 
-This application deploys:
+<!-- Add a diagram about what this application deploys -->
 
-_add details here_
+## Services
+
+<!-- List services here with link to the service read me file -->
+<!-- Eg: [User Management](../services/user-management/README.md) -->
 
 ## Configuration
 
@@ -42,12 +45,6 @@ yarn pg:deploy
 ```bash
 yarn nx run application:cdk <command> <args>
 ```
-
-## Services
-
-This application deploys the following services:
-
-- _list services here_
 
 ## Testing
 

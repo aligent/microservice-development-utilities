@@ -4,7 +4,11 @@ This is a CDK service generated using `@aligent/nx-cdk` for Nx.
 
 ## Architecture
 
-[Add your architecture documentation here]
+<!-- Add your architecture documentation here -->
+
+# Technical Decisions
+
+<!-- Add your notes and technical decisions here -->
 
 ## Development
 
