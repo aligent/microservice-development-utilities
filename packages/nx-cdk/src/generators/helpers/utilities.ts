@@ -15,13 +15,13 @@ export function constructPackageJsonFile(name: string, version: string, nodeVers
 
     const packageJson = Object.fromEntries(
         Object.entries({
-            ...PACKAGE_JSON,
             name: `@${name}/integrations`,
             description: `${name} integrations mono-repository`,
             version,
+            ...PACKAGE_JSON,
             devDependencies,
             engines: { node: `^${nodeVersionMajor}.${nodeVersionMinor}.0` },
-        }).sort()
+        })
     );
 
     return packageJson;

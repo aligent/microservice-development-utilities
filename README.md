@@ -101,13 +101,13 @@ To test packages locally before publishing, you can use the local `verdaccio` re
 
 ```bash
 # Start local registry
-npx nx start-local-registry
+npx nx start-local-registry microservice-development-utilities
 
 # In another terminal, publish packages locally
-npx nx run-many -t publish
+npx nx release publish
 
 # Stop local registry when done
-npx nx stop-local-registry
+npx nx stop-local-registry microservice-development-utilities
 ```
 
 ### Note

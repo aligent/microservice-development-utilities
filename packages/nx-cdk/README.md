@@ -11,12 +11,6 @@ The preset generator initializes a new CDK project with a complete workspace str
 #### Usage
 
 ```bash
-npx nx g @aligent/nx-cdk:preset <project-name> [options]
-```
-
-Or when creating a new workspace:
-
-```bash
 npx create-nx-workspace@latest --preset=@aligent/nx-cdk
 ```
 
@@ -49,13 +43,6 @@ The preset generator scaffolds:
   - `bin/main.ts` - CDK app entry point
   - `lib/service-stacks.ts` - Service stacks definition
   - TypeScript configurations (`tsconfig.json`, `tsconfig.lib.json`, `tsconfig.spec.json`)
-
-#### Example
-
-```bash
-# Create a new project named "my-cdk-app" with Node.js 22.10.0
-npx nx g @aligent/nx-cdk:preset my-cdk-app --nodeVersion=22.10.0
-```
 
 ### Service Generator
 

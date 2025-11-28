@@ -35,6 +35,11 @@
                     }
                 ]
             }
+        },
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "dist/nx-cdk"
+            }
         }
     },
     "tags": ["nx", "plugin", "cdk"]

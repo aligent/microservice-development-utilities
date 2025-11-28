@@ -4,14 +4,18 @@
 
 # Project standard configurations
 !**/*.md
-!.githooks
+!.git-hooks
+!.git-hooks/*
 !.github
+!.github/*
+!.github/**/*
 !.editorconfig
 !.gitignore
 !.nvmrc
 !.prettierignore
 !cdk-config.yml
 !eslint.config.mjs
+!LICENSE
 !nx.json
 !package.json
 !prettier.config.mjs
@@ -20,14 +24,12 @@
 !vitest.global.setup.mjs
 !vitest.config.base.mjs
 
-# IDE - VSCode
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
 # Package manager
+!.yarn
 !.yarn/patches
 !.yarn/plugins
+!.yarn/plugins/*
+!.yarn/plugins/**/*
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
@@ -35,12 +37,26 @@
 !yarn.lock
 
 # Application
-!applications
+!application
+!application/*
+!application/**/*
+!collection
+!collection/*
+!collection/**/*
 !docs
+!docs/*
+!docs/**/*
 !libs
+!libs/*
+!libs/**/*
 !services
+!services/*
+!services/**/*
 
 # Test and bundle artifacts
-# **/cdk.out
-# **/dist
-# **/coverage
+**/cdk.out
+**/dist
+**/coverage
+
+# Environment files
+*.env
