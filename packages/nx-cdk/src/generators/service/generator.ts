@@ -57,10 +57,10 @@ function addTsConfigReference(tree: Tree, referencePath: string) {
 
 export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSchema) {
     const projectRoot = `${SERVICES_FOLDER}/${options.name}`;
-    const stackName = `${options.name
+    const stack = `${options.name
         .split('-')
         .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join('')}Stack`;
+        .join('')}`;
 
     if (!tree.exists(SERVICES_FOLDER)) {
         tree.write(`${SERVICES_FOLDER}/.gitkeep`, '');
@@ -68,7 +68,7 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
 
     generateFiles(tree, join(__dirname, 'files'), projectRoot, {
         ...options,
-        stackName,
+        stack,
         template: '',
     });
 
@@ -84,6 +84,8 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
 
     // FIXME Double check if this is needed or not
     // registerWithTypecheckPlugin(tree, `${projectRoot}/*`);
+
+    // TODO ts-morph for stack initiation within application/lib/service-stacks.ts
 
     await formatFiles(tree);
 }
