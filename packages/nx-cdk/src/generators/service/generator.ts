@@ -57,12 +57,20 @@ function addTsConfigReference(tree: Tree, referencePath: string) {
 
 export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSchema) {
     const projectRoot = `${SERVICES_FOLDER}/${options.name}`;
+    const stackName = `${options.name
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('')}Stack`;
 
     if (!tree.exists(SERVICES_FOLDER)) {
         tree.write(`${SERVICES_FOLDER}/.gitkeep`, '');
     }
 
-    generateFiles(tree, join(__dirname, 'files'), projectRoot, { ...options, template: '' });
+    generateFiles(tree, join(__dirname, 'files'), projectRoot, {
+        ...options,
+        stackName,
+        template: '',
+    });
 
     // Generate service's tsconfigs
     const { tsConfig, tsConfigLib, tsConfigSpec } = constructProjectTsConfigFiles('service');

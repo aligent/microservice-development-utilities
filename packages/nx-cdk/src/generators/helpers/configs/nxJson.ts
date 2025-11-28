@@ -6,6 +6,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
     plugins: [
         { plugin: '@nx/eslint/plugin', options: {} },
         { plugin: '@nx/vite/plugin', options: {} },
+        { plugin: '@nx/js/typescript', options: { build: false } },
         {
             plugin: '@nx/rsbuild',
             options: {
@@ -20,9 +21,6 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
             exclude: [],
         },
     ],
-    generators: {
-        '@nx/js:library': { bundler: 'none', linter: 'eslint', unitTestRunner: 'vitest' },
-    },
     namedInputs: {
         default: ['{projectRoot}/**/*', 'sharedGlobals'],
         production: [

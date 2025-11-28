@@ -22,7 +22,7 @@ export const PACKAGE_JSON = {
         '@aligent/ts-code-standards': '^4.1.0',
         '@nx/eslint': '21.5.2',
         '@nx/eslint-plugin': '21.5.2',
-        // '@nx/js': '21.5.2', // TODO double check if it's actually needed
+        '@nx/js': '21.5.2',
         '@nx/rsbuild': '21.5.2',
         '@nx/vite': '21.5.2',
         '@rsbuild/core': '^1.5.6',

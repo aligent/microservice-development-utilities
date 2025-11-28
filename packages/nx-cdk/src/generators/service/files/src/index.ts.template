@@ -3,9 +3,10 @@ import { Code } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import path from 'node:path';
 
-const SERVICE_NAME = '<%= name %>' as const;
+export const SERVICE_NAME = '<%= name %>' as const;
+type ServiceName = typeof SERVICE_NAME | (string & {});
 
-export interface <%= name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('') %>StackProps extends StackProps {
+export interface <%= stackName %>Props extends StackProps {
     description: string;
 }
 
@@ -16,8 +17,8 @@ export interface <%= name.split('-').map(part => part.charAt(0).toUpperCase() + 
  *
  * Use 'resolve' helpers below when referencing lambda handlers, step function files etc.
  */
-export class <%= name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('') %>Stack extends Stack {
-    constructor(scope: Construct, id: typeof SERVICE_NAME | (string & {}), props?: <%= name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('') %>StackProps) {
+export class <%= stackName %> extends Stack {
+    constructor(scope: Construct, id: ServiceName, props?: <%= stackName %>Props) {
         super(scope, id, props);
 
         const STAGE = Stage.of(this)?.stageName;
