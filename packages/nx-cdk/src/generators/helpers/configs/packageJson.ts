@@ -56,7 +56,7 @@ export const PACKAGE_JSON = {
         vite: '7.1.6',
         vitest: '^3.2.4',
     },
-    workspaces: ['libs/*', 'services/*', 'application/*'],
+    workspaces: ['application', 'libs/*', 'services/*'],
     packageManager:
         'yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c',
 } as const;
