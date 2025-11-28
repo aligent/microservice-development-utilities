@@ -1,0 +1,27 @@
+{
+  "name": "application",
+  "type": "module",
+  "main": "./bin/main.ts",
+  "types": "./bin/main.ts",
+  "nx": {
+    "tags": [
+      "scope:application"
+    ],
+    "targets": {
+      "cdk": {
+        "executor": "nx:run-commands",
+        "options": {
+          "color": true,
+          "command": "cdk",
+          "cwd": "{projectRoot}"
+        }
+      },
+      "parameters": {
+        "executor": "nx:run-commands",
+        "options": {
+          "path": "/application/dev"
+        }
+      }
+    }
+  }
+}

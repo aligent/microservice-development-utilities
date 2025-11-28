@@ -1,17 +1,33 @@
-import { addProjectConfiguration, formatFiles, generateFiles, Tree } from '@nx/devkit';
-import * as path from 'path';
+import { formatFiles, generateFiles, Tree, updateNxJson, writeJson } from '@nx/devkit';
+import { join } from 'path';
+import { NX_JSON } from '../helpers/configs/nxJson';
+import {
+    constructPackageJsonFile,
+    constructProjectTsConfigFiles,
+    getGeneratorVersion,
+} from '../helpers/utilities';
 import { PresetGeneratorSchema } from './schema';
 
 export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema) {
-    // TODO implement the preset generator here
-    const projectRoot = `libs/${options.name}`;
-    addProjectConfiguration(tree, options.name, {
-        root: projectRoot,
-        projectType: 'library',
-        sourceRoot: `${projectRoot}/src`,
-        targets: {},
+    const { name, nodeVersion } = options;
+    const version = getGeneratorVersion();
+
+    generateFiles(tree, join(__dirname, 'files'), '.', {
+        ...options,
+        template: '',
     });
-    generateFiles(tree, path.join(__dirname, 'files'), projectRoot, options);
+
+    updateNxJson(tree, { ...NX_JSON });
+
+    const packageJson = constructPackageJsonFile(name, version, nodeVersion);
+    writeJson(tree, 'package.json', packageJson);
+
+    // Generate application's tsconfigs
+    const { tsConfig, tsConfigLib, tsConfigSpec } = constructProjectTsConfigFiles('application');
+    writeJson(tree, 'application/tsconfig.json', tsConfig);
+    writeJson(tree, 'application/tsconfig.lib.json', tsConfigLib);
+    writeJson(tree, 'application/tsconfig.spec.json', tsConfigSpec);
+
     await formatFiles(tree);
 }
 

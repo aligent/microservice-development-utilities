@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+import { App, Aspects, Tags } from 'aws-cdk-lib';
+import { ApplicationStage } from './lib/service-stacks.js';
+
+// TODO Consider to pull this out to a separate construct repo so we can import and use later
+import { LogGroupDefaultsInjector } from './_internal/log-group-defaults-injector.js';
+import { MicroserviceChecks } from './_internal/microservice-checks.js';
+import { NodeJsFunctionDefaultsInjector } from './_internal/nodejs-function-defaults-injector.js';
+import { StepFunctionDefaultsInjector } from './_internal/step-function-defaults-injector.ts';
+import { VersionFunctionsAspect } from './_internal/version-functions-aspect.js';
+
+const APPLICATION_CONTEXT = { APPLICATION_OWNER: 'aligent' } as const;
+
+const app = new App({
+    context: APPLICATION_CONTEXT,
+    propertyInjectors: [new NodeJsFunctionDefaultsInjector(), new StepFunctionDefaultsInjector()],
+});
+Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
+
+// TODO: explain why we choose this setup instead of dynamic or use context
+// https://dev.to/aws-heroes/how-to-use-aws-cdk-stage-and-when-to-choose-static-vs-dynamic-stack-creation-35h
+
+// Set up application stages
+// NOTE: Property Injectors will only apply ONCE each, so adding one in stage
+// overrides the same injector at the app level
+const dev = new ApplicationStage(app, 'dev', {
+    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'SHORT' })],
+});
+Aspects.of(dev).add(new MicroserviceChecks());
+
+const stg = new ApplicationStage(app, 'stg', {
+    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'MEDIUM' })],
+});
+Aspects.of(stg).add(new MicroserviceChecks());
+
+const prd = new ApplicationStage(app, 'prd', {
+    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'LONG' })],
+});
+Aspects.of(prd).add(new MicroserviceChecks());
+
+// Ensure lambdas and step functions are versioned and have the default alias
+Aspects.of(prd).add(new VersionFunctionsAspect());

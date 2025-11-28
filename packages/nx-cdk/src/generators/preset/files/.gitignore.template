@@ -1,0 +1,46 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+# Ignore everything by default
+*
+
+# Project standard configurations
+!**/*.md
+!.githooks
+!.github
+!.editorconfig
+!.gitignore
+!.nvmrc
+!.prettierignore
+!cdk-config.yml
+!eslint.config.mjs
+!nx.json
+!package.json
+!prettier.config.mjs
+!rsbuild.config.base.mjs
+!tsconfig.json
+!vitest.global.setup.mjs
+!vitest.config.base.mjs
+
+# IDE - VSCode
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Package manager
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+!.yarnrc.yml
+!yarn.lock
+
+# Application
+!applications
+!docs
+!libs
+!services
+
+# Test and bundle artifacts
+# **/cdk.out
+# **/dist
+# **/coverage

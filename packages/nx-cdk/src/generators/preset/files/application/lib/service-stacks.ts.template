@@ -1,0 +1,17 @@
+import { Stage, Tags, type StageProps } from 'aws-cdk-lib';
+import type { Construct } from 'constructs';
+
+/**
+ * Application stage
+ *
+ * This is the main entry point for the application.
+ * It is used to define context and compose service stacks.
+ */
+export class ApplicationStage extends Stage {
+    constructor(scope: Construct, id: string, props?: StageProps) {
+        super(scope, id, props);
+        Tags.of(this).add('STAGE', id);
+
+        // Instantiate service stacks here as required
+    }
+}

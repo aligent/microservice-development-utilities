@@ -1,9 +1,9 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { viteBaseConfig } from '../../vitest.config.base.mjs';
+import { vitestBaseConfig } from '../../vitest.config.base.mjs';
 
 export default defineConfig(configEnv => {
     return mergeConfig(
-        viteBaseConfig(configEnv),
+        vitestBaseConfig(configEnv),
         defineConfig({
             cacheDir: '../../node_modules/.vite/<%= name %>',
             test: {
