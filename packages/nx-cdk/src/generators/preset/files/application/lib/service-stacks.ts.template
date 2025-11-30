@@ -12,6 +12,12 @@ export class ApplicationStage extends Stage {
         super(scope, id, props);
         Tags.of(this).add('STAGE', id);
 
-        // Instantiate service stacks here as required
+        /**
+         * Service stack initialization
+         *
+         * Service stacks are automatically instantiated here when generated using the service generator.
+         * Each service stack will be initialized with this stage as the parent scope, ensuring proper
+         * stack composition and resource organization within the CDK application.
+         */
     }
 }

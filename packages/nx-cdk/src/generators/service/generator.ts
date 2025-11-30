@@ -1,6 +1,9 @@
 import { formatFiles, generateFiles, Tree, updateJson, writeJson } from '@nx/devkit';
 import { join } from 'path';
-import { constructProjectTsConfigFiles } from '../helpers/utilities';
+import {
+    addServiceStackToMainApplication,
+    constructProjectTsConfigFiles,
+} from '../helpers/utilities';
 import { ServiceGeneratorSchema } from './schema';
 
 const SERVICES_FOLDER = 'services';
@@ -15,52 +18,20 @@ function addTsConfigReference(tree: Tree, referencePath: string) {
             );
         }
 
-        json.references.push({
-            path: referencePath,
-        });
+        json.references.push({ path: referencePath });
 
         return json;
     });
 }
 
-// function registerWithTypecheckPlugin(tree: Tree, referencePath: string) {
-//     updateJson(tree, 'nx.json', json => {
-//         json.plugins ??= [];
-
-//         // Services should be non-buildable, so we need to register them with the typescript plugin configuration
-//         // that adds typechecking but not a build argument
-//         const plugin = json.plugins.find(
-//             (p: {
-//                 plugin: string;
-//                 include: string[];
-//                 options?: { typecheck?: unknown; build?: unknown };
-//             }) => p.plugin === '@nx/js/typescript' && p.options?.typecheck && !p.options?.build
-//         );
-
-//         if (!plugin) {
-//             json.plugins.push({
-//                 plugin: '@nx/js/typescript',
-//                 options: {
-//                     typecheck: {
-//                         targetName: 'typecheck',
-//                     },
-//                 },
-//                 include: [referencePath],
-//             });
-//         } else {
-//             plugin.include.push(referencePath);
-//         }
-
-//         return json;
-//     });
-// }
-
 export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSchema) {
     const projectRoot = `${SERVICES_FOLDER}/${options.name}`;
-    const stack = `${options.name
+    const nameParts = options.name
         .split('-')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join('')}`;
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1));
+
+    const constant = nameParts.map(name => name.toUpperCase()).join('_');
+    const stack = `${nameParts.join('')}Stack`;
 
     if (!tree.exists(SERVICES_FOLDER)) {
         tree.write(`${SERVICES_FOLDER}/.gitkeep`, '');
@@ -68,6 +39,7 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
 
     generateFiles(tree, join(__dirname, 'files'), projectRoot, {
         ...options,
+        constant,
         stack,
         template: '',
     });
@@ -78,14 +50,9 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
     writeJson(tree, `${projectRoot}/tsconfig.lib.json`, tsConfigLib);
     writeJson(tree, `${projectRoot}/tsconfig.spec.json`, tsConfigSpec);
 
-    // Add the service to tsconfig.json references
-    // The root application needs to import stacks from the service
+    // Integrate the new service with the root application
     addTsConfigReference(tree, `./${projectRoot}`);
-
-    // FIXME Double check if this is needed or not
-    // registerWithTypecheckPlugin(tree, `${projectRoot}/*`);
-
-    // TODO ts-morph for stack initiation within application/lib/service-stacks.ts
+    addServiceStackToMainApplication(tree, { name: options.name, constant, stack }, 'application');
 
     await formatFiles(tree);
 }
