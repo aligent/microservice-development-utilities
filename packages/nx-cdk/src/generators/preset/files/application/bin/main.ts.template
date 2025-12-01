@@ -13,7 +13,10 @@ const APPLICATION_CONTEXT = { APPLICATION_OWNER: 'aligent' } as const;
 
 const app = new App({
     context: APPLICATION_CONTEXT,
-    propertyInjectors: [new NodeJsFunctionDefaultsInjector(), new StepFunctionDefaultsInjector()],
+    propertyInjectors: [
+        new NodeJsFunctionDefaultsInjector({ runtime: <%= nodeRuntime %> }),
+        new StepFunctionDefaultsInjector(),
+    ],
 });
 Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
 

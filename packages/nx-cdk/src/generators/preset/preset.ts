@@ -9,17 +9,18 @@ import {
 import { PresetGeneratorSchema } from './schema';
 
 export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema) {
-    const { name, nodeVersion } = options;
+    const [nodeVersionMajor] = options.nodeVersion.split('.');
     const version = getGeneratorVersion();
 
     generateFiles(tree, join(__dirname, 'files'), '.', {
         ...options,
+        nodeRuntime: `Runtime.NODEJS_${nodeVersionMajor}_X`,
         template: '',
     });
 
     updateNxJson(tree, { ...NX_JSON });
 
-    const packageJson = constructPackageJsonFile(name, version, nodeVersion);
+    const packageJson = constructPackageJsonFile(options.name, version, options.nodeVersion);
     writeJson(tree, 'package.json', packageJson);
 
     // Generate application's tsconfigs

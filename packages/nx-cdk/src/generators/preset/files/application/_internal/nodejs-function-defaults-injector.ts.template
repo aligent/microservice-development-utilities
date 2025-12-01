@@ -3,7 +3,8 @@ import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, type NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 
 interface Config {
-    sourceMap: boolean;
+    runtime: Runtime;
+    sourceMap?: boolean;
 }
 
 /**
@@ -39,7 +40,7 @@ interface Config {
  */
 export class NodeJsFunctionDefaultsInjector implements IPropertyInjector {
     public readonly constructUniqueId = NodejsFunction.PROPERTY_INJECTION_ID;
-    private readonly config: Config;
+    private readonly config: Required<Config>;
     private defaultProps: NodejsFunctionProps;
 
     /**
@@ -47,9 +48,9 @@ export class NodeJsFunctionDefaultsInjector implements IPropertyInjector {
      *
      * @param config - Configuration identifier used to select appropriate defaults. Uses production defaults if not specified.
      */
-    constructor(config: Config = { sourceMap: true }) {
-        this.config = { ...config };
-        this.defaultProps = { runtime: Runtime.NODEJS_22_X, tracing: Tracing.ACTIVE };
+    constructor(config: Config) {
+        this.config = { ...config, sourceMap: config.sourceMap || true };
+        this.defaultProps = { runtime: config.runtime, tracing: Tracing.ACTIVE };
     }
 
     /**

@@ -11,8 +11,6 @@ interface Service {
 }
 
 export function constructPackageJsonFile(name: string, version: string, nodeVersion: string) {
-    const [nodeVersionMajor, nodeVersionMinor] = nodeVersion.split('.');
-
     const devDependencies = Object.fromEntries(
         Object.entries({
             '@aligent/nx-cdk': version,
@@ -27,7 +25,7 @@ export function constructPackageJsonFile(name: string, version: string, nodeVers
             version,
             ...PACKAGE_JSON,
             devDependencies,
-            engines: { node: `^${nodeVersionMajor}.${nodeVersionMinor}.0` },
+            engines: { node: `^${nodeVersion}` },
         })
     );
 
