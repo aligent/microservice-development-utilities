@@ -24,7 +24,7 @@ Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
 /**
  * Static Stage Creation Approach
  *
- * We use static stage creation (explicitly defining dev, stg, prd) for several reasons:
+ * We use static stage creation (explicitly defining development, staging, production) for several reasons:
  *
  * 1. **Predictability**: All stages are known at synthesis time, making the CDK app
  *    behavior deterministic and easier to reason about.
@@ -49,24 +49,24 @@ Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
  * construct tree. When the same injector type is defined at both app and stage levels, the
  * stage-level injector takes precedence and overrides the app-level configuration.
  */
-const dev = new ApplicationStage(app, 'dev', {
+const development = new ApplicationStage(app, 'development', {
     propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'SHORT' })],
 });
-Aspects.of(dev).add(new MicroserviceChecks());
+Aspects.of(development).add(new MicroserviceChecks());
 
-const stg = new ApplicationStage(app, 'stg', {
+const staging = new ApplicationStage(app, 'staging', {
     propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'MEDIUM' })],
 });
-Aspects.of(stg).add(new MicroserviceChecks());
+Aspects.of(staging).add(new MicroserviceChecks());
 
-const prd = new ApplicationStage(app, 'prd', {
+const production = new ApplicationStage(app, 'production', {
     propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'LONG' })],
 });
-Aspects.of(prd).add(new MicroserviceChecks());
+Aspects.of(production).add(new MicroserviceChecks());
 
 /**
  * This aspect ensures all Lambda functions and Step Functions in production
  * are automatically versioned and have a stable 'live' alias pointing to the
  * current version, enabling zero-downtime deployments.
  */
-Aspects.of(prd).add(new VersionFunctionsAspect());
+Aspects.of(production).add(new VersionFunctionsAspect());

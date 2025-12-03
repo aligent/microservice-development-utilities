@@ -18,7 +18,7 @@ Services deployment are managed by the main [CDK Application](./application/READ
 ```
 <%= folderName %>/
 ├── application/             # CDK Application & orchestration
-│   ├── bin/main.ts          # CDK App entry point (dev/stg/prd stages)
+│   ├── bin/main.ts          # CDK App entry point (development/staging/production stages)
 │   ├── lib/                 # Service stack composition
 │   └── cdk.json             # CDK configuration
 │
