@@ -4,28 +4,35 @@ import { Project } from 'ts-morph';
 import { PACKAGE_JSON } from './configs/packageJson';
 import { TS_CONFIG_JSON, TS_CONFIG_LIB_JSON, TS_CONFIG_SPEC_JSON } from './configs/tsConfigs';
 
+interface PackageJsonInput {
+    name: string;
+    projectName: string;
+    version: string;
+    nodeVersion: string;
+}
+
 interface Service {
     name: string;
     constant: string;
     stack: string;
 }
 
-export function constructPackageJsonFile(name: string, version: string, nodeVersion: string) {
+export function constructPackageJsonFile(input: PackageJsonInput) {
     const devDependencies = Object.fromEntries(
         Object.entries({
-            '@aligent/nx-cdk': version,
+            '@aligent/nx-cdk': input.version,
             ...PACKAGE_JSON.devDependencies,
         }).sort()
     );
 
     const packageJson = Object.fromEntries(
         Object.entries({
-            name: `@${name}/integrations`,
-            description: `${name} integrations mono-repository`,
-            version,
+            name: `@${input.name}/integrations`,
+            description: `${input.projectName} integrations mono-repository`,
+            version: input.version,
             ...PACKAGE_JSON,
             devDependencies,
-            engines: { node: `^${nodeVersion}` },
+            engines: { node: `^${input.nodeVersion}` },
         })
     );
 
@@ -65,6 +72,19 @@ export function getGeneratorVersion() {
     throw new Error(`Unable to get generator version from ${packagePath}`);
 }
 
+/**
+ * Automatically registers a service stack to the main CDK application's ApplicationStage.
+ *
+ * This function modifies the service-stacks.ts file by:
+ * 1. Adding import statements for the service's stack class and constants
+ * 2. Instantiating the stack within the ApplicationStage constructor
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param service - Service information containing name, constant, and stack class names
+ * @param projectName - The name of the main application project to register the service to
+ *
+ * @throws {Error} If the ApplicationStage constructor cannot be found in service-stacks.ts
+ */
 export async function addServiceStackToMainApplication(
     tree: Tree,
     service: Service,
@@ -93,4 +113,14 @@ export async function addServiceStackToMainApplication(
     );
 
     await stackSource?.save();
+}
+
+/**
+ * Splits a kebab-case name into an array of capitalized parts.
+ *
+ * @param name - The kebab-case string to split (e.g., "my-service-name")
+ * @returns An array of strings with each part capitalized (e.g., ["My", "Service", "Name"])
+ */
+export function splitInputName(name: string) {
+    return name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1));
 }

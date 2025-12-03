@@ -39,8 +39,6 @@ export const PACKAGE_JSON = {
         'aws-cdk-lib': '^2.230.0',
         'cdk-nag': '^2.37.55',
         constructs: '^10.4.3',
-        esbuild: '~0.25.8', // TODO Do we need this package now that we're using rsbuild instead
-        'esbuild-visualizer': '^0.7.0',
         eslint: '^9.32.0',
         'eslint-config-prettier': '^10.1.8',
         'eslint-plugin-import': '^2.32.0',
@@ -48,15 +46,15 @@ export const PACKAGE_JSON = {
         jiti: '2.5.1',
         'jsonc-eslint-parser': '^2.4.0',
         nx: '21.5.2',
-        // open: '^10.2.0', // TODO Double check what is this and why it's here?
         prettier: '^3.6.2',
         'store-parameters': '^1.0.6',
         tslib: '^2.8.1',
+        tsx: '^4.21.0',
         typescript: '~5.9.2',
         vite: '7.1.6',
         vitest: '^3.2.4',
     },
     workspaces: ['application', 'libs/*', 'services/*'],
     packageManager:
-        'yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c',
+        'yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8',
 } as const;

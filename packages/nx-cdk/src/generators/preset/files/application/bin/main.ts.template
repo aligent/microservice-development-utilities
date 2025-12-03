@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import { App, Aspects, Tags } from 'aws-cdk-lib';
-import { ApplicationStage } from './lib/service-stacks.js';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { ApplicationStage } from '../lib/service-stacks.js';
 
 // TODO Pull this out to constructs repo so we can import and use later
-import { LogGroupDefaultsInjector } from './_internal/log-group-defaults-injector.js';
-import { MicroserviceChecks } from './_internal/microservice-checks.js';
-import { NodeJsFunctionDefaultsInjector } from './_internal/nodejs-function-defaults-injector.js';
-import { StepFunctionDefaultsInjector } from './_internal/step-function-defaults-injector.ts';
-import { VersionFunctionsAspect } from './_internal/version-functions-aspect.js';
+import { LogGroupDefaultsInjector } from '../_internal/log-group-defaults-injector.js';
+import { MicroserviceChecks } from '../_internal/microservice-checks.js';
+import { NodeJsFunctionDefaultsInjector } from '../_internal/nodejs-function-defaults-injector.js';
+import { StepFunctionDefaultsInjector } from '../_internal/step-function-defaults-injector.ts';
+import { VersionFunctionsAspect } from '../_internal/version-functions-aspect.js';
 
 const APPLICATION_CONTEXT = { APPLICATION_OWNER: 'aligent' } as const;
 

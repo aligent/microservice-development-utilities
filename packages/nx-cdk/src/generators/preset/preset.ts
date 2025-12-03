@@ -5,22 +5,32 @@ import {
     constructPackageJsonFile,
     constructProjectTsConfigFiles,
     getGeneratorVersion,
+    splitInputName,
 } from '../helpers/utilities';
 import { PresetGeneratorSchema } from './schema';
 
 export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema) {
-    const [nodeVersionMajor] = options.nodeVersion.split('.');
-    const version = getGeneratorVersion();
+    const { name, destination, nodeVersion } = options;
+    const [nodeVersionMajor] = nodeVersion.split('.');
+    const nameParts = splitInputName(name);
+    const projectName = nameParts.join(' ');
 
     generateFiles(tree, join(__dirname, 'files'), '.', {
         ...options,
+        projectName,
+        folderName: destination || name,
         nodeRuntime: `Runtime.NODEJS_${nodeVersionMajor}_X`,
         template: '',
     });
 
     updateNxJson(tree, { ...NX_JSON });
 
-    const packageJson = constructPackageJsonFile(options.name, version, options.nodeVersion);
+    const packageJson = constructPackageJsonFile({
+        name: options.name,
+        projectName,
+        version: getGeneratorVersion(),
+        nodeVersion,
+    });
     writeJson(tree, 'package.json', packageJson);
 
     // Generate application's tsconfigs

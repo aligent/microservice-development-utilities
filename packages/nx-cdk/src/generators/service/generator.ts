@@ -3,6 +3,7 @@ import { join } from 'path';
 import {
     addServiceStackToMainApplication,
     constructProjectTsConfigFiles,
+    splitInputName,
 } from '../helpers/utilities';
 import { ServiceGeneratorSchema } from './schema';
 
@@ -26,9 +27,7 @@ function addTsConfigReference(tree: Tree, referencePath: string) {
 
 export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSchema) {
     const projectRoot = `${SERVICES_FOLDER}/${options.name}`;
-    const nameParts = options.name
-        .split('-')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1));
+    const nameParts = splitInputName(options.name);
 
     const constant = nameParts.map(name => name.toUpperCase()).join('_');
     const stack = `${nameParts.join('')}Stack`;

@@ -14,12 +14,17 @@ const HANDLERS_PATH = 'src/runtime/handlers';
  */
 export function defineLambdaConfig(configPath, subPath = HANDLERS_PATH) {
     if (subPath.includes('..')) throw new Error('Invalid path provided');
+
     const basePath = resolve(configPath, subPath);
     const handlers = fg.sync(`${basePath}/**/*.ts`);
 
+    // FIXME: We need a way to skip bundling instead of throwing error here
+    if (!handlers.length) {
+        throw new Error('Unable to find any handler');
+    }
+
     // Format an entry object containing each file found in the folder
-    // Maintains subfolder structure
-    // e.g. { 'test/log-object': 'test/log-object' }
+    // Maintains subfolder structure. E.g. { 'test/log-object': 'test/log-object' }
     const entry = Object.fromEntries(
         handlers.map(handler => {
             const bundledPath = handler.replace(`${basePath}/`, '');
@@ -29,10 +34,7 @@ export function defineLambdaConfig(configPath, subPath = HANDLERS_PATH) {
     );
 
     return defineConfig({
-        source: {
-            entry,
-            tsconfigPath: './tsconfig.lib.json',
-        },
+        source: { entry, disableDefaultEntry: true, tsconfigPath: './tsconfig.lib.json' },
         performance: {
             chunkSplit: {
                 // Not sure this is necessary for single-file-bundling but seems safer to set it
@@ -40,27 +42,20 @@ export function defineLambdaConfig(configPath, subPath = HANDLERS_PATH) {
             },
         },
         output: {
-            // Only bundle javascript/typescript code
             target: 'node',
-            // Output ESM modules
-            module: true,
+            module: true, // Output ESM modules
             filename: { js: '[name]/index.mjs' },
-            // Don't output license comments in bundled code
-            legalComments: 'none',
+            legalComments: 'none', // Don't output license comments in bundled code
             // FIXME: handle the following things by stag/environment
             // sourceMap: true,
             // minify: true,
         },
         tools: {
             rspack: {
-                output: {
-                    // Forces bundler to include all dependencies in one file
-                    asyncChunks: false,
-                },
-                optimization: {
-                    // Prevent bundler from wrapping handlers in an IIFE
-                    avoidEntryIife: true,
-                },
+                // Forces bundler to include all dependencies in one file
+                output: { asyncChunks: false },
+                // Prevent bundler from wrapping handlers in an IIFE
+                optimization: { avoidEntryIife: true },
             },
         },
     });

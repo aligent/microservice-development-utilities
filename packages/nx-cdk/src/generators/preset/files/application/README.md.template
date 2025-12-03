@@ -1,15 +1,6 @@
-# <%= name %> Application
+# Application
 
 This application manages the deployment of microservices and their shared infrastructure.
-
-## Architecture
-
-<!-- Add a diagram about what this application deploys -->
-
-## Services
-
-<!-- List services here with link to the service read me file -->
-<!-- Eg: [User Management](../services/user-management/README.md) -->
 
 ## Configuration
 
@@ -50,9 +41,9 @@ yarn nx run application:cdk <command> <args>
 
 ### Mock Services
 
-The application includes mock services for testing integrations without external dependencies.
+The application may include mock services for testing integrations without external dependencies.
 
-- _list mock services here_
+<!-- list mock services here -->
 
 Change the value of the `/application/dev/url` SSM Parameter to switch between real and mock endpoints
 

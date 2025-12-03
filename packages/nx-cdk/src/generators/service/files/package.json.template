@@ -14,13 +14,6 @@
   "nx": {
     "tags": [
       "scope:services"
-    ],
-    "targets": {
-      "pg": {
-        "options": {
-          "stack": "dev/<%= name %>"
-        }
-      }
-    }
+    ]
   }
 }

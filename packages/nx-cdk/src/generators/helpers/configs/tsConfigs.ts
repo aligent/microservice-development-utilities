@@ -36,6 +36,14 @@ export const TS_CONFIG_SPEC_JSON: TsConfig = {
         outDir: './out-tsc/vitest',
         types: ['vitest/globals', 'vitest/importMeta', 'vite/client', 'node', 'vitest'],
     },
-    include: ['vite.config.mjs', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.d.ts'],
+    include: [
+        'vite.config.mjs',
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/**/*.d.ts',
+        'tests/**/*.test.ts',
+        'tests/**/*.spec.ts',
+        'tests/**/*.d.ts',
+    ],
     references: [{ path: './tsconfig.lib.json' }],
 };
