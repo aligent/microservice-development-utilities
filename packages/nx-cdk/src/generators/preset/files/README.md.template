@@ -50,10 +50,13 @@ yarn install
 
 ## Contributing
 
-1. Create new branch from `production`
+We follow [trunk-based development framework](https://trunkbaseddevelopment.com/) as a start and will evolve depending on our need.
+
+1. Create new branch from `main`
 2. Make your changes following code standards
 3. Ensure your changes pass linting, type checks and testes
-4. Submit a pull request to `staging`
+4. Submit a pull request back to `main`
+5. For deployment, submit a pull request from `main` to `staging` or `production`
 
 ## Adding New Services
 

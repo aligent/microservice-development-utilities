@@ -1,4 +1,4 @@
-# <%= name %>
+# <%= serviceName %>
 
 This is a CDK service generated using `@aligent/nx-cdk` for Nx.
 

@@ -38,6 +38,7 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
 
     generateFiles(tree, join(__dirname, 'files'), projectRoot, {
         ...options,
+        serviceName: nameParts.join(' '),
         constant,
         stack,
         template: '',
