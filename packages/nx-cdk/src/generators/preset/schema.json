@@ -26,17 +26,6 @@
             "x-prompt": "What is the target Node.js version the project?",
             "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
             "patternErrorMessage": "Node.js version must be a valid semantic version (semver), e.g. 22.10.0 or 24.10.0"
-        },
-        "destination": {
-            "type": "string",
-            "description": "The folder name of the project/application",
-            "$default": {
-                "$source": "argv",
-                "index": 2
-            },
-            "x-prompt": "Where should the project be stored",
-            "pattern": "^[a-z0-9-]+$",
-            "patternErrorMessage": "Destination folder name must contain only lowercase alphanumeric characters and dashes"
         }
     },
     "required": ["name"]

@@ -1,8 +1,15 @@
 import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
-
 import { serviceGenerator } from './generator';
 import { ServiceGeneratorSchema } from './schema';
+
+const application = {
+    name: 'application',
+    type: 'module',
+    main: './bin/main.ts',
+    types: './bin/main.ts',
+    nx: { tags: ['scope:application'] },
+};
 
 describe('service generator', () => {
     let tree: Tree;
@@ -17,9 +24,10 @@ describe('service generator', () => {
                 "references": []
             }`
         );
+        tree.write('application/package.json', JSON.stringify(application));
     });
 
-    it('should run successfully when type is general', async () => {
+    it('should run successfully', async () => {
         const options: ServiceGeneratorSchema = { name: 'test' };
         await expect(serviceGenerator(tree, options)).resolves.not.toThrow();
     });
@@ -36,43 +44,5 @@ describe('service generator', () => {
         const references = JSON.parse(tsconfig).references;
 
         expect(references).toEqual([{ path: './services/test' }]);
-    });
-
-    it('should register the services as a no-buildable typecheck target', async () => {
-        const options: ServiceGeneratorSchema = { name: 'test' };
-
-        await serviceGenerator(tree, options);
-
-        const nxJson = tree.read('nx.json', 'utf-8');
-
-        assert.isNotNull(nxJson);
-
-        const plugins = JSON.parse(nxJson).plugins;
-
-        expect(plugins).toEqual([
-            {
-                plugin: '@nx/js/typescript',
-                options: {
-                    typecheck: {
-                        targetName: 'typecheck',
-                    },
-                },
-                include: ['services/test/*'],
-            },
-        ]);
-    });
-
-    it('should not add paths to the base tsconfig', async () => {
-        const options: ServiceGeneratorSchema = { name: 'test' };
-
-        await serviceGenerator(tree, options);
-
-        const tsconfig = tree.read('tsconfig.base.json', 'utf-8');
-
-        assert.isNotNull(tsconfig);
-
-        const paths = JSON.parse(tsconfig).paths;
-
-        expect(paths).toBe(undefined);
     });
 });

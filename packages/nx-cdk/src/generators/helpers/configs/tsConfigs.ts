@@ -4,7 +4,7 @@ interface TsConfig {
     files?: string[];
     include: string[];
     exclude?: string[];
-    references: Record<string, string>[];
+    references: Array<Record<string, string>>;
 }
 
 const BASE_CONFIG = '@aligent/ts-code-standards/tsconfigs-extend';

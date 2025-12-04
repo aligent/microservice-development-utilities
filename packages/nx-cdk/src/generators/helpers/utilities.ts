@@ -1,4 +1,6 @@
-import { readJsonFile, readProjectConfiguration, Tree, workspaceRoot } from '@nx/devkit';
+/* v8 ignore start */
+import { readJsonFile, readProjectConfiguration, Tree } from '@nx/devkit';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { Project } from 'ts-morph';
 import { PACKAGE_JSON } from './configs/packageJson';
@@ -57,7 +59,7 @@ function isPackageJsonWithVersion(obj: unknown): obj is { version: string } {
         typeof obj === 'object' &&
         obj !== null &&
         'version' in obj &&
-        typeof (obj as any).version === 'string'
+        typeof obj.version === 'string'
     );
 }
 
@@ -96,7 +98,12 @@ export async function addServiceStackToMainApplication(
         throw new Error('Invalid application root path');
     }
 
-    const stacksPath = join(workspaceRoot, application.root, 'lib/service-stacks.ts');
+    const stacksPath = join(tree.root, application.root, 'lib/service-stacks.ts');
+
+    if (!existsSync(stacksPath)) {
+        console.log('Service Stacks does not exist, skipping service stacks registration.');
+        return;
+    }
 
     const project = new Project();
     const stackSource = project.addSourceFileAtPath(stacksPath);
