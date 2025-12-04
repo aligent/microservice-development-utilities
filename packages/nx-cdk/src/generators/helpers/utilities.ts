@@ -91,6 +91,11 @@ export async function addServiceStackToMainApplication(
     projectName: string
 ) {
     const application = readProjectConfiguration(tree, projectName);
+
+    if (application.root.includes('..')) {
+        throw new Error('Invalid application root path');
+    }
+
     const stacksPath = join(workspaceRoot, application.root, 'lib/service-stacks.ts');
 
     const project = new Project();
