@@ -12,7 +12,6 @@ export default [
                 {
                     optionalDependencies: false,
                     peerDependencies: false,
-                    bundledDependencies: false,
                     packageDir: ['.', '..', '../..'],
                 },
             ],

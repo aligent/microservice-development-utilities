@@ -11,6 +11,9 @@
     },
     "./package.json": "./package.json"
   },
+  "bundleDependencies": [
+    "clients"
+  ],
   "nx": {
     "tags": [
       "scope:services"
