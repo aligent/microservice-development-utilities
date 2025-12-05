@@ -6,13 +6,18 @@ import {
 } from '../../helpers/generate-openapi-types';
 import {
     addTsConfigPath,
+    addTsConfigReference,
     appendToIndexFile,
-    attemptToAddProjectConfiguration,
+    getExistingProject,
+    getRootTsConfigPathInTree,
     toClassName,
 } from '../../helpers/utilities';
 import { ClientGeneratorSchema } from './schema';
 
 const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
+
+// We also use this as the project root for all generated clients
+const PROJECT_NAME = 'clients';
 
 export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema) {
     const { name, schemaPath, importPath = `@clients`, skipValidate, override } = options;
@@ -22,14 +27,12 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         throw new Error(`Invalid schema file extension: ${ext}`);
     }
 
-    if (!skipValidate) {
-        const hasError = await validateSchema(schemaPath);
-        if (hasError) {
-            throw new Error('Schema validation failed!');
-        }
+    const hasError = await validateSchema(schemaPath);
+    if (!skipValidate && hasError) {
+        throw new Error('Schema validation failed!');
     }
 
-    const projectRoot = `clients`;
+    const projectRoot = PROJECT_NAME;
     const apiClientDest = `${projectRoot}/src/${name}`;
     const schemaDest = `${apiClientDest}/schema.${ext}`;
     const typesDest = `${apiClientDest}/generated-types.ts`;
@@ -40,24 +43,38 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         );
     }
 
-    const isNewProject = attemptToAddProjectConfiguration(tree, projectRoot);
+    const existingProject = getExistingProject(tree, PROJECT_NAME);
+
+    if (!existingProject) {
+        logger.warn(`Creating new project ${PROJECT_NAME} at ${projectRoot}`);
+
+        generateFiles(tree, joinPathFragments(__dirname, './files'), projectRoot, options);
+
+        const tsConfigFile = getRootTsConfigPathInTree(tree);
+
+        if (tsConfigFile === 'tsconfig.json') {
+            addTsConfigReference(tree, tsConfigFile, `./${projectRoot}`);
+        } else {
+            const lookupPath = joinPathFragments(projectRoot, './src', 'index.ts');
+            addTsConfigPath(tree, tsConfigFile, importPath, [lookupPath]);
+        }
+    }
 
     await copySchema(tree, schemaDest, schemaPath);
     await generateOpenApiTypes(tree, schemaDest, typesDest);
 
-    if (isNewProject) {
-        logger.info(`Creating new project at ${projectRoot}`);
-
-        generateFiles(tree, joinPathFragments(__dirname, './files'), projectRoot, options);
-        addTsConfigPath(tree, importPath, [joinPathFragments(projectRoot, './src', 'index.ts')]);
-    }
-
-    // Generate the files for the specific new client
+    /**
+     * Each time we add new API client, we actually add a new class into `clients` project (if it exists).
+     * This add a new example client class to `apiClientDest` folder
+     */
     generateFiles(tree, joinPathFragments(__dirname, './client-specific-files'), apiClientDest, {
         className: toClassName(name),
     });
 
-    // Append to index file for imports
+    /**
+     * The `clients` project expose all the API clients via `src/index.ts` file.
+     * As a result, we need to append new client to the list of exporting;
+     */
     appendToIndexFile(tree, projectRoot, name);
 
     await formatFiles(tree);
