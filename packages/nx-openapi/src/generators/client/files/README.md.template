@@ -8,7 +8,7 @@ This folder contains TypeScript API clients generated from OpenAPI specification
 
 ## Example
 ```typescript
-import { MyApiClient } from '@clients'; // Adjust the import name as necessary
+import { MyApiClient } from 'clients'; // Adjust the import name as necessary
 
 const client = new MyApiClient(
     { baseUrl: 'https://my-api-client.base-url', signal: AbortSignal.timeout(30000) },

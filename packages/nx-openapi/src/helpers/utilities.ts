@@ -1,33 +1,19 @@
-import { addProjectConfiguration, Tree, updateJson } from '@nx/devkit';
+import { logger, readProjectConfiguration, Tree, updateJson } from '@nx/devkit';
 
 /**
- * Attempts to add a new project configuration to the workspace.
+ * Get existing project by name.
+ * If the project exists, it returns project configuration or undefined otherwise.
  *
- * This function adds a new project configuration to the workspace. If a project with the same name
- * already exists, it returns `false`. If an error occurs for any other reason, the error is re-thrown.
- *
- * @param {Tree} tree - The file system tree representing the current project.
- * @param {string} name - The name of the project to add.
- * @param {string} projectRoot - The root directory of the project.
- * @returns - Whether project configuration was added successfully, or it already exists.
- * @throws {Error} If an error occurs that is not related to the project already existing.
+ * @param tree - The file system tree representing the current project.
+ * @param projectName - The name of the project to add.
+ * @returns - The project configuration.
  */
-export function attemptToAddProjectConfiguration(tree: Tree, projectRoot: string) {
+export function getExistingProject(tree: Tree, projectName: string) {
     try {
-        addProjectConfiguration(tree, 'clients', {
-            root: projectRoot,
-            projectType: 'library',
-            sourceRoot: `${projectRoot}/src`,
-            targets: {},
-            tags: ['clients'],
-        });
-        return true;
-    } catch (err) {
-        if (err instanceof Error && err.message.includes('already exists')) {
-            return false;
-        }
-
-        throw err;
+        return readProjectConfiguration(tree, projectName);
+    } catch (error) {
+        logger.debug(`Project ${projectName} doesn't exist`, String(error));
+        return undefined;
     }
 }
 
@@ -36,7 +22,7 @@ export function attemptToAddProjectConfiguration(tree: Tree, projectRoot: string
  * They're simple so we recreate them here instead of adding '@nx/js' as a dependency
  * Source: {@link https://github.com/nrwl/nx/blob/master/packages/js/src/utils/typescript/ts-config.ts}
  */
-function getRootTsConfigPathInTree(tree: Tree): string {
+export function getRootTsConfigPathInTree(tree: Tree): string {
     for (const path of ['tsconfig.base.json', 'tsconfig.json']) {
         if (tree.exists(path)) {
             return path;
@@ -47,18 +33,22 @@ function getRootTsConfigPathInTree(tree: Tree): string {
 }
 
 /**
- * Adds a new path mapping to the `paths` property in the root TypeScript configuration file.
+ * Adds a new path mapping to the `compilerOptions.paths` property in the root TypeScript configuration file.
+ * If the import path already exists, an error is thrown.
  *
- * This function updates the `tsconfig.base.json` or `tsconfig.json` file to include a new path mapping
- * for the specified import path. If the import path already exists, an error is thrown.
- *
- * @param {Tree} tree - The file system tree representing the current project.
- * @param {string} importPath - The import path to add to the `paths` property.
- * @param {string[]} lookupPaths - The array of paths to associate with the import path.
- * @throws {Error} If the import path already exists in the `paths` property.
+ * @param tree - The file system tree representing the current project.
+ * @param tsConfigFile - The root TypeScript configuration file path.
+ * @param importPath - The import path to add to the `paths` property.
+ * @param lookupPaths - The array of paths to associate with the import path.
+ * @throws - If the import path already exists in the `paths` property.
  */
-export function addTsConfigPath(tree: Tree, importPath: string, lookupPaths: string[]) {
-    updateJson(tree, getRootTsConfigPathInTree(tree), json => {
+export function addTsConfigPath(
+    tree: Tree,
+    tsConfigFile: string,
+    importPath: string,
+    lookupPaths: string[]
+) {
+    updateJson(tree, tsConfigFile, json => {
         json.compilerOptions ??= {};
         const c = json.compilerOptions;
         c.paths ??= {};
@@ -70,6 +60,33 @@ export function addTsConfigPath(tree: Tree, importPath: string, lookupPaths: str
         }
 
         c.paths[importPath] = lookupPaths;
+
+        return json;
+    });
+}
+
+/**
+ * Adds a new referencing path to the `references` property in the root TypeScript configuration file.
+ * If the referencing path already exists, an error is thrown.
+ *
+ * @param tree - The file system tree representing the current project.
+ * @param tsConfigFile - The root TypeScript configuration file path.
+ * @param referencePath - The referencing path.
+ * @throws - If the import path already exists in the `paths` property.
+ */
+export function addTsConfigReference(tree: Tree, tsConfigFile: string, referencePath: string) {
+    updateJson(tree, tsConfigFile, json => {
+        json.references ??= [];
+
+        if (json.references.some((r: { path: string }) => r.path === referencePath)) {
+            throw new Error(
+                `You already have a library using the import path "${referencePath}". Make sure to specify a unique one.`
+            );
+        }
+
+        json.references.push({
+            path: referencePath,
+        });
 
         return json;
     });
