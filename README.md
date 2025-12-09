@@ -110,10 +110,6 @@ npx nx release publish
 npx nx stop-local-registry microservice-development-utilities
 ```
 
-### Note
-
-- At the moment, we do not include `verdaccio` in our dev dependencies yet because of [CVE-2025-56200]https://github.com/advisories/GHSA-9965-vmph-33xx vulnerable in one of Verdaccio v6.2.1 dependencies. It will be added back once they resolve the issue. For now, we will need to add it in when we use it and remove it before making a PR.
-
 ## Project Structure
 
 ```
