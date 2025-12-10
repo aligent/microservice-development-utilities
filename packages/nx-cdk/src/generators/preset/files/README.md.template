@@ -17,17 +17,17 @@ Services deployment are managed by the main [CDK Application](./application/READ
 
 ```
 <%= folderName %>/
-├── application/             # CDK Application & orchestration
-│   ├── bin/main.ts          # CDK App entry point (development/staging/production stages)
-│   ├── lib/                 # Service stack composition
-│   └── cdk.json             # CDK configuration
+├── application/              # CDK Application & orchestration
+│   ├── bin/main.ts           # CDK App entry point (development/staging/production stages)
+│   ├── lib/                  # Service stack composition
+│   └── cdk.json              # CDK configuration
 │
-├── services/                # Microservices workspace
+├── services/                 # Microservices workspace
 │
-├── nx.json                  # Nx monorepo configuration
-├── rsbuild.config.base.mjs  # Base Lambda bundling config
-├── vitest.config.base.mjs   # Base test configuration
-└── eslint.config.mjs        # ESLint configuration
+├── nx.json                   # Nx monorepo configuration
+├── rolldown.config.base.mjs  # Base Lambda bundling config
+├── vitest.config.base.mjs    # Base test configuration
+└── eslint.config.mjs         # ESLint configuration
 ```
 
 ## Getting Started

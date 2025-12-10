@@ -7,19 +7,6 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
         { plugin: '@nx/eslint/plugin', options: {} },
         { plugin: '@nx/vite/plugin', options: {} },
         { plugin: '@nx/js/typescript', options: { build: false } },
-        {
-            plugin: '@nx/rsbuild',
-            options: {
-                buildTargetName: 'build:lambda',
-                devTargetName: 'dev:lambda',
-                inspectTargetName: 'inspect:lambda',
-            },
-            // This plugin configuration is only for bundling lambda code in services
-            // The `**` glob is required to include all services
-            include: ['services/**'],
-            // Services with no lambda handlers should be excluded from here
-            exclude: [],
-        },
     ],
     namedInputs: {
         default: ['{projectRoot}/**/*', 'sharedGlobals'],

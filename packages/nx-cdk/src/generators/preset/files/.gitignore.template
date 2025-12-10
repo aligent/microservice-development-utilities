@@ -19,7 +19,7 @@
 !nx.json
 !package.json
 !prettier.config.mjs
-!rsbuild.config.base.mjs
+!rolldown.config.base.mjs
 !tsconfig.json
 !vitest.global.setup.mjs
 !vitest.config.base.mjs

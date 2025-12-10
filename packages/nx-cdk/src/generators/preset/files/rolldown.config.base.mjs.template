@@ -1,0 +1,46 @@
+import fg from 'fast-glob';
+import { builtinModules } from 'node:module';
+import { extname, resolve } from 'node:path';
+import { defineConfig } from 'rolldown';
+
+/**
+ * Prepare Rolldown config that bundles all typescript files in a single directory in to separate files
+ * This is used to bundle lambda handlers with their own dependencies for separate upload to AWS Lambda
+ *
+ * @param {string} subPath Relative path to the handlers directory
+ * @returns Rolldown config for multiple lambda handlers
+ */
+export function defineLambdaConfig(subPath) {
+    if (subPath.includes('..')) throw new Error('Invalid path provided');
+    const handlersPath = resolve(process.cwd(), subPath);
+    const handlers = fg.sync(`${handlersPath}/**/*.ts`);
+
+    return handlers.map(handler => {
+        const bundledPath = handler.replace(`${handlersPath}/`, '');
+        const entryName = bundledPath.replace(extname(bundledPath), '');
+
+        return defineConfig({
+            input: { [entryName]: handler },
+            platform: 'node',
+            tsconfig: 'tsconfig.lib.json',
+            logLevel: 'info',
+            watch: false,
+            external: [...builtinModules],
+            output: {
+                entryFileNames: '[name]/index.mjs',
+                format: 'esm',
+                // TODO: Support sourcemap enable/disable base on environment
+                sourcemap: true,
+                // FIXME: Rolldown is still in Beta and built-in minification is not production ready yet
+                minify: false,
+                legalComments: 'none',
+                inlineDynamicImports: true,
+                // TODO: Support shims only when needed instead consider looking at tsup, tsdown and rollup shims plugins
+                banner: `import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);`,
+            },
+        });
+    });
+}

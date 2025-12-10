@@ -1,0 +1,3 @@
+import { defineLambdaConfig } from '../../rolldown.config.base.mjs';
+
+export default defineLambdaConfig('src/runtime/handlers');

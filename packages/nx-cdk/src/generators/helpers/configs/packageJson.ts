@@ -26,9 +26,7 @@ export const PACKAGE_JSON = {
         '@nx/eslint': '22.1.3',
         '@nx/eslint-plugin': '22.1.3',
         '@nx/js': '22.1.3',
-        '@nx/rsbuild': '22.1.3',
         '@nx/vite': '22.1.3',
-        '@rsbuild/core': '^1.5.6',
         '@swc-node/register': '^1.10.10',
         '@swc/core': '^1.13.3',
         '@swc/helpers': '^0.5.17',
@@ -50,6 +48,8 @@ export const PACKAGE_JSON = {
         'jsonc-eslint-parser': '^2.4.0',
         nx: '22.1.3',
         prettier: '^3.6.2',
+        // FIXME: Rolldown is still in beta. We pin the version and can upgrade with precaution.
+        rolldown: '1.0.0-beta.53',
         'store-parameters': '^1.1.3',
         tslib: '^2.8.1',
         tsx: '^4.21.0',
