@@ -1,5 +1,5 @@
 export const PACKAGE_JSON = {
-    author: 'Aligent Consulting',
+    author: 'Aligent',
     private: true,
     license: 'MIT',
     type: 'module',
