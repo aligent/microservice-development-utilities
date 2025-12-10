@@ -3,7 +3,7 @@ import { App, Aspects, Tags } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
-// TODO Pull this out to constructs repo so we can import and use later
+// TODO [MI-277] Pull this out to constructs repo so we can import and use later
 import { LogGroupDefaultsInjector } from '../_internal/log-group-defaults-injector.js';
 import { MicroserviceChecks } from '../_internal/microservice-checks.js';
 import { NodeJsFunctionDefaultsInjector } from '../_internal/nodejs-function-defaults-injector.js';

@@ -48,7 +48,7 @@ export const PACKAGE_JSON = {
         'jsonc-eslint-parser': '^2.4.0',
         nx: '22.1.3',
         prettier: '^3.6.2',
-        // FIXME: Rolldown is still in beta. We pin the version and can upgrade with precaution.
+        // FIXME: [MI-251] Rolldown is still in beta. We pin the version and can upgrade with precaution.
         rolldown: '1.0.0-beta.53',
         'store-parameters': '^1.1.3',
         tslib: '^2.8.1',
