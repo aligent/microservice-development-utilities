@@ -1,0 +1,6 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-extend",
+    "compileOnSave": false,
+    "files": [],
+    "references": [{"path": "./application"}]
+}

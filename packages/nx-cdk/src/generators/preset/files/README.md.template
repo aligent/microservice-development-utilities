@@ -1,0 +1,77 @@
+# <%= projectName %> Integrations
+
+A monorepo containing integration services that support the <%= projectName %> project. This repository manages the deployment of microservices and their shared infrastructure using AWS CDK.
+
+## Overview
+
+<!-- Add an overview of the whole system -->
+
+## Services
+
+Services deployment are managed by the main [CDK Application](./application/README.md)
+
+<!-- List services here with link to the service read me file -->
+<!-- Eg: [User Management](../services/user-management/README.md) -->
+
+## Project Structure
+
+```
+<%= folderName %>/
+├── application/              # CDK Application & orchestration
+│   ├── bin/main.ts           # CDK App entry point (development/staging/production stages)
+│   ├── lib/                  # Service stack composition
+│   └── cdk.json              # CDK configuration
+│
+├── services/                 # Microservices workspace
+│
+├── nx.json                   # Nx monorepo configuration
+├── rolldown.config.base.mjs  # Base Lambda bundling config
+├── vitest.config.base.mjs    # Base test configuration
+└── eslint.config.mjs         # ESLint configuration
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js <%= nodeVersion %> (see [.nvmrc](.nvmrc))
+- Yarn 4.12.0+
+- AWS CLI configured with appropriate credentials
+
+### Installation
+
+```bash
+# Use correct Node version
+nvm use
+
+# Install dependencies
+yarn install
+```
+
+## Contributing
+
+We follow [trunk-based development framework](https://trunkbaseddevelopment.com/) as a start and will evolve depending on our need.
+
+1. Create new branch from `main`
+2. Make your changes following code standards
+3. Ensure your changes pass linting, type checks and testes
+4. Submit a pull request back to `main`
+5. For deployment, submit a pull request from `main` to `staging` or `production`
+
+## Adding New Services
+
+To add a new service to the monorepo:
+
+1. Use the Aligent CDK generator `@aligent/nx-cdk`
+2. Add service infrastructure in
+    - `services/{service-name}/src/index.ts`
+    - `services/{service-name}/src/infra/`
+3. Add Lambda handlers in `services/{service-name}/src/runtime/handlers/`
+
+## License
+
+MIT
+
+## Support
+
+For questions or issues, please contact the Aligent Microservices guild.

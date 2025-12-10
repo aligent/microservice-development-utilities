@@ -1,0 +1,15 @@
+{
+    "generators": {
+        "preset": {
+            "factory": "./src/generators/preset/preset",
+            "schema": "./src/generators/preset/schema.json",
+            "description": "preset generator",
+            "x-use-standalone-layout": true
+        },
+        "service": {
+            "factory": "./src/generators/service/generator",
+            "schema": "./src/generators/service/schema.json",
+            "description": "Generate a new service"
+        }
+    }
+}

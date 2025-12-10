@@ -1,0 +1,29 @@
+# <%= serviceName %>
+
+This is a CDK service generated using `@aligent/nx-cdk` for Nx.
+
+## Architecture
+
+<!-- Add your architecture documentation here -->
+
+# Technical Decisions
+
+<!-- Add your notes and technical decisions here -->
+
+## Development
+
+### Type Checking
+
+```bash
+npx nx check-types <%= name %>
+```
+
+### Testing
+
+```bash
+npx nx test <%= name %>
+```
+
+## Deployment
+
+This service is deployed as part of the CDK application. See the main README for deployment instructions.

@@ -1,0 +1,61 @@
+# Application
+
+This application manages the deployment of microservices and their shared infrastructure.
+
+## Configuration
+
+### Environment Parameters
+
+Parameters are managed through the `parameters/.env.csv` file by default
+
+```bash
+# Pull down parameters from the playground environment to .env.csv
+yarn nx run application:parameters
+
+# Update parameters from .env.csv
+yarn nx run application:parameters:import
+
+# Custom filename and parameter path can be passed in as arguments
+yarn nx run application:parameters --file .env.dev.csv --path /my/dev/path
+```
+
+## Deployment
+
+### Using yarn script from workspace root (Recommended)
+
+```bash
+# Synthesize templates
+yarn pg:synth
+
+# Deploy to playground
+yarn pg:deploy
+```
+
+### Direct Nx Commands
+
+```bash
+yarn nx run application:cdk <command> <args>
+```
+
+## Testing
+
+### Mock Services
+
+The application may include mock services for testing integrations without external dependencies.
+
+<!-- list mock services here -->
+
+Change the value of the `/application/dev/url` SSM Parameter to switch between real and mock endpoints
+
+### Local Development
+
+```bash
+# Type checking
+yarn typecheck
+
+# Testing
+yarn test
+
+# Linting
+yarn lint
+```
