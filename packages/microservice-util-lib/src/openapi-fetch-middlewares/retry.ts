@@ -97,6 +97,18 @@ function shouldRetryOnStatus(status: number, retryOn: number[]): boolean {
 }
 
 /**
+ * Checks the response status and throw error if it's not "ok".
+ *
+ * @param {Response} response - The HTTP response object.
+ * @throws {Error} When the response is not an "ok" response.
+ */
+function throwErrorIfNotOkResponse(response: Response) {
+    if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+    }
+}
+
+/**
  * This middleware implements retry logic with support for:
  * - Configurable number of retry attempts
  * - Exponential backoff, linear backoff, or custom delay strategies
@@ -161,7 +173,8 @@ function retryMiddleware(config?: RetryConfig): Middleware {
 
             // If retryOn is specified, only use that list
             if (config?.retryOn && config.retryOn.length > 0) {
-                if (!shouldRetryOnStatus(response.status, config.retryOn)) {
+                if (!shouldRetryOnStatus(context.response.status, config.retryOn)) {
+                    throwErrorIfNotOkResponse(context.response);
                     return context.response;
                 }
 
@@ -174,6 +187,7 @@ function retryMiddleware(config?: RetryConfig): Middleware {
                 normalisedConfig.idempotentOnly
             );
             if (!shouldRetry) {
+                throwErrorIfNotOkResponse(context.response);
                 return context.response;
             }
 
@@ -230,11 +244,13 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
         }
 
         if (config.retryOn && !shouldRetryOnStatus(response?.status, config.retryOn)) {
+            throwErrorIfNotOkResponse(response);
             return response;
         }
 
         const shouldRetry = await config.retryCondition(context, config.idempotentOnly);
         if (!shouldRetry) {
+            throwErrorIfNotOkResponse(response);
             return response;
         }
     } while (attempt <= maxRetries);
@@ -243,10 +259,7 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
         throw context.error;
     }
 
-    if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`);
-    }
-
+    throwErrorIfNotOkResponse(response);
     return response;
 }
 

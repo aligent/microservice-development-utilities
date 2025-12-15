@@ -148,10 +148,11 @@ describe('retry middleware', () => {
             expect(response.response.status).toBe(200);
         });
 
-        it('should not retry on 4xx errors (except 408, 429)', async () => {
+        it('should not retry & throw error on 4xx errors (except 408, 429)', async () => {
             mockFetch.mockResolvedValue(
                 new Response(JSON.stringify({ error: 'Bad Request' }), {
                     status: 400,
+                    statusText: 'Bad Request',
                     headers: { 'Content-Type': 'application/json' },
                 })
             );
@@ -162,16 +163,16 @@ describe('retry middleware', () => {
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10 }));
 
-            await client.GET('/test');
-
+            await expect(client.GET('/test')).rejects.toThrow('400: Bad Request');
             expect(mockFetch).toHaveBeenCalledTimes(1);
         });
 
-        it('should not retry POST requests when idempotentOnly is not false', async () => {
+        it('should not retry & throw error on POST requests when idempotentOnly is not false', async () => {
             mockFetch
                 .mockResolvedValueOnce(
                     new Response(JSON.stringify({ error: 'Internal Server Error' }), {
                         status: 500,
+                        statusText: 'Internal Server Error',
                         headers: { 'Content-Type': 'application/json' },
                     })
                 )
@@ -194,10 +195,8 @@ describe('retry middleware', () => {
                 })
             );
 
-            const response = await client.POST('/test');
-
+            await expect(client.POST('/test')).rejects.toThrow('500: Internal Server Error');
             expect(mockFetch).toHaveBeenCalledTimes(1);
-            expect(response.response.status).toBe(500);
         });
 
         it('should use custom retry condition', async () => {
@@ -428,10 +427,11 @@ describe('retry middleware', () => {
             expect(response.response.status).toBe(200);
         });
 
-        it('should not retry on status codes not in retryOn list', async () => {
+        it('should not retry & throw error on status codes not in retryOn list', async () => {
             mockFetch.mockResolvedValue(
                 new Response(JSON.stringify({ error: 'Internal Server Error' }), {
                     status: 500,
+                    statusText: 'Internal Server Error',
                     headers: { 'Content-Type': 'application/json' },
                 })
             );
@@ -449,9 +449,9 @@ describe('retry middleware', () => {
             });
             client.use(retryMiddleware(config));
 
-            await client.GET('/test');
-
             // Should not retry because 500 is not in retryOn list
+            await expect(client.GET('/test')).rejects.toThrow('500: Internal Server Error');
+
             expect(mockFetch).toHaveBeenCalledTimes(1);
         });
 
