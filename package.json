@@ -30,7 +30,7 @@
     "@nx/devkit": "20.8.1",
     "@nx/eslint": "20.8.1",
     "@nx/eslint-plugin": "20.8.1",
-    "@nx/js": "20.8.1",
+    "@nx/js": "22.2.6",
     "@nx/plugin": "20.8.1",
     "@nx/vite": "20.8.1",
     "@nx/web": "20.8.1",
