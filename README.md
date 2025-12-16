@@ -5,6 +5,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 # Packages
 
 - [Microservice Util Lib](/packages/microservice-util-lib/README.md)
+- [Nx CDK](/packages/nx-cdk/README.md)
 - [Nx Openapi](/packages/nx-openapi/README.md)
 - [Nx Serverless](/packages/nx-serverless/README.md) (obsoleted)
 
@@ -100,16 +101,14 @@ To test packages locally before publishing, you can use the local `verdaccio` re
 
 ```bash
 # Start local registry
-npx nx start-local-registry
+npx nx start-local-registry microservice-development-utilities
 
 # In another terminal, publish packages locally
-npx nx run-many -t publish
+npx nx release publish
 
 # Stop local registry when done
-npx nx stop-local-registry
+npx nx stop-local-registry microservice-development-utilities
 ```
-### Note
-- At the moment, we do not include `verdaccio` in our dev dependencies yet because of [CVE-2025-56200]https://github.com/advisories/GHSA-9965-vmph-33xx vulnerable in one of Verdaccio v6.2.1 dependencies. It will be added back once they resolve the issue. For now, we will need to add it in when we use it and remove it before making a PR. 
 
 ## Project Structure
 
@@ -117,6 +116,7 @@ npx nx stop-local-registry
 microservice-development-utilities/
 ├── packages/
 │   ├── microservice-util-lib/  # Utility library for microservices
+│   ├── nx-cdk/                 # Nx plugin for CDK project generation
 │   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
 │   └── nx-serverless/          # Nx plugin for Serverless project generation (obsoleted)
 └── package.json                # Root package configuration

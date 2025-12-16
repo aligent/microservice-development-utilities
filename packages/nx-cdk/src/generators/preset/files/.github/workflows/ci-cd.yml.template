@@ -1,0 +1,27 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - '**'
+  push:
+    branches:
+      - staging
+      - production
+
+jobs:
+  code-quality:
+    name: 🕵️‍♀️ Code Quality Check
+    uses: aligent/workflows/.github/workflows/node-pr.yml@main
+    with:
+      skip-format: false
+
+  deploy:
+    name: Deploy to AWS
+    uses: aligent/workflows/.github/workflows/aws-cdk-deploy.yml@main
+    with:
+      cdk-stack-name: ${{ vars.STACK_NAME }}
+      aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+      deploy: true
+    secrets:
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -1,0 +1,72 @@
+#!/usr/bin/env node
+import { App, Aspects, Tags } from 'aws-cdk-lib';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { ApplicationStage } from '../lib/service-stacks.js';
+
+// TODO [MI-277] Pull this out to constructs repo so we can import and use later
+import { LogGroupDefaultsInjector } from '../_internal/log-group-defaults-injector.js';
+import { MicroserviceChecks } from '../_internal/microservice-checks.js';
+import { NodeJsFunctionDefaultsInjector } from '../_internal/nodejs-function-defaults-injector.js';
+import { StepFunctionDefaultsInjector } from '../_internal/step-function-defaults-injector.ts';
+import { VersionFunctionsAspect } from '../_internal/version-functions-aspect.js';
+
+const APPLICATION_CONTEXT = { APPLICATION_OWNER: 'aligent' } as const;
+
+const app = new App({
+    context: APPLICATION_CONTEXT,
+    propertyInjectors: [
+        new NodeJsFunctionDefaultsInjector({ runtime: <%= nodeRuntime %> }),
+        new StepFunctionDefaultsInjector(),
+    ],
+});
+Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
+
+/**
+ * Static Stage Creation Approach
+ *
+ * We use static stage creation (explicitly defining development, staging, production) for several reasons:
+ *
+ * 1. **Predictability**: All stages are known at synthesis time, making the CDK app
+ *    behavior deterministic and easier to reason about.
+ *
+ * 2. **Type Safety**: Static definitions provide better IDE support, autocompletion,
+ *    and compile-time type checking for stage-specific configurations.
+ *
+ * 3. **Explicit Configuration**: Each stage's unique settings (e.g., log retention
+ *    durations, aspects, property injectors) are clearly visible in the code without
+ *    needing to trace through dynamic logic.
+ *
+ * 4. **Simpler Deployment**: CDK can synthesize all stages in a single pass without
+ *    requiring runtime context lookups or conditional logic.
+ *
+ * 5. **CI/CD Integration**: Static stages integrate seamlessly with standard CI/CD
+ *    pipelines where environment configuration is managed externally.
+ *
+ * @see {@link https://dev.to/aws-heroes/how-to-use-aws-cdk-stage-and-when-to-choose-static-vs-dynamic-stack-creation-35h|Static vs Dynamic Stack Creation}
+ *
+ * @remarks Property Injector Behavior
+ * Property injectors are applied based on their class type and will only execute once per
+ * construct tree. When the same injector type is defined at both app and stage levels, the
+ * stage-level injector takes precedence and overrides the app-level configuration.
+ */
+const development = new ApplicationStage(app, 'development', {
+    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'SHORT' })],
+});
+Aspects.of(development).add(new MicroserviceChecks());
+
+const staging = new ApplicationStage(app, 'staging', {
+    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'MEDIUM' })],
+});
+Aspects.of(staging).add(new MicroserviceChecks());
+
+const production = new ApplicationStage(app, 'production', {
+    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'LONG' })],
+});
+Aspects.of(production).add(new MicroserviceChecks());
+
+/**
+ * This aspect ensures all Lambda functions and Step Functions in production
+ * are automatically versioned and have a stable 'live' alias pointing to the
+ * current version, enabling zero-downtime deployments.
+ */
+Aspects.of(production).add(new VersionFunctionsAspect());
