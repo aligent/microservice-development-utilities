@@ -66,21 +66,13 @@ function combineUrlAndPathParams(url: string, pathParams?: Record<string, unknow
  *
  * @param {string} baseURL - The base URL.
  * @param {string} url - The URL to process.
- * @returns {{ baseUri: string, searchParams: URLSearchParams | null }} The processed URL and its search parameters.
+ * @returns The processed URL.
  */
-function handleOAuthUrl(baseURL: string, url: string) {
+function getOAuthUrl(baseURL: string, url: string) {
     const oauthUrl = new URL(!baseURL || isAbsoluteURL(url) ? url : combineURLs(baseURL, url));
 
-    let searchParams: URLSearchParams | null = null;
-
-    // Query parameters are hashed as part of params rather than as part of the URL
-    if (oauthUrl.search) {
-        searchParams = new URLSearchParams(oauthUrl.search);
-        oauthUrl.search = '';
-    }
-
-    // Do not include hash in signature
-    oauthUrl.hash = '';
+    oauthUrl.search = ''; // Query parameters are hashed as part of params rather than as part of the URL
+    oauthUrl.hash = ''; // Do not include hash in signature
 
     // Remove port if it is the default for that protocol
     if (
@@ -90,10 +82,7 @@ function handleOAuthUrl(baseURL: string, url: string) {
         oauthUrl.port = '';
     }
 
-    return {
-        baseUri: oauthUrl.toString(),
-        searchParams,
-    };
+    return oauthUrl.toString();
 }
 
 /**
@@ -217,12 +206,6 @@ export async function generateOauthParams(
         addParamsToSign(paramsToSign, params.query);
     }
 
-    const { baseUri, searchParams } = handleOAuthUrl(options.baseUrl, url);
-
-    if (searchParams) {
-        addParamsToSign(paramsToSign, searchParams);
-    }
-
     const body = await request.text();
 
     // If user submit a form, then include form parameters in the
@@ -241,10 +224,11 @@ export async function generateOauthParams(
         }
     }
 
+    const oauthUrl = getOAuthUrl(options.baseUrl, url);
     oauthParams.oauth_signature = sign(
         algorithm,
         method,
-        baseUri,
+        oauthUrl,
         paramsToSign,
         consumerSecret,
         tokenSecret
