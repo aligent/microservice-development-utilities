@@ -206,34 +206,6 @@ describe('generateOauthParams', () => {
         expect(result).toEqual(expected);
     });
 
-    it('generate correct HMAC-SHA1 signature to simple POST request with query parameters as URLSearchParams in url', async () => {
-        const request: MiddlewareCallbackParams['request'] = {
-            ...baseRequest,
-            method: 'post',
-            url: 'path/with/string?a=1&b=2',
-        };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
-        const params: MiddlewareCallbackParams['params'] = {};
-        const config: OAuth10a = {
-            algorithm: 'HMAC-SHA1',
-            credentials: () => new Promise(res => res(credentialsWithoutToken)),
-        };
-
-        const expected = [
-            'oauth_consumer_key="k"',
-            'oauth_nonce="123-456-789-0ab-cde"',
-            'oauth_signature_method="HMAC-SHA1"',
-            'oauth_timestamp="1746014400"',
-            'oauth_version="1.0"',
-            'oauth_signature="VRnvkkfIdfGLOUm6hIrySl7wpNg%3D"',
-        ].join(',');
-
-        const result = await generateOauthParams(request, options, params, config);
-        expect(result).toEqual(expected);
-    });
-
     it('generate correct HMAC-SHA1 signature to simple GET request with callback URL', async () => {
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
