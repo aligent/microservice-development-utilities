@@ -58,6 +58,9 @@ export class HttpResponseError extends Error {
 export function isHttpResponseError(error: unknown): error is HttpResponseError {
     return (
         error instanceof HttpResponseError ||
-        (typeof error === 'object' && error !== null && (error as any).isHttpResponseError === true)
+        (typeof error === 'object' &&
+            error !== null &&
+            'isHttpResponseError' in error &&
+            error.isHttpResponseError === true)
     );
 }
