@@ -1,0 +1,6 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-extend",
+    "files": [],
+    "include": [],
+    "references": []
+}

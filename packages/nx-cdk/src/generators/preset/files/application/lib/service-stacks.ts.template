@@ -1,3 +1,4 @@
+import { SharedInfraStack } from '@libs/infra';
 import { Stage, Tags, type StageProps } from 'aws-cdk-lib';
 import type { Construct } from 'constructs';
 
@@ -15,6 +16,8 @@ export class ApplicationStage extends Stage {
     constructor(scope: Construct, id: string, props?: StageProps) {
         super(scope, id, props);
         Tags.of(this).add('STAGE', id);
+
+        const sharedInfra = new SharedInfraStack(this, 'shared-infra', props);
 
         // Service stacks initialization
     }

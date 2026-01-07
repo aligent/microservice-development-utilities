@@ -10,7 +10,7 @@ import { NodeJsFunctionDefaultsInjector } from '../_internal/nodejs-function-def
 import { StepFunctionDefaultsInjector } from '../_internal/step-function-defaults-injector.ts';
 import { VersionFunctionsAspect } from '../_internal/version-functions-aspect.js';
 
-const APPLICATION_CONTEXT = { APPLICATION_OWNER: 'aligent' } as const;
+const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'aligent' } as const;
 
 const app = new App({
     context: APPLICATION_CONTEXT,
@@ -19,7 +19,7 @@ const app = new App({
         new StepFunctionDefaultsInjector(),
     ],
 });
-Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
+Tags.of(app).add('OWNER', APPLICATION_CONTEXT.OWNER);
 
 /**
  * Static Stage Creation Approach
