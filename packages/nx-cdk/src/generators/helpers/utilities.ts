@@ -109,9 +109,9 @@ export async function addServiceStackToMainApplication(
     const stackSource = project.addSourceFileAtPath(stacksPath);
 
     const applicationStage = stackSource.getClassOrThrow('ApplicationStage');
-    const stageConstructors = applicationStage?.getConstructors();
+    const stageConstructor = applicationStage.getConstructors()[0];
 
-    if (!stageConstructors?.length) {
+    if (!stageConstructor) {
         throw new Error('Unable to find main application stage constructor');
     }
 
@@ -120,11 +120,14 @@ export async function addServiceStackToMainApplication(
         namedImports: [service.constant, service.stack],
     });
 
-    stageConstructors[0]?.addStatements(
-        `new ${service.stack}(this, ${service.constant}.NAME, { ...props, description: ${service.constant}.DESCRIPTION });`
+    const sharedInfra = stageConstructor.getVariableStatement('sharedInfra');
+    const sharedPropsStatement = sharedInfra ? `...sharedInfra.getProps(),` : '';
+
+    stageConstructor.addStatements(
+        `new ${service.stack}(this, ${service.constant}.NAME, { ...props, ${sharedPropsStatement} description: ${service.constant}.DESCRIPTION });`
     );
 
-    await stackSource?.save();
+    await stackSource.save();
 }
 
 /**

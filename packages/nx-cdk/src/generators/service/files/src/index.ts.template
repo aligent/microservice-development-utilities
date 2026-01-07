@@ -1,3 +1,4 @@
+import { SharedInfraProps } from '@libs/infra';
 import { Stack, StackProps, Stage, Tags } from 'aws-cdk-lib';
 import { Code } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
@@ -14,7 +15,7 @@ export const <%= constant %> = {
 } as const;
 
 type Id = typeof <%= constant %>.NAME | (string & {});
-interface Props extends StackProps {
+interface Props extends StackProps, SharedInfraProps {
     description: string;
 }
 
