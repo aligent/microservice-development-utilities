@@ -63,6 +63,9 @@ We follow [trunk-based development framework](https://trunkbaseddevelopment.com/
 To add a new service to the monorepo:
 
 1. Use the Aligent CDK generator `@aligent/nx-cdk`
+    ```bash
+    yarn nx g @aligent/nx-cdk:service <service-name>
+    ```
 2. Add service infrastructure in
     - `services/{service-name}/src/index.ts`
     - `services/{service-name}/src/infra/`
