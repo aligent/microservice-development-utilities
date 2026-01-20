@@ -55,8 +55,8 @@ We follow [trunk-based development framework](https://trunkbaseddevelopment.com/
 1. Create new branch from `main`
 2. Make your changes following code standards
 3. Ensure your changes pass linting, type checks and testes
-4. Submit a pull request back to `main`
-5. For deployment, submit a pull request from `main` to `staging` or `production`
+4. Submit a pull request back to `main`. A merge to `main` will deploy to `staging` environment.
+5. For `production` deployment, create a realease from `main`.
 
 ## Adding New Services
 

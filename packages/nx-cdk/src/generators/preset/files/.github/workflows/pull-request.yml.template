@@ -1,0 +1,11 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  code-quality:
+    name: 🕵️‍♀️ Code Quality Check
+    uses: aligent/workflows/.github/workflows/node-pr.yml@main

@@ -15,12 +15,6 @@
           "command": "cdk",
           "cwd": "{projectRoot}"
         }
-      },
-      "parameters": {
-        "executor": "nx:run-commands",
-        "options": {
-          "path": "/application/dev"
-        }
       }
     }
   }

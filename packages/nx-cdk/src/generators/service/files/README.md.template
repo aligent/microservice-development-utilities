@@ -15,13 +15,13 @@ This is a CDK service generated using `@aligent/nx-cdk` for Nx.
 ### Type Checking
 
 ```bash
-npx nx check-types <%= name %>
+yarn nx check-types <%= name %>
 ```
 
 ### Testing
 
 ```bash
-npx nx test <%= name %>
+yarn nx test <%= name %>
 ```
 
 ## Deployment

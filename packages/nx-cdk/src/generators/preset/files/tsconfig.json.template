@@ -2,5 +2,5 @@
     "extends": "@aligent/ts-code-standards/tsconfigs-extend",
     "compileOnSave": false,
     "files": [],
-    "references": [{"path": "./application"}]
+    "references": [{"path": "./application"}, {"path": "./libs/infra"}]
 }
