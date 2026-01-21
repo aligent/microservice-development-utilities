@@ -27,7 +27,7 @@ export const PACKAGE_JSON = {
         '@nx/eslint-plugin': '22.1.3',
         '@nx/js': '22.1.3',
         '@nx/vite': '22.1.3',
-        "@nx/workspace": "22.1.3",
+        '@nx/workspace': '22.1.3',
         '@swc-node/register': '^1.10.10',
         '@swc/core': '^1.13.3',
         '@swc/helpers': '^0.5.17',
@@ -57,6 +57,22 @@ export const PACKAGE_JSON = {
         typescript: '~5.9.2',
         vite: '^7.2.6',
         vitest: '^3.2.4',
+    },
+    nx: {
+        includedScripts: [],
+        targets: {
+            parameters: {
+                executor: 'nx:run-commands',
+                options: { color: true, cwd: 'parameters' },
+                configurations: {
+                    import: { command: 'store-parameters import {args.file} --delimiter=|' },
+                    export: {
+                        command:
+                            'store-parameters export {args.file} --path={args.path} --delimiter=|',
+                    },
+                },
+            },
+        },
     },
     workspaces: ['application', 'clients', 'libs/*', 'services/*'],
     packageManager:

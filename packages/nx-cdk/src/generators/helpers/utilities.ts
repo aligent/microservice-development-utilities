@@ -35,6 +35,7 @@ export function constructPackageJsonFile(input: PackageJsonInput) {
             ...PACKAGE_JSON,
             devDependencies,
             engines: { node: `^${input.nodeVersion}` },
+            nx: { name: `${input.name}-int`, ...PACKAGE_JSON.nx },
         })
     );
 

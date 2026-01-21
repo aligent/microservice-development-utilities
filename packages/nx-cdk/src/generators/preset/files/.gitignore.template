@@ -49,6 +49,9 @@
 !libs
 !libs/*
 !libs/**/*
+!parameters
+!parameters/*
+!parameters/**/*
 !services
 !services/*
 !services/**/*
@@ -58,5 +61,6 @@
 **/dist
 **/coverage
 
-# Environment files
+# Misc files
 *.env
+.DS_Store

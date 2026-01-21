@@ -71,6 +71,18 @@ To add a new service to the monorepo:
     - `services/{service-name}/src/infra/`
 3. Add Lambda handlers in `services/{service-name}/src/runtime/handlers/`
 
+## Environment Parameters Management
+
+Parameters are managed through the `parameters/{env}.csv` file by default
+
+```bash
+# Import values from `parameters/{env}.csv` to Parameter Store in AWS
+yarn nx run <%= name %>-int:parameters:import --file=dev.csv
+
+# Custom filename and parameter path can be passed in as arguments
+yarn nx run <%= name %>-int:parameters:export --file=dev.csv --path=/my/dev/path
+```
+
 ## License
 
 MIT

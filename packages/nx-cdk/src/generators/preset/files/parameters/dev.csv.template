@@ -1,0 +1,2 @@
+Note|Name|Type|Value
+Collect from eCommerce|/<%= name %>-int/e-commerce/base-url|String|https://e-commerce.com/dev/api
