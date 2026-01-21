@@ -27,6 +27,7 @@ export const PACKAGE_JSON = {
         '@nx/eslint-plugin': '22.1.3',
         '@nx/js': '22.1.3',
         '@nx/vite': '22.1.3',
+        "@nx/workspace": "22.1.3",
         '@swc-node/register': '^1.10.10',
         '@swc/core': '^1.13.3',
         '@swc/helpers': '^0.5.17',

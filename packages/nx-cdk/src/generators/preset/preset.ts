@@ -34,10 +34,8 @@ export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema
     writeJson(tree, 'package.json', packageJson);
 
     // Generate application's tsconfigs
-    const { tsConfig, tsConfigLib, tsConfigSpec } = constructProjectTsConfigFiles('application');
+    const { tsConfig } = constructProjectTsConfigFiles('application');
     writeJson(tree, 'application/tsconfig.json', tsConfig);
-    writeJson(tree, 'application/tsconfig.lib.json', tsConfigLib);
-    writeJson(tree, 'application/tsconfig.spec.json', tsConfigSpec);
 
     await formatFiles(tree);
 }

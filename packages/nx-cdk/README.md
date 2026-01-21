@@ -42,7 +42,7 @@ The preset generator scaffolds:
   - `cdk.context.json` - CDK context
   - `bin/main.ts` - CDK app entry point
   - `lib/service-stacks.ts` - Service stacks definition
-  - TypeScript configurations (`tsconfig.json`, `tsconfig.lib.json`, `tsconfig.spec.json`)
+  - TypeScript configurations (`tsconfig.json`, `tsconfig.spec.json`)
 
 ### Service Generator
 
