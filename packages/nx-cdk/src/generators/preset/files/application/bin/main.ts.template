@@ -1,21 +1,20 @@
 #!/usr/bin/env node
+import { MicroserviceChecks, VersionFunctionsAspect } from '@aligent/cdk-aspects';
 import { App, Aspects, Tags } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
 // TODO [MI-277] Pull this out to constructs repo so we can import and use later
 import { LogGroupDefaultsInjector } from '../_internal/log-group-defaults-injector.js';
-import { MicroserviceChecks } from '../_internal/microservice-checks.js';
 import { NodeJsFunctionDefaultsInjector } from '../_internal/nodejs-function-defaults-injector.js';
 import { StepFunctionDefaultsInjector } from '../_internal/step-function-defaults-injector.ts';
-import { VersionFunctionsAspect } from '../_internal/version-functions-aspect.js';
 
 const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'aligent' } as const;
 
 const app = new App({
     context: APPLICATION_CONTEXT,
     propertyInjectors: [
-        new NodeJsFunctionDefaultsInjector({ runtime: <%= nodeRuntime %> }),
+        new NodeJsFunctionDefaultsInjector({ runtime: Runtime.NODEJS_<%= nodeRuntime %> }),
         new StepFunctionDefaultsInjector(),
     ],
 });

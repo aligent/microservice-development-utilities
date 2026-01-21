@@ -19,7 +19,7 @@ export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema
         ...options,
         projectName,
         folderName: destination || name,
-        nodeRuntime: `Runtime.NODEJS_${nodeVersionMajor}_X`,
+        nodeRuntime: `${nodeVersionMajor}_X`,
         template: '',
     });
 
