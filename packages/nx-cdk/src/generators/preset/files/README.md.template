@@ -56,7 +56,7 @@ We follow [trunk-based development framework](https://trunkbaseddevelopment.com/
 2. Make your changes following code standards
 3. Ensure your changes pass linting, type checks and testes
 4. Submit a pull request back to `main`. A merge to `main` will deploy to `staging` environment.
-5. For `production` deployment, create a realease from `main`.
+5. For `production` deployment, create a release from `main`.
 
 ## Adding New Services
 
