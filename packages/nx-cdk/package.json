@@ -10,7 +10,7 @@
     "directory": "packages/nx-cdk"
   },
   "dependencies": {
-    "@nx/devkit": "20.8.1",
+    "@nx/devkit": "22.2.6",
     "ts-morph": "^27.0.2"
   },
   "generators": "./generators.json",
