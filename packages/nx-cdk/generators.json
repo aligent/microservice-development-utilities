@@ -3,7 +3,7 @@
         "preset": {
             "factory": "./src/generators/preset/preset",
             "schema": "./src/generators/preset/schema.json",
-            "description": "preset generator",
+            "description": "Generate a new workspace",
             "x-use-standalone-layout": true
         },
         "service": {

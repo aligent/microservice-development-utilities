@@ -55,18 +55,33 @@ We follow [trunk-based development framework](https://trunkbaseddevelopment.com/
 1. Create new branch from `main`
 2. Make your changes following code standards
 3. Ensure your changes pass linting, type checks and testes
-4. Submit a pull request back to `main`
-5. For deployment, submit a pull request from `main` to `staging` or `production`
+4. Submit a pull request back to `main`. A merge to `main` will deploy to `staging` environment.
+5. For `production` deployment, create a release from `main`.
 
 ## Adding New Services
 
 To add a new service to the monorepo:
 
 1. Use the Aligent CDK generator `@aligent/nx-cdk`
+    ```bash
+    yarn nx g @aligent/nx-cdk:service <service-name>
+    ```
 2. Add service infrastructure in
     - `services/{service-name}/src/index.ts`
     - `services/{service-name}/src/infra/`
 3. Add Lambda handlers in `services/{service-name}/src/runtime/handlers/`
+
+## Environment Parameters Management
+
+Parameters are managed through the `parameters/{env}.csv` file by default
+
+```bash
+# Import values from `parameters/{env}.csv` to Parameter Store in AWS
+yarn nx run <%= name %>-int:parameters:import --file=dev.csv
+
+# Custom filename and parameter path can be passed in as arguments
+yarn nx run <%= name %>-int:parameters:export --file=dev.csv --path=/my/dev/path
+```
 
 ## License
 

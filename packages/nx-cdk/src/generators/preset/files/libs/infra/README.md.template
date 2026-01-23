@@ -1,0 +1,61 @@
+# @libs/infra
+
+Shared infrastructure library for CDK stacks providing common resources used across multiple services.
+
+## Architecture
+
+This library exports a `SharedInfraStack` that manages shared infrastructure resources, preventing duplication and ensuring consistency across service stacks.
+
+### Shared Resources
+
+This `SharedInfraStack` provides:
+
+<!-- List your shared resources here. For example:
+- **eCommerce Base URL**: Retrieved from SSM Parameter Store (`/{applicationName}/e-commerce/base-url`)
+- **eCommerce Credentials**: Managed secret for API authentication (`{applicationName}/e-commerce-credentials`) 
+-->
+
+### Usage
+
+- Import and instantiate the `SharedInfraStack` in your application stage, then pass the shared resources to service stacks:
+
+```typescript
+import { SharedInfraStack } from '@libs/infra';
+
+const sharedInfra = new SharedInfraStack(this, 'shared-infra', props);
+
+new MyServiceStack(this, 'service-name', {
+  ...props,
+  ...sharedInfra.getProps(),
+  description: 'service description',
+});
+```
+
+- Import and extend your service stack props:
+
+```typescript
+import { SharedInfraProps } from '@libs/infra';
+
+interface Props extends StackProps, SharedInfraProps {
+  description: string;
+}
+```
+
+## Technical Decisions
+
+### Single Shared Stack Pattern
+
+Resources that are used by multiple services are created once in the shared infrastructure stack and passed to service stacks via constructor props. This approach:
+
+- Prevents resource duplication
+- Ensures consistent configuration across services
+- Simplifies resource management and updates
+- Reduces AWS costs by sharing resources
+
+### Stage Requirement
+
+The `SharedInfraStack` must be instantiated within a CDK Stage to properly resolve the stage name for resource naming and tagging.
+
+### Application Context
+
+Requires the `NAME` context variable to be set for proper resource naming conventions.

@@ -1,30 +1,32 @@
 #!/usr/bin/env node
+import { MicroserviceChecks, VersionFunctionsAspect } from '@aligent/cdk-aspects';
 import { App, Aspects, Tags } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
-// TODO [MI-277] Pull this out to constructs repo so we can import and use later
-import { LogGroupDefaultsInjector } from '../_internal/log-group-defaults-injector.js';
-import { MicroserviceChecks } from '../_internal/microservice-checks.js';
-import { NodeJsFunctionDefaultsInjector } from '../_internal/nodejs-function-defaults-injector.js';
-import { StepFunctionDefaultsInjector } from '../_internal/step-function-defaults-injector.ts';
-import { VersionFunctionsAspect } from '../_internal/version-functions-aspect.js';
+// TODO: [MI-277] Move these aspects to @aligent/cdk-aspects package for reuse across projects
+import { LogGroupDefaultsAspect } from '../_internal/log-group-defaults-aspect.js';
+import { NodeJsFunctionDefaultsAspect } from '../_internal/nodejs-function-defaults-aspect.js';
+import { StepFunctionDefaultsAspect } from '../_internal/step-function-defaults-aspect.js';
 
-const APPLICATION_CONTEXT = { APPLICATION_OWNER: 'aligent' } as const;
+const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'aligent' } as const;
+const STAGE_NAMES = { DEV: 'dev', STG: 'stg', PRD: 'prd' } as const;
 
-const app = new App({
-    context: APPLICATION_CONTEXT,
-    propertyInjectors: [
-        new NodeJsFunctionDefaultsInjector({ runtime: <%= nodeRuntime %> }),
-        new StepFunctionDefaultsInjector(),
-    ],
-});
-Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
+const app = new App({ context: APPLICATION_CONTEXT });
+Tags.of(app).add('OWNER', APPLICATION_CONTEXT.OWNER);
+
+/**
+ * Apply Application-Level Aspects
+ * These aspects are applied to all resources across all stages
+ */
+Aspects.of(app).add(new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_<%= nodeRuntime %> }));
+Aspects.of(app).add(new StepFunctionDefaultsAspect());
+Aspects.of(app).add(new MicroserviceChecks());
 
 /**
  * Static Stage Creation Approach
  *
- * We use static stage creation (explicitly defining development, staging, production) for several reasons:
+ * We use static stage creation (explicitly defining dev, stg, prd) for several reasons:
  *
  * 1. **Predictability**: All stages are known at synthesis time, making the CDK app
  *    behavior deterministic and easier to reason about.
@@ -33,8 +35,8 @@ Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
  *    and compile-time type checking for stage-specific configurations.
  *
  * 3. **Explicit Configuration**: Each stage's unique settings (e.g., log retention
- *    durations, aspects, property injectors) are clearly visible in the code without
- *    needing to trace through dynamic logic.
+ *    durations, aspects) are clearly visible in the code without needing to trace
+ *    through dynamic logic.
  *
  * 4. **Simpler Deployment**: CDK can synthesize all stages in a single pass without
  *    requiring runtime context lookups or conditional logic.
@@ -44,29 +46,23 @@ Tags.of(app).add('OWNER', APPLICATION_CONTEXT.APPLICATION_OWNER);
  *
  * @see {@link https://dev.to/aws-heroes/how-to-use-aws-cdk-stage-and-when-to-choose-static-vs-dynamic-stack-creation-35h|Static vs Dynamic Stack Creation}
  *
- * @remarks Property Injector Behavior
- * Property injectors are applied based on their class type and will only execute once per
- * construct tree. When the same injector type is defined at both app and stage levels, the
- * stage-level injector takes precedence and overrides the app-level configuration.
+ * @remarks
+ * Aspects visit all constructs in the tree after synthesis and can modify them
+ * (e.g., applying log retention policies, enabling tracing).
  */
-const development = new ApplicationStage(app, 'development', {
-    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'SHORT' })],
-});
-Aspects.of(development).add(new MicroserviceChecks());
 
-const staging = new ApplicationStage(app, 'staging', {
-    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'MEDIUM' })],
-});
-Aspects.of(staging).add(new MicroserviceChecks());
+const dev = new ApplicationStage(app, STAGE_NAMES.DEV);
+Aspects.of(dev).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }));
 
-const production = new ApplicationStage(app, 'production', {
-    propertyInjectors: [new LogGroupDefaultsInjector({ duration: 'LONG' })],
-});
-Aspects.of(production).add(new MicroserviceChecks());
+const stg = new ApplicationStage(app, STAGE_NAMES.STG);
+Aspects.of(stg).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }));
 
 /**
- * This aspect ensures all Lambda functions and Step Functions in production
- * are automatically versioned and have a stable 'live' alias pointing to the
- * current version, enabling zero-downtime deployments.
+ * Production Stage
+ * - Long log retention (2 years) for compliance and debugging
+ * - Resources retained on stack deletion
+ * - Lambda functions and Step Functions are automatically versioned, enabled for zero-downtime deployments
  */
-Aspects.of(production).add(new VersionFunctionsAspect());
+const prd = new ApplicationStage(app, STAGE_NAMES.PRD);
+Aspects.of(prd).add(new LogGroupDefaultsAspect({ duration: 'LONG' }));
+Aspects.of(prd).add(new VersionFunctionsAspect());

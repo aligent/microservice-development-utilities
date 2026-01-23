@@ -1,0 +1,17 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    uses: aligent/workflows/.github/workflows/aws-cdk.yml@main
+    with:
+      deploy: true
+      deploy-command: yarn nx run application:cdk deploy
+      extra-arguments: --exclusively
+      github-environment: staging
+    secrets: inherit

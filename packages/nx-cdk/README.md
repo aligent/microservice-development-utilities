@@ -42,7 +42,7 @@ The preset generator scaffolds:
   - `cdk.context.json` - CDK context
   - `bin/main.ts` - CDK app entry point
   - `lib/service-stacks.ts` - Service stacks definition
-  - TypeScript configurations (`tsconfig.json`, `tsconfig.lib.json`, `tsconfig.spec.json`)
+  - TypeScript configurations (`tsconfig.json`, `tsconfig.spec.json`)
 
 ### Service Generator
 
@@ -51,7 +51,7 @@ The service generator creates a new CDK service within the `services/` folder of
 #### Usage
 
 ```bash
-npx nx g @aligent/nx-cdk:service <service-name>
+yarn nx g @aligent/nx-cdk:service <service-name>
 ```
 
 #### Options
@@ -83,10 +83,10 @@ The service generator creates a new service in `services/<service-name>/` with:
 
 ```bash
 # Create a new service named "user-management"
-npx nx g @aligent/nx-cdk:service user-management
+yarn nx g @aligent/nx-cdk:service user-management
 
 # Create a new service named "payment-processing"
-npx nx g @aligent/nx-cdk:service payment-processing
+yarn nx g @aligent/nx-cdk:service payment-processing
 ```
 
 ## Project Structure

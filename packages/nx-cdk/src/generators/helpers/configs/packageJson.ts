@@ -11,22 +11,24 @@ export const PACKAGE_JSON = {
         typecheck: 'nx affected -t typecheck',
         'typecheck:all': 'nx run-many -t typecheck',
         postinstall: `[ -d .git ] && git config core.hooksPath '.git-hooks' && chmod +x .git-hooks/* || true`,
-        'pg:synth': `nx run application:cdk synth 'development/**' --exclusively --profile playground`,
-        'pg:deploy': `nx run application:cdk deploy --method 'direct' 'development/**' --exclusively --require-approval never --profile playground`,
-        'pg:destroy': "nx run application:cdk destroy 'development/**' --profile playground",
+        'pg:synth': `nx run application:cdk synth 'dev/**' --exclusively --profile playground`,
+        'pg:deploy': `nx run application:cdk deploy --method 'direct' 'dev/**' --exclusively --require-approval never --profile playground`,
+        'pg:destroy': "nx run application:cdk destroy 'dev/**' --profile playground",
         audit: 'nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache',
     },
     dependencies: {
         '@aligent/microservice-util-lib': '^1.2.0',
     },
     devDependencies: {
+        '@aligent/cdk-aspects': '^0.2.0',
         '@aligent/cdk-step-function-from-file': '^0.3.2',
         '@aligent/nx-openapi': '^1.0.0',
         '@aligent/ts-code-standards': '^4.1.0',
         '@nx/eslint': '22.1.3',
         '@nx/eslint-plugin': '22.1.3',
         '@nx/js': '22.1.3',
-        '@nx/vite': '22.1.3',
+        '@nx/vitest': '22.1.3',
+        '@nx/workspace': '22.1.3',
         '@swc-node/register': '^1.10.10',
         '@swc/core': '^1.13.3',
         '@swc/helpers': '^0.5.17',
@@ -37,7 +39,7 @@ export const PACKAGE_JSON = {
         '@vitest/coverage-v8': '^3.2.4',
         '@vitest/ui': '^3.2.4',
         'aws-cdk': '^2.1033.0',
-        'aws-cdk-lib': '^2.230.0',
+        'aws-cdk-lib': '^2.235.1',
         'cdk-nag': '^2.37.55',
         constructs: '^10.4.3',
         eslint: '^9.32.0',
@@ -56,6 +58,22 @@ export const PACKAGE_JSON = {
         typescript: '~5.9.2',
         vite: '^7.2.6',
         vitest: '^3.2.4',
+    },
+    nx: {
+        includedScripts: [],
+        targets: {
+            parameters: {
+                executor: 'nx:run-commands',
+                options: { color: true, cwd: 'parameters' },
+                configurations: {
+                    import: { command: 'store-parameters import {args.file} --delimiter=|' },
+                    export: {
+                        command:
+                            'store-parameters export {args.file} --path={args.path} --delimiter=|',
+                    },
+                },
+            },
+        },
     },
     workspaces: ['application', 'clients', 'libs/*', 'services/*'],
     packageManager:

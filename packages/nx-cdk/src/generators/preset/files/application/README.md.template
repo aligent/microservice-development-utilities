@@ -2,23 +2,6 @@
 
 This application manages the deployment of microservices and their shared infrastructure.
 
-## Configuration
-
-### Environment Parameters
-
-Parameters are managed through the `parameters/.env.csv` file by default
-
-```bash
-# Pull down parameters from the playground environment to .env.csv
-yarn nx run application:parameters
-
-# Update parameters from .env.csv
-yarn nx run application:parameters:import
-
-# Custom filename and parameter path can be passed in as arguments
-yarn nx run application:parameters --file .env.dev.csv --path /my/dev/path
-```
-
 ## Deployment
 
 ### Using yarn script from workspace root (Recommended)

@@ -5,7 +5,7 @@ export default defineConfig(configEnv => {
     return mergeConfig(
         vitestBaseConfig(configEnv),
         defineConfig({
-            cacheDir: '../../node_modules/.vite/<%= name %>',
+            cacheDir: '../../node_modules/.vitest/<%= name %>',
             test: {
                 env: {
                     NODE_ENV: 'test',
