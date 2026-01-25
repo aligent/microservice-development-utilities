@@ -1,8 +1,5 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "resolveJsonModule": true
-    },
+    "extends": "@aligent/ts-code-standards/tsconfigs-extend",
     "files": [],
     "include": [],
     "references": [
