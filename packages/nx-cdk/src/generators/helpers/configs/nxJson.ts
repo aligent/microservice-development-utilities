@@ -7,7 +7,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
     plugins: [
         { plugin: '@nx/eslint/plugin', options: {} },
         { plugin: '@nx/js/typescript', options: { build: false } },
-        { plugin: '@nx/vitest', options: { testMode: 'run' } },
+        { plugin: '@nx/vitest', options: {} },
     ],
     namedInputs: {
         default: ['{projectRoot}/**/*', 'sharedGlobals'],
@@ -27,7 +27,6 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
             inputs: ['production', '^production'],
             outputs: ['{projectRoot}/dist'],
         },
-        cdk: { dependsOn: ['^build'], inputs: ['production', '^production'] },
         lint: { cache: true, inputs: ['default', '^production'] },
         test: {
             cache: true,

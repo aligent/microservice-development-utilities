@@ -18,6 +18,7 @@ export function defineLambdaConfig(subPath) {
     return handlers.map(handler => {
         const bundledPath = handler.replace(`${handlersPath}/`, '');
         const entryName = bundledPath.replace(extname(bundledPath), '');
+        const bundleMode = process.env.BUNDLE_MODE?.toLowerCase() || 'prd';
 
         return defineConfig({
             input: { [entryName]: handler },
@@ -29,9 +30,8 @@ export function defineLambdaConfig(subPath) {
             output: {
                 entryFileNames: '[name]/index.mjs',
                 format: 'esm',
-                // TODO: [MI-251] Support sourcemap enable/disable base on environment
-                sourcemap: true,
-                // FIXME: [MI-251] Rolldown is still in Beta and built-in minification is not production ready yet
+                sourcemap: bundleMode === 'prd' ? false : true,
+                // FIXME: [MI-251] Rolldown is still in RC and built-in minification is not production ready yet
                 minify: false,
                 legalComments: 'none',
                 inlineDynamicImports: true,

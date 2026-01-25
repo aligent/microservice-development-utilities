@@ -11,8 +11,8 @@ export const PACKAGE_JSON = {
         typecheck: 'nx affected -t typecheck',
         'typecheck:all': 'nx run-many -t typecheck',
         postinstall: `[ -d .git ] && git config core.hooksPath '.git-hooks' && chmod +x .git-hooks/* || true`,
-        'pg:synth': `nx run application:cdk synth 'dev/**' --exclusively --profile playground`,
-        'pg:deploy': `nx run application:cdk deploy --method 'direct' 'dev/**' --exclusively --require-approval never --profile playground`,
+        'pg:synth': `nx run application:cdk synth 'dev/**' --exclusively --bundle-mode=dev --profile=playground`,
+        'pg:deploy': `nx run application:cdk deploy 'dev/**' --method=direct --require-approval=never --exclusively --bundle-mode=dev --profile=playground`,
         'pg:destroy': "nx run application:cdk destroy 'dev/**' --profile playground",
         audit: 'nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache',
     },
@@ -50,8 +50,8 @@ export const PACKAGE_JSON = {
         'jsonc-eslint-parser': '^2.4.0',
         nx: '22.1.3',
         prettier: '^3.6.2',
-        // FIXME: [MI-251] Rolldown is still in beta. We pin the version and can upgrade with precaution.
-        rolldown: '1.0.0-beta.53',
+        // FIXME: [MI-251] Rolldown is still in RC. We pin the version and can upgrade with precaution.
+        rolldown: '1.0.0-rc.1',
         'store-parameters': '^1.1.3',
         tslib: '^2.8.1',
         tsx: '^4.21.0',
