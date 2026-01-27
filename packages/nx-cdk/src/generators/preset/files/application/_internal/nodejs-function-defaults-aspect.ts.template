@@ -1,4 +1,4 @@
-import { type IAspect } from 'aws-cdk-lib';
+import { Duration, type IAspect } from 'aws-cdk-lib';
 import { CfnFunction, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { IConstruct } from 'constructs';
@@ -6,6 +6,8 @@ import { IConstruct } from 'constructs';
 interface Config {
     runtime: Runtime;
     sourceMap?: boolean;
+    memorySize?: number;
+    timeout?: Duration;
 }
 
 /**
@@ -20,13 +22,15 @@ interface Config {
  * Aspects.of(app).add(new NodeJsFunctionDefaultsAspect({
  *   runtime: Runtime.NODEJS_24_X,
  *   sourceMap: true,
+ *   memorySize: 256,
+ *   timeout: Duration.seconds(3),
  * }));
  *
  * // Functions automatically inherit configuration defaults
  * new NodejsFunction(stack, 'MyFunction', {
  *   code: Code.fromAsset('src/lambda'),
  *   handler: 'index.handler',
- *   // runtime, tracing, and source map support applied automatically
+ *   // runtime, tracing, memory, timeout, and source map support applied automatically
  * });
  * ```
  *
@@ -62,6 +66,14 @@ export class NodeJsFunctionDefaultsAspect implements IAspect {
 
             if (cfnFunction && cfnFunction.tracingConfig === undefined) {
                 cfnFunction.tracingConfig = { mode: Tracing.ACTIVE };
+            }
+
+            if (cfnFunction && this.config.memorySize && cfnFunction.memorySize === undefined) {
+                cfnFunction.memorySize = this.config.memorySize;
+            }
+
+            if (cfnFunction && this.config.timeout && cfnFunction.timeout === undefined) {
+                cfnFunction.timeout = this.config.timeout.toSeconds();
             }
 
             if (this.config.sourceMap) {

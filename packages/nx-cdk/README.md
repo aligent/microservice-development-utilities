@@ -44,6 +44,28 @@ The preset generator scaffolds:
   - `lib/service-stacks.ts` - Service stacks definition
   - TypeScript configurations (`tsconfig.json`, `tsconfig.spec.json`)
 
+#### Lambda Function Defaults
+
+The preset includes a `NodeJsFunctionDefaultsAspect` that automatically applies sensible defaults to all `NodejsFunction` constructs. These defaults are applied unless explicitly overridden on the function:
+
+| Setting      | Default Value | Description                          |
+| ------------ | ------------- | ------------------------------------ |
+| `runtime`    | Node.js 24.x  | Matches the project's Node version   |
+| `memorySize` | 256 MB        | Default memory allocation            |
+| `timeout`    | 3 seconds     | Default execution timeout            |
+| `tracing`    | Active        | X-Ray tracing enabled                |
+| `sourceMap`  | Enabled       | `NODE_OPTIONS=--enable-source-maps`  |
+
+To override these defaults for a specific function, set the property explicitly:
+
+```typescript
+new NodejsFunction(stack, 'MyFunction', {
+    entry: 'src/handler.ts',
+    memorySize: 512,        // Override default 256 MB
+    timeout: Duration.seconds(30), // Override default 3 seconds
+});
+```
+
 ### Service Generator
 
 The service generator creates a new CDK service within the `services/` folder of your existing CDK project. Each service is configured as a separate package with its own build configuration and testing setup.

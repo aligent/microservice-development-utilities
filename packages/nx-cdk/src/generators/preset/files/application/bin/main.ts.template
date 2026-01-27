@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { MicroserviceChecks, VersionFunctionsAspect } from '@aligent/cdk-aspects';
-import { App, Aspects, Tags } from 'aws-cdk-lib';
+import { App, Aspects, Duration, Tags } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
@@ -19,7 +19,13 @@ Tags.of(app).add('OWNER', APPLICATION_CONTEXT.OWNER);
  * Apply Application-Level Aspects
  * These aspects are applied to all resources across all stages
  */
-Aspects.of(app).add(new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_<%= nodeRuntime %> }));
+Aspects.of(app).add(
+    new NodeJsFunctionDefaultsAspect({
+        runtime: Runtime.NODEJS_<%= nodeRuntime %>,
+        memorySize: 256,
+        timeout: Duration.seconds(3),
+    })
+);
 Aspects.of(app).add(new StepFunctionDefaultsAspect());
 Aspects.of(app).add(new MicroserviceChecks());
 
