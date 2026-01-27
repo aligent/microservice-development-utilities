@@ -6,9 +6,8 @@
     "targets": {
         "build": {
             "executor": "@nx/js:tsc",
-            "outputs": ["{options.outputPath}"],
             "options": {
-                "outputPath": "dist/microservice-util-lib",
+                "outputPath": "{projectRoot}/dist",
                 "main": "{projectRoot}/src/index.ts",
                 "tsConfig": "{projectRoot}/tsconfig.lib.json",
                 "assets": [
@@ -32,7 +31,7 @@
         },
         "nx-release-publish": {
             "options": {
-                "packageRoot": "dist/microservice-util-lib"
+                "packageRoot": "{projectRoot}/dist"
             }
         }
     },

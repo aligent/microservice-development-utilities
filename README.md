@@ -9,6 +9,8 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 - [Nx Openapi](/packages/nx-openapi/README.md)
 - [Nx Serverless](/packages/nx-serverless/README.md) (obsoleted)
 
+<!-- TODO: Reorganies this section and add "adding new package" -->
+
 # Development
 
 ## Prerequisites

@@ -1,9 +1,9 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { viteBaseConfig } from '../../vite.config.base.mjs';
+import { vitestBaseConfig } from '../../vitest.config.base.mjs';
 
 export default mergeConfig(
-    viteBaseConfig,
+    vitestBaseConfig,
     defineConfig({
-        cacheDir: '../../node_modules/.vite/packages/nx-openapi',
+        cacheDir: '../../node_modules/.vitest/nx-openapi',
     })
 );

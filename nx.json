@@ -32,7 +32,8 @@
         "@nx/js:tsc": {
             "cache": true,
             "dependsOn": ["^build"],
-            "inputs": ["production", "^production"]
+            "inputs": ["production", "^production"],
+            "outputs": ["{options.outputPath}"]
         },
         "@nx/vitest:test": {
             "cache": true,
