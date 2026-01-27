@@ -56,6 +56,7 @@
         },
         "projects": ["packages/*"],
         "projectsRelationship": "independent",
+        "versionPlans": true,
         "releaseTag": {
             "pattern": "release/{projectName}/{version}"
         }
