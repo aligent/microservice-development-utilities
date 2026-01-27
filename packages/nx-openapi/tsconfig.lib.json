@@ -1,5 +1,5 @@
 {
-    "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "extends": "./tsconfig.json",
     "compilerOptions": {
         "baseUrl": ".",
         "rootDir": "src",
