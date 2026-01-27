@@ -51,9 +51,6 @@
                 "file": false
             }
         },
-        "versionPlans": {
-            "ignorePatternsForPlanCheck": ["packages/nx-serverless/*"]
-        },
         "projects": ["packages/*"],
         "projectsRelationship": "independent",
         "releaseTag": {
