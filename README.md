@@ -8,8 +8,6 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 - [Nx CDK](/packages/nx-cdk/README.md)
 - [Nx Openapi](/packages/nx-openapi/README.md)
 
-<!-- TODO: Reorganies this section and add "adding new package" -->
-
 # Development
 
 ## Prerequisites
@@ -33,6 +31,17 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
    ```
 
 3. Git hooks will be automatically configured via the `prepare` script.
+
+## Project Structure
+
+```
+microservice-development-utilities/
+├── packages/
+│   ├── microservice-util-lib/  # Utility library for microservices
+│   ├── nx-cdk/                 # Nx plugin for CDK project generation
+│   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
+└── package.json                # Root package configuration
+```
 
 ## Available Commands
 
@@ -111,16 +120,28 @@ npx nx release publish
 npx nx stop-local-registry microservice-development-utilities
 ```
 
-## Project Structure
+## Adding New Packages
 
+This monorepo includes a generator to create new packages with all the necessary boilerplate. The generator sets up:
+
+- Package configuration with `@aligent` scope
+- TypeScript configuration
+- Testing setup with Vitest
+- ESLint configuration
+- Example source code and tests
+- Integration with the root `tsconfig.json`
+
+### Usage
+
+```bash
+# To generate a new package, run this command and follow the prompt
+npx nx g @tools/generators:package
+
+# Preview changes without writing files
+npx nx g @tools/generators:package --dry-run
 ```
-microservice-development-utilities/
-├── packages/
-│   ├── microservice-util-lib/  # Utility library for microservices
-│   ├── nx-cdk/                 # Nx plugin for CDK project generation
-│   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
-└── package.json                # Root package configuration
-```
+
+For more details, see [tools/generators/README.md](/tools/generators/README.md).
 
 # Release Process
 

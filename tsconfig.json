@@ -11,6 +11,9 @@
         },
         {
             "path": "./packages/nx-openapi"
+        },
+        {
+            "path": "./tools/generators"
         }
     ]
 }

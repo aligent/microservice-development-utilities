@@ -1,0 +1,9 @@
+{
+    "generators": {
+        "package": {
+            "factory": "./package/generator",
+            "schema": "./package/schema.json",
+            "description": "Generate a new package for this monorepo"
+        }
+    }
+}

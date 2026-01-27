@@ -61,7 +61,8 @@
   "author": "Aligent",
   "license": "MIT",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "tools/*"
   ],
   "nx": {
     "name": "microservice-development-utilities",

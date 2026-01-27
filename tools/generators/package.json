@@ -1,0 +1,7 @@
+{
+  "name": "@tools/generators",
+  "version": "0.0.1",
+  "description": "Local generators for generating new packages",
+  "private": true,
+  "generators": "./generators.json"
+}

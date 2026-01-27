@@ -1,0 +1,16 @@
+{
+  "name": "<%= scopedName %>",
+  "version": "0.1.0",
+  "description": "<%= description %>",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligent/microservice-development-utilities.git",
+    "directory": "packages/<%= name %>"
+  },
+  "dependencies": {},
+  "author": "Aligent",
+  "license": "MIT"
+}

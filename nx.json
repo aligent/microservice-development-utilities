@@ -2,6 +2,9 @@
     "$schema": "./node_modules/nx/schemas/nx-schema.json",
     "defaultBase": "origin/main",
     "tui": { "enabled": false },
+    "sync": { "applyChanges": true },
+    "workspaceLayout": { "libsDir": "packages" },
+    "generators": { "@tools/generators:package": {} },
     "namedInputs": {
         "default": ["{projectRoot}/**/*", "sharedGlobals"],
         "production": [

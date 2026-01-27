@@ -1,0 +1,13 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "files": [],
+    "include": [],
+    "references": [
+        {
+            "path": "./tsconfig.lib.json"
+        },
+        {
+            "path": "./tsconfig.spec.json"
+        }
+    ]
+}

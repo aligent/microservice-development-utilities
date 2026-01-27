@@ -1,0 +1,10 @@
+import { describe, it, expect } from 'vitest';
+import { hello } from './index';
+
+describe('<%= name %>', () => {
+    describe('hello', () => {
+        it('should return a greeting message', () => {
+            expect(hello()).toBe('Hello from <%= scopedName %>!');
+        });
+    });
+});
