@@ -65,6 +65,7 @@
   ],
   "nx": {
     "name": "microservice-development-utilities",
+    "projectType": "application",
     "includedScripts": [],
     "targets": {
       "start-local-registry": {
