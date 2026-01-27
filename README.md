@@ -7,7 +7,6 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 - [Microservice Util Lib](/packages/microservice-util-lib/README.md)
 - [Nx CDK](/packages/nx-cdk/README.md)
 - [Nx Openapi](/packages/nx-openapi/README.md)
-- [Nx Serverless](/packages/nx-serverless/README.md) (obsoleted)
 
 <!-- TODO: Reorganies this section and add "adding new package" -->
 
@@ -120,7 +119,6 @@ microservice-development-utilities/
 │   ├── microservice-util-lib/  # Utility library for microservices
 │   ├── nx-cdk/                 # Nx plugin for CDK project generation
 │   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
-│   └── nx-serverless/          # Nx plugin for Serverless project generation (obsoleted)
 └── package.json                # Root package configuration
 ```
 
