@@ -227,8 +227,10 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
         }
 
         try {
-            const signal = config.shouldResetTimeout ? undefined : context.request.signal;
-            response = await config.fetch(new Request(context.request, { signal }));
+            const request = config.shouldResetTimeout
+                ? new Request(context.request)
+                : new Request(context.request, { signal: context.request.signal });
+            response = await config.fetch(request);
 
             context = { ...context, attempt: attempt + 1, response, error: null };
 

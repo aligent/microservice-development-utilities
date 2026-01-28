@@ -1,0 +1,5 @@
+/**
+ * Main entry point for <%= scopedName %>
+ */
+
+export * from './lib';

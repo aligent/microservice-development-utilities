@@ -1,6 +1,10 @@
 {
     "$schema": "./node_modules/nx/schemas/nx-schema.json",
     "defaultBase": "origin/main",
+    "tui": { "enabled": false },
+    "sync": { "applyChanges": true },
+    "workspaceLayout": { "libsDir": "packages" },
+    "generators": { "@tools/generators:package": {} },
     "namedInputs": {
         "default": ["{projectRoot}/**/*", "sharedGlobals"],
         "production": [
@@ -13,29 +17,30 @@
     },
     "plugins": [
         {
-            "plugin": "@nx/js",
-            "options": {
-                "analyzeSourceFiles": true
-            }
-        },
-        {
             "plugin": "@nx/eslint/plugin",
             "options": {}
         },
         {
-            "plugin": "@nx/vite/plugin",
+            "plugin": "@nx/js/typescript",
+            "options": {
+                "build": false
+            }
+        },
+        {
+            "plugin": "@nx/vitest",
             "options": {}
         }
     ],
     "targetDefaults": {
-        "@nx/vite:test": {
-            "cache": true,
-            "inputs": ["default", "^production"]
-        },
         "@nx/js:tsc": {
             "cache": true,
             "dependsOn": ["^build"],
-            "inputs": ["production", "^production"]
+            "inputs": ["production", "^production"],
+            "outputs": ["{options.outputPath}"]
+        },
+        "@nx/vitest:test": {
+            "cache": true,
+            "inputs": ["default", "^production"]
         },
         "nx-release-publish": {
             "dependsOn": ["build"],
@@ -49,11 +54,11 @@
                 "file": false
             }
         },
-        "versionPlans": {
-            "ignorePatternsForPlanCheck": ["packages/nx-serverless/*"]
-        },
         "projects": ["packages/*"],
         "projectsRelationship": "independent",
-        "releaseTagPattern": "release/{projectName}/{version}"
+        "versionPlans": true,
+        "releaseTag": {
+            "pattern": "release/{projectName}/{version}"
+        }
     }
 }

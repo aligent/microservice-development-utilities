@@ -20,7 +20,7 @@
       "build": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "rolldown -c rolldown.config.mjs",
+          "command": "rolldown -c rolldown.config.mjs --environment BUNDLE_MODE:{args.bundle-mode}",
           "color": true,
           "cwd": "{projectRoot}"
         }

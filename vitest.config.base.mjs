@@ -1,9 +1,6 @@
-/// <reference types="vitest" />
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
-export const viteBaseConfig = defineConfig({
-    plugins: [nxViteTsPaths()],
+export const vitestBaseConfig = defineConfig({
     test: {
         globals: true,
         watch: false,
@@ -11,7 +8,7 @@ export const viteBaseConfig = defineConfig({
         reporters: ['default'],
         coverage: {
             provider: 'v8',
-            exclude: ['node_modules/', '**/types', '*.{js,mjs}'],
+            exclude: ['node_modules/', '**/types', '*.mjs', '**/__data__', '**/dist', '**/out-tsc'],
             thresholds: {
                 branches: 80,
                 functions: 80,

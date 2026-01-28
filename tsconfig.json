@@ -1,0 +1,19 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "compileOnSave": false,
+    "files": [],
+    "references": [
+        {
+            "path": "./packages/microservice-util-lib"
+        },
+        {
+            "path": "./packages/nx-cdk"
+        },
+        {
+            "path": "./packages/nx-openapi"
+        },
+        {
+            "path": "./tools/generators"
+        }
+    ]
+}

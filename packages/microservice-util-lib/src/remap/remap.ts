@@ -111,7 +111,13 @@ type GetKeyType<Key extends string, O extends { [key: string]: any }, M extends 
  * Given an ObjectMap, return a new ObjectMap with the first index of each
  * tuple replaced with the value of the second index
  */
-type OverrideIndex<M extends ObjectMap[number], V extends string> = readonly [M[0], V, M[2]];
+type OverrideIndex<M extends ObjectMap[number], V extends string> = M extends readonly [
+    unknown,
+    unknown,
+    infer T,
+]
+    ? readonly [M[0], V, T]
+    : readonly [M[0], V];
 
 /**
  * Given a key and a base object, return the type of the property referencable
@@ -130,7 +136,7 @@ type ConstructTypeFromPropertiesInternal<
     O extends { [key: string]: any },
 > =
     // If the key is a nested key, recurse into the base object
-    M[1] extends `${infer P}.${infer Rest}`
+    M[1] extends `${infer P extends string}.${infer Rest extends string}`
         ? { [key in P]: ConstructTypeFromPropertiesInternal<OverrideIndex<M, Rest>, O> }
         : // Otherwise, use the type of the property on the base object
           { [key in M[1]]: GetKeyType<M[0], O, M> };

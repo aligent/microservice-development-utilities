@@ -1,8 +1,8 @@
 {
-    "name": "microservice-util-lib",
+    "name": "<%= name %>",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "projectType": "library",
-    "sourceRoot": "services/microservice-util-lib/src",
+    "sourceRoot": "packages/<%= name %>/src",
     "targets": {
         "build": {
             "executor": "@nx/js:tsc",
@@ -18,15 +18,6 @@
                         "output": "./docs"
                     }
                 ]
-            },
-            "dependsOn": ["^typedoc"]
-        },
-        "typedoc": {
-            "executor": "nx:run-commands",
-            "options": {
-                "cwd": "{projectRoot}",
-                "color": true,
-                "command": "typedoc --options ./typedoc.config.mjs"
             }
         },
         "nx-release-publish": {
@@ -35,5 +26,5 @@
             }
         }
     },
-    "tags": ["library", "utilities", "microservice"]
+    "tags": ["library"]
 }
