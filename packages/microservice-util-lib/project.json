@@ -2,7 +2,7 @@
     "name": "microservice-util-lib",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "projectType": "library",
-    "sourceRoot": "services/microservice-util-lib/src",
+    "sourceRoot": "packages/microservice-util-lib/src",
     "targets": {
         "build": {
             "executor": "@nx/js:tsc",
