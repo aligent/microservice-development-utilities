@@ -1,0 +1,22 @@
+{
+  "name": "@aligent/create-workspace",
+  "version": "0.1.0",
+  "description": "A command line tool for creating new workspace",
+  "type": "commonjs",
+  "main": "./bin/index.js",
+  "typings": "./bin/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligent/microservice-development-utilities.git",
+    "directory": "packages/create-workspace"
+  },
+  "dependencies": {
+    "@nx/devkit": "22.4.1",
+    "create-nx-workspace": "22.4.1",
+    "ora": "^9.1.0",
+    "prompts": "^2.4.2",
+    "yargs": "^18.0.0"
+  },
+  "author": "Aligent",
+  "license": "MIT"
+}

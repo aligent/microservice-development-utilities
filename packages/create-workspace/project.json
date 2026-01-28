@@ -1,0 +1,30 @@
+{
+    "name": "create-workspace",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "library",
+    "sourceRoot": "packages/create-workspace/bin",
+    "targets": {
+        "build": {
+            "executor": "@nx/js:tsc",
+            "options": {
+                "outputPath": "{projectRoot}/dist",
+                "main": "{projectRoot}/bin/index.ts",
+                "tsConfig": "{projectRoot}/tsconfig.lib.json",
+                "assets": [
+                    "{projectRoot}/*.md",
+                    {
+                        "input": "./{projectRoot}/docs",
+                        "glob": "**/(*.md)",
+                        "output": "./docs"
+                    }
+                ]
+            }
+        },
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "{projectRoot}/dist"
+            }
+        }
+    },
+    "tags": ["library"]
+}
