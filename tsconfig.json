@@ -4,6 +4,9 @@
     "files": [],
     "references": [
         {
+            "path": "./packages/create-workspace"
+        },
+        {
             "path": "./packages/microservice-util-lib"
         },
         {
@@ -14,9 +17,6 @@
         },
         {
             "path": "./tools/generators"
-        },
-        {
-            "path": "./packages/create-workspace"
         }
     ]
 }

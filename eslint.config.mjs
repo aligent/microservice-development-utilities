@@ -4,7 +4,7 @@ import eslintPluginImport from 'eslint-plugin-import';
 import jsonParser from 'jsonc-eslint-parser';
 
 const eslintBaseConfig = [
-    ...eslintConfigs.core,
+    ...eslintConfigs.base,
     { ignores: ['**/*.{js,mjs}', '**/coverage', '**/dist'] },
     {
         files: ['**/*.ts'],
