@@ -1,10 +1,10 @@
 import { logger } from '@nx/devkit';
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Extracts package name and version from a preset string
- * @param preset - Format: "package@version" or "@scope/package@version" or "package"
- * @returns Object with packageName and version (or undefined if no version specified)
  */
 export function parsePreset(preset: string) {
     const defaultVersion = 'latest';
@@ -44,10 +44,7 @@ export function installDependencies(
     });
 }
 
-/**
- * Check if a command is available in the system
- */
-function isCommandAvailable(command: string): boolean {
+export function isCommandAvailable(command: string): boolean {
     try {
         execSync(`${command} --version`, { stdio: 'ignore' });
         return true;
@@ -56,30 +53,10 @@ function isCommandAvailable(command: string): boolean {
     }
 }
 
-/**
- * Check if corepack is available and enabled
- */
-export function checkCorepack(): { available: boolean; yarnAvailable: boolean } {
-    const corepackAvailable = isCommandAvailable('corepack');
-
-    if (!corepackAvailable) {
-        return { available: false, yarnAvailable: false };
-    }
-
-    // Check if yarn is available (corepack might be installed but not enabled)
-    const yarnAvailable = isCommandAvailable('yarn');
-
-    return { available: corepackAvailable, yarnAvailable };
-}
-
-/**
- * Display corepack installation instructions
- */
 export function showCorepackInstructions(): void {
     logger.info('\n');
     logger.info('This tool requires Yarn via Corepack.\n');
-    logger.info('To enable corepack, run:\n');
-    logger.info('   corepack enable yarn');
+    logger.info('To enable corepack, run: corepack enable');
     logger.info('\n');
     logger.info('If corepack is not installed, you need Node.js 16.9+ or higher.');
     logger.info('Corepack is included with Node.js but may need to be enabled.\n');
@@ -102,4 +79,28 @@ export function logErrorThenExit(error: unknown, suggestion?: string): never {
     logger.info('\n');
 
     process.exit(1);
+}
+
+export function cleanupWorkspace(directory: string, items: string[]): void {
+    for (const item of items) {
+        const itemPath = path.join(directory, item);
+        if (fs.existsSync(itemPath)) {
+            try {
+                fs.rmSync(itemPath, { recursive: true, force: true });
+            } catch (err) {
+                logger.warn(`Failed to remove ${item}`);
+            }
+        }
+    }
+}
+
+export async function failedWorkspaceCleanup(directory: string, debug: boolean): Promise<void> {
+    if (!debug && fs.existsSync(directory)) {
+        try {
+            fs.rmSync(directory, { recursive: true, force: true });
+            logger.info('Cleaned up incomplete workspace');
+        } catch (cleanupError) {
+            logger.warn('Failed to clean up directory. You may need to remove it manually.');
+        }
+    }
 }

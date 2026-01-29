@@ -2,39 +2,31 @@
 import { logger } from '@nx/devkit';
 import { createWorkspace } from 'create-nx-workspace';
 import fs from 'fs';
-// ora v9+ is ESM-only. We use type-only import with 'resolution-mode': 'import' to get types,
-// and dynamic import() at runtime to load the ESM module in our CommonJS context
-import type { Ora } from 'ora' with { 'resolution-mode': 'import' };
 import path from 'path';
 import prompts from 'prompts';
 import yargs from 'yargs';
 import {
-    checkCorepack,
+    cleanupWorkspace,
+    failedWorkspaceCleanup,
     handleCancellation,
+    isCommandAvailable,
     logErrorThenExit,
     parsePreset,
     showCorepackInstructions,
 } from './lib/helpers';
 
-const PACKAGE_MANAGER = 'yarn';
+const PACKAGE_MANAGER = 'npm';
+const ITEMS_TO_REMOVE = ['package-lock.json', '.nx', '.vscode', 'node_modules'];
 
 async function main() {
     // Handle Ctrl+C gracefully
     process.on('SIGINT', handleCancellation);
 
-    // Check for corepack/yarn availability since we use yarn
-    const { available: corepackAvailable, yarnAvailable } = checkCorepack();
+    const corepackAvailable = isCommandAvailable('corepack');
 
-    if (!corepackAvailable || !yarnAvailable) {
+    if (!corepackAvailable) {
         showCorepackInstructions();
-
-        if (!corepackAvailable) {
-            logErrorThenExit('Corepack is not available on your system');
-        }
-
-        if (!yarnAvailable) {
-            logErrorThenExit('Corepack is installed but not enabled');
-        }
+        logErrorThenExit('Corepack is not available on your system');
     }
 
     const commandIndex = process.argv.findIndex(text => text.includes('create-workspace'));
@@ -42,13 +34,18 @@ async function main() {
         .options({
             preset: {
                 type: 'string',
-                demandOption: true,
+                demandOption: false,
                 description: 'The preset to use (e.g., @aligent/nx-cdk)',
             },
             name: {
                 type: 'string',
                 demandOption: false,
                 description: 'The workspace name',
+            },
+            debug: {
+                type: 'boolean',
+                demandOption: false,
+                default: false,
             },
         })
         .usage('Usage: $0 --preset [preset] --name [name]')
@@ -79,9 +76,7 @@ async function main() {
                 },
             },
         ],
-        {
-            onCancel: handleCancellation,
-        }
+        { onCancel: handleCancellation }
     );
 
     const preset = args.preset || responses.preset;
@@ -119,18 +114,12 @@ async function main() {
             message: 'Create workspace with these settings?',
             initial: true,
         },
-        {
-            onCancel: handleCancellation,
-        }
+        { onCancel: handleCancellation }
     );
 
     if (!confirmed) {
         handleCancellation();
     }
-
-    // Dynamic import of ESM ora module (works in async context even with CommonJS)
-    const { default: ora } = await import('ora');
-    const spinner: Ora = ora('Creating workspace...').start();
 
     try {
         const { directory } = await createWorkspace(presetWithVersion, {
@@ -139,22 +128,29 @@ async function main() {
             packageManager: PACKAGE_MANAGER,
         });
 
-        // TODO: add install packages if needed
+        cleanupWorkspace(directory, ITEMS_TO_REMOVE);
 
-        spinner.succeed(`Workspace ${name} created at: ${directory}`);
+        // Show summary and next steps
+        logger.info('\n✨ Summary:');
+        logger.info(`   Successfully created workspace "${name}"`);
+        logger.info(`   Using preset: ${presetWithVersion}`);
+        logger.info(`   Location: ${directory}`);
+        logger.info('');
+        logger.info('📝 Next steps:');
+        logger.info(`   1. cd ${name}`);
+        logger.info('      Navigate to your new workspace directory');
+        logger.info('');
+        logger.info('   2. nvm use');
+        logger.info('      Activate the Node.js version specified in .nvmrc');
+        logger.info('');
+        logger.info('   3. yarn install');
+        logger.info('      Install all workspace dependencies');
+        logger.info('');
     } catch (err) {
-        spinner.fail('Failed to create workspace');
+        logger.error('Failed to create workspace');
 
-        // Clean up failed attempt
         const dirPath = path.join(process.cwd(), name);
-        if (fs.existsSync(dirPath)) {
-            try {
-                fs.rmSync(dirPath, { recursive: true, force: true });
-                logger.info('Cleaned up incomplete workspace');
-            } catch (cleanupError) {
-                logger.warn('Failed to clean up directory. You may need to remove it manually.');
-            }
-        }
+        await failedWorkspaceCleanup(dirPath, args.debug);
 
         logger.error('Error details:');
         logErrorThenExit(err);
