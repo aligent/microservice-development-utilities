@@ -1,13 +1,14 @@
 #!/usr/bin/env node
-import { MicroserviceChecks, VersionFunctionsAspect } from '@aligent/cdk-aspects';
+import {
+    LambdaAndStepFunctionVersioningAspect,
+    LogGroupDefaultsAspect,
+    MicroserviceChecks,
+    NodeJsFunctionDefaultsAspect,
+    StepFunctionsDefaultsAspect,
+} from '@aligent/cdk-aspects';
 import { App, Aspects, Tags } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
-
-// TODO: [MI-277] Move these aspects to @aligent/cdk-aspects package for reuse across projects
-import { LogGroupDefaultsAspect } from '../_internal/log-group-defaults-aspect.js';
-import { NodeJsFunctionDefaultsAspect } from '../_internal/nodejs-function-defaults-aspect.js';
-import { StepFunctionDefaultsAspect } from '../_internal/step-function-defaults-aspect.js';
 
 const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'aligent' } as const;
 const STAGE_NAMES = { DEV: 'dev', STG: 'stg', PRD: 'prd' } as const;
@@ -20,7 +21,7 @@ Tags.of(app).add('OWNER', APPLICATION_CONTEXT.OWNER);
  * These aspects are applied to all resources across all stages
  */
 Aspects.of(app).add(new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_<%= nodeRuntime %> }));
-Aspects.of(app).add(new StepFunctionDefaultsAspect());
+Aspects.of(app).add(new StepFunctionsDefaultsAspect());
 Aspects.of(app).add(new MicroserviceChecks());
 
 /**
@@ -65,4 +66,4 @@ Aspects.of(stg).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }));
  */
 const prd = new ApplicationStage(app, STAGE_NAMES.PRD);
 Aspects.of(prd).add(new LogGroupDefaultsAspect({ duration: 'LONG' }));
-Aspects.of(prd).add(new VersionFunctionsAspect());
+Aspects.of(prd).add(new LambdaAndStepFunctionVersioningAspect());

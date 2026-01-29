@@ -4,6 +4,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 
 # Packages
 
+- [Create Workspace](/packages/create-workspace/README.md)
 - [Microservice Util Lib](/packages/microservice-util-lib/README.md)
 - [Nx CDK](/packages/nx-cdk/README.md)
 - [Nx Openapi](/packages/nx-openapi/README.md)
