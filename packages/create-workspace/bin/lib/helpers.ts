@@ -26,24 +26,6 @@ export function parsePreset(preset: string) {
     return { presetName: preset };
 }
 
-export function installDependencies(
-    packageManager: string,
-    args: string[],
-    cwd: string
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        try {
-            execSync(`${packageManager} ${args.join(' ')}`, {
-                cwd,
-                stdio: 'inherit',
-            });
-            resolve();
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
 export function isCommandAvailable(command: string): boolean {
     try {
         execSync(`${command} --version`, { stdio: 'ignore' });
