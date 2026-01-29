@@ -69,7 +69,7 @@ export function cleanupWorkspace(directory: string, items: string[]): void {
         if (fs.existsSync(itemPath)) {
             try {
                 fs.rmSync(itemPath, { recursive: true, force: true });
-            } catch (err) {
+            } catch {
                 logger.warn(`Failed to remove ${item}`);
             }
         }
@@ -81,7 +81,7 @@ export async function failedWorkspaceCleanup(directory: string, debug: boolean):
         try {
             fs.rmSync(directory, { recursive: true, force: true });
             logger.info('Cleaned up incomplete workspace');
-        } catch (cleanupError) {
+        } catch {
             logger.warn('Failed to clean up directory. You may need to remove it manually.');
         }
     }
