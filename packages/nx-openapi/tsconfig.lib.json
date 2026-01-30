@@ -6,7 +6,8 @@
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
         "types": ["node"],
-        "declaration": true
+        "declaration": true,
+        "composite": true
     },
     "include": ["src/**/*.ts"],
     "exclude": ["vitest.config.mjs", "src/**/*.spec.ts", "src/**/*.test.ts"]

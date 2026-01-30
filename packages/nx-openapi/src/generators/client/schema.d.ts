@@ -1,3 +1,5 @@
+export type AuthMethod = 'api-key' | 'oauth1.0a' | 'basic' | 'oauth2.0';
+
 export interface ClientGeneratorSchema {
     name: string;
     schemaPath: string;
@@ -5,4 +7,5 @@ export interface ClientGeneratorSchema {
     importPath?: string;
     skipValidate: boolean;
     override: boolean;
+    authMethod?: AuthMethod;
 }
