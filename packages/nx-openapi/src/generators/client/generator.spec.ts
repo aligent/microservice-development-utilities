@@ -89,6 +89,64 @@ describe('client generator', () => {
         await expect(clientGenerator(tree, options)).rejects.toThrowError();
     });
 
+    it('should throw error when directory already exists without override flag', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+        };
+
+        // First generation
+        await clientGenerator(tree, options);
+
+        // Second generation without override should throw
+        await expect(clientGenerator(tree, options)).rejects.toThrow(
+            'Directory "test" already exists'
+        );
+    });
+
+    it('should override existing client when override flag is set', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+        };
+
+        // First generation
+        await clientGenerator(tree, options);
+
+        // Second generation with override should succeed
+        const overrideOptions = { ...options, override: true };
+        await expect(clientGenerator(tree, overrideOptions)).resolves.not.toThrow();
+    });
+
+    it('should add tsconfig path when using tsconfig.base.json', async () => {
+        // Create tsconfig.base.json instead of tsconfig.json
+        tree.delete('tsconfig.json');
+        tree.write(
+            'tsconfig.base.json',
+            JSON.stringify({
+                compilerOptions: {
+                    paths: {},
+                },
+            })
+        );
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+        };
+
+        await clientGenerator(tree, options);
+
+        const tsconfig = JSON.parse(tree.read('tsconfig.base.json', 'utf-8')!);
+        expect(tsconfig.compilerOptions.paths['@clients']).toBeDefined();
+    });
+
     describe('authMethod option', () => {
         it('should generate client with apiKeyAuthMiddleware by default', async () => {
             const options: ClientGeneratorSchema = {
