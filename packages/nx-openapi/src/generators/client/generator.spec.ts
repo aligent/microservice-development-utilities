@@ -1,7 +1,7 @@
 import { Tree, addProjectConfiguration, readProjectConfiguration } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { clientGenerator } from './generator';
-import { AuthMethod, ClientGeneratorSchema } from './schema';
+import { ClientGeneratorSchema } from './schema';
 
 describe('client generator', () => {
     let tree: Tree;
@@ -163,7 +163,7 @@ describe('client generator', () => {
             expect(clientContent).toContain('fetchSsmParams');
         });
 
-        it.each<{ authMethod: AuthMethod; middlewareName: string }>([
+        it.each<{ authMethod: string; middlewareName: string }>([
             { authMethod: 'api-key', middlewareName: 'apiKeyAuthMiddleware' },
             { authMethod: 'oauth1.0a', middlewareName: 'oAuth10aAuthMiddleware' },
             { authMethod: 'basic', middlewareName: 'basicAuthMiddleware' },

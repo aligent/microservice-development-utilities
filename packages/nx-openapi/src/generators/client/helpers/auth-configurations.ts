@@ -115,25 +115,15 @@ export function applyAuthMethodConfiguration(
 
     const sourceFile = project.createSourceFile(filePath, fileContent);
 
-    // Add extra imports to the @aligent/microservice-util-lib import declaration
-    if (config.extraImports.length > 0) {
-        const utilLibImport = sourceFile.getImportDeclaration(
-            decl => decl.getModuleSpecifierValue() === '@aligent/microservice-util-lib'
-        );
-
-        if (utilLibImport) {
-            for (const importName of config.extraImports) {
-                utilLibImport.addNamedImport(importName);
-            }
-        }
-    }
-
-    // Add middleware import to the @aligent/microservice-util-lib import declaration
+    // Add imports to the @aligent/microservice-util-lib import declaration
     const utilLibImport = sourceFile.getImportDeclaration(
         decl => decl.getModuleSpecifierValue() === '@aligent/microservice-util-lib'
     );
 
     if (utilLibImport) {
+        for (const importName of config.extraImports) {
+            utilLibImport.addNamedImport(importName);
+        }
         utilLibImport.addNamedImport(config.middlewareName);
     }
 
@@ -182,26 +172,13 @@ export function applyAuthMethodConfiguration(
         );`;
 
     // Find the retryMiddleware use statement and insert before it
-    const constructorBody = constructor.getBody();
-    if (constructorBody) {
-        const bodyText = constructorBody.getText();
-        const retryMiddlewareIndex = bodyText.indexOf(
-            'this.client.use(\n            retryMiddleware'
-        );
+    const statements = constructor.getStatements();
+    const retryStatementIndex = statements.findIndex(statement =>
+        /this\.client\.use\(\s*retryMiddleware/.test(statement.getText())
+    );
 
-        if (retryMiddlewareIndex !== -1) {
-            // Get all statements in the constructor
-            const statements = constructor.getStatements();
-
-            // Find the retry middleware statement index
-            const retryStatementIndex = statements.findIndex(statement =>
-                statement.getText().includes('retryMiddleware')
-            );
-
-            if (retryStatementIndex !== -1) {
-                constructor.insertStatements(retryStatementIndex, middlewareCall);
-            }
-        }
+    if (retryStatementIndex !== -1) {
+        constructor.insertStatements(retryStatementIndex, middlewareCall);
     }
 
     // Write the modified content back to the tree
