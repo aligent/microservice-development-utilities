@@ -12,27 +12,13 @@ import {
     getRootTsConfigPathInTree,
     toClassName,
 } from '../../helpers/utilities';
-import { AuthMethod, ClientGeneratorSchema } from './schema';
+import { applyAuthMethodConfiguration } from './helpers/auth-configurations';
+import { ClientGeneratorSchema } from './schema';
 
 const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
 
 // We also use this as the project root for all generated clients
 const PROJECT_NAME = 'clients';
-
-const AUTH_METHOD_CONFIG: Record<AuthMethod, { middlewareName: string }> = {
-    'api-key': {
-        middlewareName: 'apiKeyAuthMiddleware',
-    },
-    'oauth1.0a': {
-        middlewareName: 'oAuth10aAuthMiddleware',
-    },
-    basic: {
-        middlewareName: 'basicAuthMiddleware',
-    },
-    'oauth2.0': {
-        middlewareName: 'oAuth20AuthMiddleware',
-    },
-};
 
 export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema) {
     const {
@@ -89,12 +75,14 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
      * Each time we add new API client, we actually add a new class into `clients` project (if it exists).
      * This add a new example client class to `apiClientDest` folder
      */
-    const authConfig = AUTH_METHOD_CONFIG[authMethod];
+    const className = toClassName(name);
     generateFiles(tree, joinPathFragments(__dirname, './client-specific-files'), apiClientDest, {
-        className: toClassName(name),
-        middlewareName: authConfig.middlewareName,
-        authMethod,
+        className,
     });
+
+    // Apply auth method configuration using ts-morph
+    const clientFilePath = joinPathFragments(apiClientDest, 'client.ts');
+    applyAuthMethodConfiguration(tree, clientFilePath, authMethod, className);
 
     /**
      * The `clients` project expose all the API clients via `src/index.ts` file.

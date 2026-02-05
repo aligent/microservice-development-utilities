@@ -6,26 +6,15 @@
  * - For more information about openapi-fetch middlewares: https://openapi-ts.dev/openapi-fetch/middleware-auth#middleware
  */
 import {
-    <%= middlewareName %>,
-<% if (authMethod === 'api-key') { %>
-    fetchSsmParams,
-<% } %>
     retryMiddleware,
 } from '@aligent/microservice-util-lib';
 import createClient, { Client, ClientOptions } from 'openapi-fetch';
 import { paths } from './generated-types';
 
 export class <%= className %> {
-<% if (authMethod === 'api-key') { %>
-    private credential: string | null = null;
-<% } %>
     public readonly client: Client<paths, `${string}/${string}`>;
 
-<% if (authMethod === 'api-key') { %>
-    constructor(options: ClientOptions, credentialPath: string) {
-<% } else { %>
     constructor(options: ClientOptions) {
-<% } %>
         this.client = createClient<paths>(options);
 
         /**
@@ -33,56 +22,6 @@ export class <%= className %> {
          * - For requests, onRequest() will be called in the order registered
          * - For responses, onResponse() will be called in reverse order.
          */
-<% if (authMethod === 'api-key') { %>
-        this.client.use(
-            <%= middlewareName %>({
-                header: 'Authorization',
-                value: async () => {
-                    if (!this.credential) {
-                        const param = await fetchSsmParams(credentialPath);
-                        if (!param?.Value) {
-                            throw new Error('Unable to fetch API client credential');
-                        }
-
-                        this.credential = param.Value;
-                    }
-
-                    return `Bearer ${this.credential}`;
-                },
-            })
-        );
-<% } else if (authMethod === 'oauth1.0a') { %>
-        this.client.use(
-            <%= middlewareName %>({
-                algorithm: 'HMAC-SHA256',
-                credentials: async () => ({
-                    // TODO: Provide your OAuth 1.0a credentials
-                    consumerKey: 'your-consumer-key',
-                    consumerSecret: 'your-consumer-secret',
-                    token: 'your-token',
-                    tokenSecret: 'your-token-secret',
-                }),
-            })
-        );
-<% } else if (authMethod === 'basic') { %>
-        this.client.use(
-            <%= middlewareName %>({
-                credentials: async () => ({
-                    // TODO: Provide your basic auth credentials
-                    username: 'your-username',
-                    password: 'your-password',
-                }),
-            })
-        );
-<% } else if (authMethod === 'oauth2.0') { %>
-        this.client.use(
-            <%= middlewareName %>({
-                // TODO: Provide your OAuth 2.0 token
-                token: async () => 'your-access-token',
-                tokenType: 'Bearer',
-            })
-        );
-<% } %>
 
         this.client.use(
             retryMiddleware({
