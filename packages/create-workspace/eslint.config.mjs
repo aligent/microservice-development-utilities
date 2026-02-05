@@ -12,10 +12,4 @@ export default [
         },
         languageOptions: { parser: jsonParser },
     },
-    {
-        files: ['./package.json', './generators.json'],
-        plugins: { '@nx': nxEslintPlugin },
-        rules: { '@nx/nx-plugin-checks': 'error' },
-        languageOptions: { parser: jsonParser },
-    },
 ];

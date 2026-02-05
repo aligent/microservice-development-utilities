@@ -1,5 +1,5 @@
 {
-    "extends": "../../tsconfig.json",
+    "extends": "@aligent/ts-code-standards/tsconfigs-base",
     "files": [],
     "include": ["**/*.ts"],
     "references": []

@@ -2,12 +2,12 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "baseUrl": ".",
-        "rootDir": "src",
+        "rootDir": "bin",
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
         "types": ["node"],
         "declaration": true
     },
-    "include": ["src/**/*.ts"],
-    "exclude": ["vitest.config.mjs", "src/**/*.spec.ts", "src/**/*.test.ts"]
+    "include": ["bin/**/*.ts"],
+    "exclude": ["vitest.config.mjs", "bin/**/*.spec.ts", "bin/**/*.test.ts"]
 }
