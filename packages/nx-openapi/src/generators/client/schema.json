@@ -40,6 +40,12 @@
             "type": "boolean",
             "description": "Override existing files during generation",
             "default": false
+        },
+        "authMethod": {
+            "type": "string",
+            "description": "Authentication method to use for the generated client middleware",
+            "enum": ["api-key", "oauth1.0a", "basic", "oauth2.0"],
+            "default": "api-key"
         }
     },
     "required": ["name", "schemaPath"]

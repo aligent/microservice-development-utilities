@@ -5,4 +5,5 @@ export interface ClientGeneratorSchema {
     importPath?: string;
     skipValidate: boolean;
     override: boolean;
+    authMethod?: string;
 }
