@@ -20,7 +20,7 @@ export const AUTH_CONFIGS: Record<string, AuthMethodConfig> = {
         classProperty: 'private credential: string | null = null;',
         constructorParam: 'credentialPath: string',
         middlewareConfig: {
-            properties: `header: 'Authorization',
+            properties: `header: 'X-Api-Key',
                 value: async () => {
                     if (!this.credential) {
                         const param = await fetchSsmParams(credentialPath);
@@ -31,7 +31,7 @@ export const AUTH_CONFIGS: Record<string, AuthMethodConfig> = {
                         this.credential = param.Value;
                     }
 
-                    return \`Bearer \${this.credential}\`;
+                    return this.credential;
                 },`,
         },
     },
@@ -70,12 +70,13 @@ export const AUTH_CONFIGS: Record<string, AuthMethodConfig> = {
         classProperty: null,
         constructorParam: null,
         middlewareConfig: {
-            properties: `// TODO: Provide your OAuth 2.0 token
-                token: async () => 'your-access-token',
-                tokenType: 'Bearer',`,
+            properties: `token: async () => {
+                    // TODO: Send API call to get your OAuth 2.0 access token
+                    return 'your-access-token';
+                }`,
         },
     },
-};
+} as const;
 
 /**
  * Applies auth method configuration to a generated client file using ts-morph.
