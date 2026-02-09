@@ -2,6 +2,16 @@ import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { applyAuthMethodConfiguration } from './auth-configurations';
 
+const BASE_CLIENT = `import { retryMiddleware } from '@aligent/microservice-util-lib';
+export class TestClient {
+    public readonly client: any;
+    constructor() {
+        this.client.use(
+            retryMiddleware({})
+        );
+    }
+}`;
+
 describe('auth-configurations', () => {
     let tree: Tree;
 
@@ -56,36 +66,22 @@ export class TestClient {
                 `export class TestClient {
     public readonly client: any;
     constructor() {
-        this.client.use(retryMiddleware({}));
+        this.client.use(
+            retryMiddleware({})
+        );
     }
 }`
             );
 
-            // Should not throw, just skip adding imports
             applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
             const content = tree.read('client.ts', 'utf-8');
-            // Without util-lib import, middleware import won't be added but class is still modified
-            expect(content).toContain('TestClient');
-        });
-
-        it('should handle class without client property for api-key auth', () => {
-            tree.write(
-                'client.ts',
-                `import { retryMiddleware } from '@aligent/microservice-util-lib';
-export class TestClient {
-    constructor() {
-        this.client.use(retryMiddleware({}));
-    }
-}`
+            expect(content).toContain('basicAuthMiddleware');
+            expect(content).not.toContain(
+                "import { retryMiddleware, basicAuthMiddleware } from '@aligent/microservice-util-lib'"
             );
-
-            // Should not throw when client property is missing
-            applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
-            const content = tree.read('client.ts', 'utf-8');
-            expect(content).toContain('apiKeyAuthMiddleware');
         });
 
-        it('should handle constructor without retryMiddleware', () => {
+        it('should not insert middleware when retryMiddleware statement is not found', () => {
             tree.write(
                 'client.ts',
                 `import { retryMiddleware } from '@aligent/microservice-util-lib';
@@ -99,48 +95,197 @@ export class TestClient {
 
             applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
             const content = tree.read('client.ts', 'utf-8');
-            // Middleware should not be inserted if retryMiddleware pattern not found
             expect(content).not.toContain('basicAuthMiddleware({');
         });
 
-        it('should add extra imports for api-key auth method', () => {
-            tree.write(
-                'client.ts',
-                `import { retryMiddleware } from '@aligent/microservice-util-lib';
+        describe('api-key auth method', () => {
+            it('should add fetchSsmParams and apiKeyAuthMiddleware imports', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('fetchSsmParams');
+                expect(content).toContain('apiKeyAuthMiddleware');
+            });
+
+            it('should add credential class property before client property', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('private credential: string | null = null');
+                const credentialIndex = content!.indexOf('credential');
+                const clientIndex = content!.indexOf('client:');
+                expect(credentialIndex).toBeLessThan(clientIndex);
+            });
+
+            it('should add credentialPath constructor parameter', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('credentialPath: string');
+            });
+
+            it('should insert apiKeyAuthMiddleware before retryMiddleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                const apiKeyIndex = content!.indexOf('apiKeyAuthMiddleware({');
+                const retryIndex = content!.indexOf('retryMiddleware({');
+                expect(apiKeyIndex).toBeGreaterThan(-1);
+                expect(apiKeyIndex).toBeLessThan(retryIndex);
+            });
+
+            it('should include X-Api-Key header and fetchSsmParams in middleware config', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain("header: 'X-Api-Key'");
+                expect(content).toContain('fetchSsmParams(credentialPath)');
+                expect(content).toContain('this.credential');
+            });
+
+            it('should skip adding credential property when client property is missing', () => {
+                tree.write(
+                    'client.ts',
+                    `import { retryMiddleware } from '@aligent/microservice-util-lib';
 export class TestClient {
-    public readonly client: any;
     constructor() {
         this.client.use(
             retryMiddleware({})
         );
     }
 }`
-            );
+                );
 
-            applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
-            const content = tree.read('client.ts', 'utf-8');
-            expect(content).toContain('fetchSsmParams');
-            expect(content).toContain('apiKeyAuthMiddleware');
+                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('apiKeyAuthMiddleware');
+                expect(content).not.toContain('private credential');
+            });
         });
 
-        it('should insert middleware before retryMiddleware', () => {
-            // The pattern looks for exactly 'this.client.use(\n            retryMiddleware'
-            tree.write(
-                'client.ts',
-                `import { retryMiddleware } from '@aligent/microservice-util-lib';
-export class TestClient {
-    public readonly client: any;
-    constructor() {
-        this.client.use(
-            retryMiddleware({})
-        );
-    }
-}`
-            );
+        describe('basic auth method', () => {
+            it('should add basicAuthMiddleware import', () => {
+                tree.write('client.ts', BASE_CLIENT);
 
-            applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
-            const content = tree.read('client.ts', 'utf-8');
-            expect(content).toContain('oAuth20AuthMiddleware');
+                applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('basicAuthMiddleware');
+            });
+
+            it('should insert basicAuthMiddleware before retryMiddleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                const basicIndex = content!.indexOf('basicAuthMiddleware({');
+                const retryIndex = content!.indexOf('retryMiddleware({');
+                expect(basicIndex).toBeGreaterThan(-1);
+                expect(basicIndex).toBeLessThan(retryIndex);
+            });
+
+            it('should not add class property or constructor parameter', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).not.toContain('private credential');
+                expect(content).not.toContain('credentialPath');
+            });
+
+            it('should include credentials config in middleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('credentials: async () =>');
+                expect(content).toContain('username:');
+                expect(content).toContain('password:');
+            });
+        });
+
+        describe('oauth2.0 auth method', () => {
+            it('should add oAuth20AuthMiddleware import', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('oAuth20AuthMiddleware');
+            });
+
+            it('should insert oAuth20AuthMiddleware before retryMiddleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                const oauthIndex = content!.indexOf('oAuth20AuthMiddleware({');
+                const retryIndex = content!.indexOf('retryMiddleware({');
+                expect(oauthIndex).toBeGreaterThan(-1);
+                expect(oauthIndex).toBeLessThan(retryIndex);
+            });
+
+            it('should not add class property or constructor parameter', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).not.toContain('private credential');
+                expect(content).not.toContain('credentialPath');
+            });
+
+            it('should include token config in middleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('token: async () =>');
+            });
+        });
+
+        describe('oauth1.0a auth method', () => {
+            it('should add oAuth10aAuthMiddleware import', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain('oAuth10aAuthMiddleware');
+            });
+
+            it('should insert oAuth10aAuthMiddleware before retryMiddleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                const oauthIndex = content!.indexOf('oAuth10aAuthMiddleware({');
+                const retryIndex = content!.indexOf('retryMiddleware({');
+                expect(oauthIndex).toBeGreaterThan(-1);
+                expect(oauthIndex).toBeLessThan(retryIndex);
+            });
+
+            it('should not add class property or constructor parameter', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).not.toContain('private credential');
+                expect(content).not.toContain('credentialPath');
+            });
+
+            it('should include algorithm and credentials config in middleware', () => {
+                tree.write('client.ts', BASE_CLIENT);
+
+                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
+                const content = tree.read('client.ts', 'utf-8');
+                expect(content).toContain("algorithm: 'HMAC-SHA256'");
+                expect(content).toContain('credentials: async () =>');
+                expect(content).toContain('consumerKey:');
+                expect(content).toContain('consumerSecret:');
+                expect(content).toContain('tokenSecret:');
+            });
         });
     });
 });
