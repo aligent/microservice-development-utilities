@@ -12,6 +12,7 @@ import {
     getRootTsConfigPathInTree,
     toClassName,
 } from '../../helpers/utilities';
+import { applyAuthMethodConfiguration } from './helpers/auth-configurations';
 import { ClientGeneratorSchema } from './schema';
 
 const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
@@ -20,7 +21,14 @@ const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
 const PROJECT_NAME = 'clients';
 
 export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema) {
-    const { name, schemaPath, importPath = `@clients`, skipValidate, override } = options;
+    const {
+        name,
+        schemaPath,
+        importPath = `@clients`,
+        skipValidate,
+        override,
+        authMethod = 'api-key',
+    } = options;
 
     const ext = schemaPath.split('.').pop() || '';
     if (!VALID_EXTENSIONS.includes(ext)) {
@@ -67,9 +75,14 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
      * Each time we add new API client, we actually add a new class into `clients` project (if it exists).
      * This add a new example client class to `apiClientDest` folder
      */
+    const className = toClassName(name);
     generateFiles(tree, joinPathFragments(__dirname, './client-specific-files'), apiClientDest, {
-        className: toClassName(name),
+        className,
     });
+
+    // Apply auth method configuration using ts-morph
+    const clientFilePath = joinPathFragments(apiClientDest, 'client.ts');
+    applyAuthMethodConfiguration(tree, clientFilePath, authMethod, className);
 
     /**
      * The `clients` project expose all the API clients via `src/index.ts` file.
