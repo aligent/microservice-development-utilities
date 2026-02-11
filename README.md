@@ -4,6 +4,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 
 # Packages
 
+- [App Builder Util Lib](/packages/appbuilder-util-lib/README.md)
 - [Create Workspace](/packages/create-workspace/README.md)
 - [Microservice Util Lib](/packages/microservice-util-lib/README.md)
 - [Nx CDK](/packages/nx-cdk/README.md)
@@ -38,6 +39,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 ```
 microservice-development-utilities/
 ├── packages/
+│   ├── appbuilder-util-lib/    # Adobe App Builder utility library
 │   ├── microservice-util-lib/  # Utility library for microservices
 │   ├── nx-cdk/                 # Nx plugin for CDK project generation
 │   ├── nx-openapi/             # Nx plugin for OpenAPI code generation

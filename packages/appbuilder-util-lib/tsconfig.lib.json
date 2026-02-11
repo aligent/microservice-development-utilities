@@ -1,0 +1,13 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "rootDir": "src",
+        "outDir": "dist",
+        "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+        "types": ["node"],
+        "declaration": true
+    },
+    "include": ["src/**/*.ts", "src/global-types"],
+    "exclude": ["vitest.config.mjs", "src/**/*.spec.ts", "src/**/*.test.ts"]
+}
