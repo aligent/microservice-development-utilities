@@ -62,6 +62,9 @@
     "vitest": "4.0.9",
     "yargs": "^18.0.0"
   },
+  "overrides": {
+    "lodash": "4.17.23"
+  },
   "author": "Aligent",
   "license": "MIT",
   "workspaces": [
