@@ -40,6 +40,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 microservice-development-utilities/
 ├── packages/
 │   ├── appbuilder-util-lib/    # Adobe App Builder utility library
+│   ├── create-workspace/       # Workspace scaffolding tool
 │   ├── microservice-util-lib/  # Utility library for microservices
 │   ├── nx-cdk/                 # Nx plugin for CDK project generation
 │   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
