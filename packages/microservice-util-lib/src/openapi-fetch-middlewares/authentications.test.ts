@@ -40,7 +40,7 @@ describe('authentications middlewares', () => {
 
         const client = createClient<paths>({
             baseUrl: 'https://base.url/api',
-            fetch: mockFetch,
+            fetch: mockFetch as typeof fetch,
         });
         client.use(apiKeyAuthMiddleware(config));
 
@@ -58,7 +58,7 @@ describe('authentications middlewares', () => {
 
         const client = createClient<paths>({
             baseUrl: 'https://base.url/api',
-            fetch: mockFetch,
+            fetch: mockFetch as typeof fetch,
         });
         client.use(basicAuthMiddleware(config));
 
@@ -86,7 +86,7 @@ describe('authentications middlewares', () => {
 
         const client = createClient<paths>({
             baseUrl: 'https://base.url/api',
-            fetch: mockFetch,
+            fetch: mockFetch as typeof fetch,
         });
         client.use(oAuth10aAuthMiddleware(config));
 
@@ -105,7 +105,7 @@ describe('authentications middlewares', () => {
 
         const client = createClient<paths>({
             baseUrl: 'https://base.url/api',
-            fetch: mockFetch,
+            fetch: mockFetch as typeof fetch,
         });
         client.use(oAuth20AuthMiddleware(config));
 
@@ -123,7 +123,7 @@ describe('authentications middlewares', () => {
 
         const client = createClient<paths>({
             baseUrl: 'https://base.url/api',
-            fetch: mockFetch,
+            fetch: mockFetch as typeof fetch,
         });
         client.use(oAuth20AuthMiddleware(config));
 

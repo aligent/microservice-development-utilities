@@ -13,6 +13,7 @@ import {
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
 } from './openapi-fetch-middlewares/authentications';
+import { LogLevel, Logger, logMiddleware } from './openapi-fetch-middlewares/log';
 import {
     RetryConfig as RetryMiddlewareConfig,
     retryMiddleware,
@@ -24,6 +25,8 @@ import S3Dao from './s3/s3';
 export type {
     ApiKey,
     Basic,
+    LogLevel,
+    Logger,
     OAuth10a,
     OAuth20,
     ObjectMap,
@@ -40,6 +43,7 @@ export {
     fetchSsmParams,
     getAwsIdFromArn,
     hasDefinedProperties,
+    logMiddleware,
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
     remap,

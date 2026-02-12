@@ -5,8 +5,7 @@
         "rootDir": "bin",
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-        "types": ["node"],
-        "declaration": true
+        "types": ["node"]
     },
     "include": ["bin/**/*.ts"],
     "exclude": ["vitest.config.mjs", "bin/**/*.spec.ts", "bin/**/*.test.ts"]
