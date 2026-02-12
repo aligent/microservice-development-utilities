@@ -15,16 +15,7 @@ type LogLevel = 'INFO' | 'DEBUG';
  * Parse request/response body based on Content-Type header
  */
 async function parseBody(source: Request | Response, contentType: string | null): Promise<unknown> {
-    if (!contentType) {
-        // No content-type, try JSON as default
-        try {
-            return await source.clone().json();
-        } catch {
-            return '[Unable to parse body]';
-        }
-    }
-
-    const normalizedContentType = contentType.toLowerCase();
+    const normalizedContentType = contentType ? contentType.toLowerCase() : 'application/json';
 
     try {
         // JSON content
@@ -55,7 +46,7 @@ async function parseBody(source: Request | Response, contentType: string | null)
         // Unknown content type, try JSON as default
         return await source.clone().json();
     } catch (error) {
-        return `[Unable to parse body: ${error instanceof Error ? error.message : 'Unknown error'}]`;
+        return `[Unable to parse ${contentType} body: ${error instanceof Error ? error.message : 'Unknown error'}]`;
     }
 }
 
