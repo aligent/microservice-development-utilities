@@ -1,5 +1,9 @@
 {
     "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "compilerOptions": {
+        "composite": true,
+        "declaration": true
+    },
     "files": [],
     "include": [],
     "references": [
