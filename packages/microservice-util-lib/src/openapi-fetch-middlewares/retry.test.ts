@@ -64,7 +64,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             const response = await client.GET('/test');
 
@@ -86,7 +88,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             await expect(client.GET('/test')).rejects.toThrow('500: Internal Server Error');
 
@@ -113,7 +117,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             const response = await client.GET('/test');
 
@@ -140,7 +146,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             const response = await client.GET('/test');
 
@@ -191,7 +199,7 @@ describe('retry middleware', () => {
                 retryMiddleware({
                     retries: 2,
                     baseDelay: 10,
-                    fetch: mockFetch,
+                    fetch: mockFetch as typeof fetch,
                 })
             );
 
@@ -218,7 +226,7 @@ describe('retry middleware', () => {
                 retries: 2,
                 baseDelay: 10,
                 retryCondition: context => context.response?.status === 418,
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -249,7 +257,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 100, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 100, fetch: mockFetch as typeof fetch })
+            );
 
             try {
                 await client.GET('/test');
@@ -293,7 +303,7 @@ describe('retry middleware', () => {
                     retries: 3,
                     baseDelay: 100,
                     retryDelay: 'linear',
-                    fetch: mockFetch,
+                    fetch: mockFetch as typeof fetch,
                 })
             );
 
@@ -331,7 +341,7 @@ describe('retry middleware', () => {
             const config: RetryConfig = {
                 retries: 2,
                 retryDelay: customDelayFn,
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -372,7 +382,7 @@ describe('retry middleware', () => {
                 retries: 2,
                 baseDelay: 10,
                 onRetry: onRetryCallback,
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -412,7 +422,7 @@ describe('retry middleware', () => {
                 retries: 2,
                 baseDelay: 10,
                 retryOn: [502, 503],
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -440,7 +450,7 @@ describe('retry middleware', () => {
                 retries: 2,
                 baseDelay: 10,
                 retryOn: [502, 503], // 500 not included
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -478,7 +488,7 @@ describe('retry middleware', () => {
                     retries: 3,
                     baseDelay: 1000,
                     maxDelay: 1500,
-                    fetch: mockFetch,
+                    fetch: mockFetch as typeof fetch,
                 })
             );
 
@@ -516,7 +526,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             const response = await client.GET('/test');
 
@@ -533,7 +545,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             await expect(client.GET('/test')).rejects.toThrow('fetch failed');
 
@@ -553,7 +567,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             const response = await client.GET('/test');
 
@@ -575,7 +591,7 @@ describe('retry middleware', () => {
                 retries: 2,
                 baseDelay: 10,
                 onRetry: onRetryCallback,
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -611,7 +627,7 @@ describe('retry middleware', () => {
                 retries: 2,
                 baseDelay: 10,
                 retryCondition: customRetryCondition,
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             };
 
             const client = createClient<paths>({
@@ -654,7 +670,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             const response = await client.GET('/test');
 
@@ -670,7 +688,9 @@ describe('retry middleware', () => {
                 baseUrl: 'https://api.example.com',
                 fetch: mockFetch as typeof fetch,
             });
-            client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
+            client.use(
+                retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch as typeof fetch })
+            );
 
             await expect(client.GET('/test')).rejects.toThrow('not a fetch error');
 
@@ -690,9 +710,11 @@ describe('retry middleware', () => {
 
         const client = createClient<paths>({
             baseUrl: 'https://api.example.com',
-            fetch: mockFetch,
+            fetch: mockFetch as typeof fetch,
         });
-        client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
+        client.use(
+            retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch as typeof fetch })
+        );
 
         await expect(client.GET('/test')).rejects.toThrow('500: Internal Server Error');
 
