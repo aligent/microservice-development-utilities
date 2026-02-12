@@ -24,28 +24,30 @@ async function parseBody(source: Request | Response, contentType: string | null)
         }
     }
 
+    const normalizedContentType = contentType.toLowerCase();
+
     try {
         // JSON content
-        if (contentType.includes('application/json')) {
+        if (normalizedContentType.includes('application/json')) {
             return await source.clone().json();
         }
 
         // Text content
         if (
-            contentType.includes('text/') ||
-            contentType.includes('application/xml') ||
-            contentType.includes('application/x-www-form-urlencoded')
+            normalizedContentType.includes('text/') ||
+            normalizedContentType.includes('application/xml') ||
+            normalizedContentType.includes('application/x-www-form-urlencoded')
         ) {
             return await source.clone().text();
         }
 
         // Binary or multipart content - don't parse
         if (
-            contentType.includes('multipart/form-data') ||
-            contentType.includes('application/octet-stream') ||
-            contentType.includes('image/') ||
-            contentType.includes('video/') ||
-            contentType.includes('audio/')
+            normalizedContentType.includes('multipart/form-data') ||
+            normalizedContentType.includes('application/octet-stream') ||
+            normalizedContentType.includes('image/') ||
+            normalizedContentType.includes('video/') ||
+            normalizedContentType.includes('audio/')
         ) {
             return `[Binary content: ${contentType}]`;
         }
@@ -116,7 +118,7 @@ function logMiddleware(
 
     return {
         async onRequest({ options, params, request }) {
-            const contentType = request.headers.get('content-type');
+            const contentType = request.headers.get('Content-Type');
             log(`${request.method} request to ${clientName}`, {
                 method: request.method,
                 baseUrl: options.baseUrl,
@@ -127,7 +129,7 @@ function logMiddleware(
         },
 
         async onResponse({ response }) {
-            const contentType = response.headers.get('content-type');
+            const contentType = response.headers.get('Content-Type');
             log(`Response from ${clientName}`, {
                 status: response.status,
                 body: await parseBody(response, contentType),
