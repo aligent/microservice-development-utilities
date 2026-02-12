@@ -1,6 +1,6 @@
 {
   "name": "@aligent/appbuilder-util-lib",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A utility library to simplify and standardise common Adobe App Builder tasks.",
   "type": "commonjs",
   "main": "./src/index.js",
