@@ -18,9 +18,13 @@ async function parseBody(source: Request | Response, contentType: string | null)
     const normalizedContentType = contentType ? contentType.toLowerCase() : 'application/json';
 
     try {
+        if (!source.body) {
+            return 'null';
+        }
+
         // JSON content
         if (normalizedContentType.includes('application/json')) {
-            return await source.clone().json();
+            return await source.json();
         }
 
         // Text content
@@ -29,7 +33,7 @@ async function parseBody(source: Request | Response, contentType: string | null)
             normalizedContentType.includes('application/xml') ||
             normalizedContentType.includes('application/x-www-form-urlencoded')
         ) {
-            return await source.clone().text();
+            return await source.text();
         }
 
         // Binary or multipart content - don't parse
@@ -43,8 +47,8 @@ async function parseBody(source: Request | Response, contentType: string | null)
             return `[Binary content: ${contentType}]`;
         }
 
-        // Unknown content type, try JSON as default
-        return await source.clone().json();
+        // Unknown content type, try TEXT as default
+        return await source.text();
     } catch (error) {
         return `[Unable to parse ${contentType} body: ${error instanceof Error ? error.message : 'Unknown error'}]`;
     }
@@ -115,7 +119,7 @@ function logMiddleware(
                 baseUrl: options.baseUrl,
                 url: request.url,
                 params: params,
-                body: await parseBody(request, contentType),
+                body: await parseBody(request.clone(), contentType),
             });
         },
 
@@ -123,7 +127,7 @@ function logMiddleware(
             const contentType = response.headers.get('Content-Type');
             log(`Response from ${clientName}`, {
                 status: response.status,
-                body: await parseBody(response, contentType),
+                body: await parseBody(response.clone(), contentType),
             });
         },
     };
