@@ -1,0 +1,30 @@
+{
+    "name": "appbuilder-util-lib",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "library",
+    "sourceRoot": "packages/appbuilder-util-lib/src",
+    "targets": {
+        "build": {
+            "executor": "@nx/js:tsc",
+            "options": {
+                "outputPath": "{projectRoot}/dist",
+                "main": "{projectRoot}/src/index.ts",
+                "tsConfig": "{projectRoot}/tsconfig.lib.json",
+                "assets": [
+                    "{projectRoot}/*.md",
+                    {
+                        "input": "./{projectRoot}/docs",
+                        "glob": "**/(*.md)",
+                        "output": "./docs"
+                    }
+                ]
+            }
+        },
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "{projectRoot}/dist"
+            }
+        }
+    },
+    "tags": ["library"]
+}

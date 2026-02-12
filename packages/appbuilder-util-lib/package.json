@@ -1,0 +1,19 @@
+{
+  "name": "@aligent/appbuilder-util-lib",
+  "version": "0.1.0",
+  "description": "A utility library to simplify and standardise common Adobe App Builder tasks.",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligent/microservice-development-utilities.git",
+    "directory": "packages/appbuilder-util-lib"
+  },
+  "dependencies": {
+    "@adobe/aio-sdk": "^6.0.0",
+    "base64url": "^3.0.1"
+  },
+  "author": "Aligent",
+  "license": "MIT"
+}
