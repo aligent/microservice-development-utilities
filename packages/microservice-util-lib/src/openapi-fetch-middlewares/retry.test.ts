@@ -30,7 +30,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware());
 
@@ -62,7 +62,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 
@@ -84,7 +84,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 
@@ -111,7 +111,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
 
@@ -138,7 +138,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
 
@@ -159,7 +159,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10 }));
 
@@ -185,7 +185,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(
                 retryMiddleware({
@@ -223,7 +223,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -247,7 +247,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 100, fetch: mockFetch }));
 
@@ -286,7 +286,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(
                 retryMiddleware({
@@ -336,7 +336,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -377,7 +377,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -417,7 +417,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -445,7 +445,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -469,7 +469,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             // Exponential backoff would be: 1000ms, 2000ms, 4000ms
             // But maxRetryDelay is 1500ms, so all should be capped
@@ -514,7 +514,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 
@@ -531,7 +531,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 
@@ -551,7 +551,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 2, baseDelay: 10, fetch: mockFetch }));
 
@@ -580,7 +580,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -616,7 +616,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware(config));
 
@@ -652,7 +652,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 
@@ -668,7 +668,7 @@ describe('retry middleware', () => {
 
             const client = createClient<paths>({
                 baseUrl: 'https://api.example.com',
-                fetch: mockFetch,
+                fetch: mockFetch as typeof fetch,
             });
             client.use(retryMiddleware({ retries: 3, baseDelay: 10, fetch: mockFetch }));
 

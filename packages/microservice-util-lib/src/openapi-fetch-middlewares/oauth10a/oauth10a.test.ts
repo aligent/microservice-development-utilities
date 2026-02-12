@@ -6,8 +6,8 @@ import { generateOauthParams } from './oauth10a';
 
 describe('generateOauthParams', () => {
     const baseRequest: MiddlewareCallbackParams['request'] = {
-        method: '',
-        url: '',
+        method: 'get',
+        url: 'path/with/string',
         cache: 'default',
         credentials: 'same-origin',
         headers: new Headers(),
@@ -34,6 +34,7 @@ describe('generateOauthParams', () => {
         baseUrl: 'https://base.url',
         bodySerializer: () => '',
         fetch: () => Promise.resolve(new Response()),
+        pathSerializer: () => '',
         querySerializer: () => '',
         parseAs: 'json',
     };
@@ -59,14 +60,8 @@ describe('generateOauthParams', () => {
     });
 
     it('generate correct HMAC-SHA256 signature to simple GET with token', async () => {
-        const request: MiddlewareCallbackParams['request'] = {
-            ...baseRequest,
-            method: 'get',
-            url: 'path/with/string',
-        };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA256',
@@ -88,14 +83,8 @@ describe('generateOauthParams', () => {
     });
 
     it('generate correct HMAC-SHA1 signature to simple GET without token', async () => {
-        const request: MiddlewareCallbackParams['request'] = {
-            ...baseRequest,
-            method: 'get',
-            url: 'path/with/string',
-        };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA1',
@@ -119,12 +108,10 @@ describe('generateOauthParams', () => {
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
             method: 'post',
-            url: 'path/with/string',
             text: () => Promise.resolve('{"a":1,"b":2}'),
+            clone: () => ({ ...request }),
         };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA256',
@@ -150,13 +137,11 @@ describe('generateOauthParams', () => {
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
             method: 'post',
-            url: 'path/with/string',
             headers: new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' }),
             text: () => Promise.resolve('a=1&b=2'),
+            clone: () => ({ ...request }),
         };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA1',
@@ -180,11 +165,9 @@ describe('generateOauthParams', () => {
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
             method: 'post',
-            url: 'path/with/string',
+            clone: () => ({ ...request }),
         };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {
             query: { a: '1', b: '2' },
         };
@@ -207,14 +190,8 @@ describe('generateOauthParams', () => {
     });
 
     it('generate correct HMAC-SHA1 signature to simple GET request with callback URL', async () => {
-        const request: MiddlewareCallbackParams['request'] = {
-            ...baseRequest,
-            method: 'get',
-            url: 'path/with/string',
-        };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA1',
@@ -237,14 +214,8 @@ describe('generateOauthParams', () => {
     });
 
     it('generate correct HMAC-SHA256 signature to simple GET request with verifier', async () => {
-        const request: MiddlewareCallbackParams['request'] = {
-            ...baseRequest,
-            method: 'get',
-            url: 'path/with/string',
-        };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA256',
@@ -270,11 +241,9 @@ describe('generateOauthParams', () => {
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
             method: 'post',
-            url: 'path/with/string',
+            clone: () => ({ ...request }),
         };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {};
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA1',
@@ -303,15 +272,11 @@ describe('generateOauthParams', () => {
     it('generate correct HMAC-SHA1 signature to simple GET request with path parameters', async () => {
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
-            method: 'get',
             url: 'path/with/{param1}/and/{param2}',
+            clone: () => ({ ...request }),
         };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
-        const params: MiddlewareCallbackParams['params'] = {
-            path: { param1: '1', param2: '2' },
-        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
+        const params: MiddlewareCallbackParams['params'] = { path: { param1: '1', param2: '2' } };
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA1',
             credentials: () => new Promise(res => res(credentialsWithoutToken)),
@@ -331,14 +296,8 @@ describe('generateOauthParams', () => {
     });
 
     it('generate correct HMAC-SHA256 signature to simple GET request with query parameters that contains space character', async () => {
-        const request: MiddlewareCallbackParams['request'] = {
-            ...baseRequest,
-            method: 'get',
-            url: 'path/with/string',
-        };
-        const options: MiddlewareCallbackParams['options'] = {
-            ...baseOptions,
-        };
+        const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
         const params: MiddlewareCallbackParams['params'] = {
             query: { time: '2023-04-04 00:00:00' },
         };

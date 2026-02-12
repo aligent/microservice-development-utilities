@@ -173,8 +173,15 @@ export async function generateOauthParams(
     const { algorithm, includeBodyHash = 'auto', realm, callback, verifier } = config;
     const { consumerKey, consumerSecret, token, tokenSecret } = await config.credentials();
 
-    const method = (request.method || 'GET').toUpperCase();
-    const url = combineUrlAndPathParams(request.url, params.path);
+    // Due to the way that openapi-fetch & fetch API are implemented in NodeJS (undici),
+    // each request only can be used ONCE. We have to clone the request like this to extract information
+    // Otherwise, undici will not be able to create & send the request.
+    const clonedRequest = request.clone();
+
+    const method = (clonedRequest.method || 'GET').toUpperCase();
+    const url = combineUrlAndPathParams(clonedRequest.url, params.path);
+    const contentType = clonedRequest.headers.get('Content-Type');
+    const body = await clonedRequest.text();
 
     const oauthParams: Record<string, string> = {
         oauth_consumer_key: consumerKey,
@@ -206,22 +213,18 @@ export async function generateOauthParams(
         addParamsToSign(paramsToSign, params.query);
     }
 
-    const body = await request.text();
-
     // If user submit a form, then include form parameters in the
     // signature as parameters rather than the body hash
-    if (request.headers.get('Content-Type') === 'application/x-www-form-urlencoded') {
+    if (contentType === 'application/x-www-form-urlencoded') {
         addParamsToSign(paramsToSign, new URLSearchParams(body));
-        console.log(JSON.stringify(paramsToSign));
-    } else {
-        if (shouldGenerateBodyHash(body, method, includeBodyHash)) {
-            const bodyHash = crypto
-                .createHash(algorithm === 'HMAC-SHA1' ? 'sha1' : 'sha256')
-                .update(Buffer.from(body))
-                .digest('base64');
-            oauthParams.oauth_body_hash = bodyHash;
-            addParamToSign(paramsToSign, 'oauth_body_hash', bodyHash);
-        }
+    } else if (shouldGenerateBodyHash(body, method, includeBodyHash)) {
+        const bodyHash = crypto
+            .createHash(algorithm === 'HMAC-SHA1' ? 'sha1' : 'sha256')
+            .update(Buffer.from(body))
+            .digest('base64');
+
+        oauthParams.oauth_body_hash = bodyHash;
+        addParamToSign(paramsToSign, 'oauth_body_hash', bodyHash);
     }
 
     const oauthUrl = getOAuthUrl(options.baseUrl, url);
