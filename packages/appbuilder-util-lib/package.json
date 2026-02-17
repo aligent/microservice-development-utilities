@@ -14,6 +14,7 @@
     "@adobe/aio-lib-core-logging": "^3.0.2",
     "@adobe/aio-lib-db": "^0.1.0-beta.6",
     "@adobe/aio-lib-files": "^4.1.2",
+    "@adobe/aio-lib-state": "^5.3.1",
     "@adobe/aio-sdk": "^6.0.0",
     "base64url": "^3.0.1"
   },
