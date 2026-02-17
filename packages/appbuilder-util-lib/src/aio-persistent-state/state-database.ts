@@ -43,22 +43,30 @@ let dbLibPromise: Promise<DbClient> | undefined;
 /**
  * Returns a lazily-initialised Adobe I/O State instance.
  * The promise is cached so the SDK is only initialised once per process.
+ * If initialisation fails, the cache is cleared so the next call retries.
  *
  * @returns A promise that resolves to the Adobe I/O State instance.
  */
 function getStateLib(): Promise<AdobeState> {
-    stateLibPromise ??= initialiseState();
+    stateLibPromise ??= initialiseState().catch(err => {
+        stateLibPromise = undefined;
+        throw err;
+    });
     return stateLibPromise;
 }
 
 /**
  * Returns a lazily-initialised Adobe I/O Database instance.
  * The promise is cached so the SDK is only initialised once per process.
+ * If initialisation fails, the cache is cleared so the next call retries.
  *
  * @returns A promise that resolves to the Adobe I/O Database instance.
  */
 function getDbLib(): Promise<DbClient> {
-    dbLibPromise ??= initialiseDb();
+    dbLibPromise ??= initialiseDb().catch(err => {
+        dbLibPromise = undefined;
+        throw err;
+    });
     return dbLibPromise;
 }
 

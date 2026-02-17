@@ -31,22 +31,30 @@ let filesLibPromise: Promise<Files> | undefined;
 /**
  * Returns a lazily-initialised Adobe I/O State instance.
  * The promise is cached so the SDK is only initialised once per process.
+ * If initialisation fails, the cache is cleared so the next call retries.
  *
  * @returns A promise that resolves to the Adobe I/O State instance.
  */
 function getStateLib(): Promise<AdobeState> {
-    stateLibPromise ??= initialiseState();
+    stateLibPromise ??= initialiseState().catch(err => {
+        stateLibPromise = undefined;
+        throw err;
+    });
     return stateLibPromise;
 }
 
 /**
  * Returns a lazily-initialised Adobe I/O Files instance.
  * The promise is cached so the SDK is only initialised once per process.
+ * If initialisation fails, the cache is cleared so the next call retries.
  *
  * @returns A promise that resolves to the Adobe I/O Files instance.
  */
 function getFilesLib(): Promise<Files> {
-    filesLibPromise ??= initialiseFiles();
+    filesLibPromise ??= initialiseFiles().catch(err => {
+        filesLibPromise = undefined;
+        throw err;
+    });
     return filesLibPromise;
 }
 
