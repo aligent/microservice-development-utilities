@@ -1,37 +1,51 @@
 import base64url from 'base64url';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-jest.mock('@adobe/aio-lib-core-logging', () => () => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
+const {
+    mockFilesDelete,
+    mockFilesRead,
+    mockFilesWrite,
+    mockStateDelete,
+    mockStateGet,
+    mockStatePut,
+} = vi.hoisted(() => ({
+    mockFilesDelete: vi.fn(),
+    mockFilesRead: vi.fn(),
+    mockFilesWrite: vi.fn(),
+    mockStateDelete: vi.fn(),
+    mockStateGet: vi.fn(),
+    mockStatePut: vi.fn(),
 }));
 
-const mockFilesDelete = jest.fn();
-const mockFilesRead = jest.fn();
-const mockFilesWrite = jest.fn();
-
-jest.mock('@adobe/aio-lib-files', () => ({
-    init: jest.fn().mockResolvedValue({
-        delete: mockFilesDelete,
-        read: mockFilesRead,
-        write: mockFilesWrite,
+vi.mock('@adobe/aio-lib-core-logging', () => ({
+    default: () => ({
+        info: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        warn: vi.fn(),
     }),
 }));
 
-const mockStateDelete = jest.fn();
-const mockStateGet = jest.fn();
-const mockStatePut = jest.fn();
-
-jest.mock('@adobe/aio-lib-state', () => ({
-    init: jest.fn().mockResolvedValue({
-        delete: mockStateDelete,
-        get: mockStateGet,
-        put: mockStatePut,
-    }),
+vi.mock('@adobe/aio-lib-files', () => ({
+    init: () =>
+        Promise.resolve({
+            delete: mockFilesDelete,
+            read: mockFilesRead,
+            write: mockFilesWrite,
+        }),
 }));
 
-import { DEFAULT_ONE_YEAR_TTL_SECONDS } from '../src/constants';
-import { createFileStorageClient } from '../src/state-files';
+vi.mock('@adobe/aio-lib-state', () => ({
+    init: () =>
+        Promise.resolve({
+            delete: mockStateDelete,
+            get: mockStateGet,
+            put: mockStatePut,
+        }),
+}));
+
+import { DEFAULT_ONE_YEAR_TTL_SECONDS } from '../constants';
+import { createFileStorageClient } from '../state-files';
 
 describe('createFileStorageClient()', () => {
     test('should throw when encoded key exceeds maximum size', async () => {
@@ -45,7 +59,7 @@ describe('createFileStorageClient()', () => {
 
 describe('get()', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockFilesRead.mockResolvedValue(Buffer.from('mocked-files-value'));
     });
 
@@ -112,7 +126,7 @@ describe('get()', () => {
 
 describe('put()', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     test('should encode the key, write to file, and put to state', async () => {
@@ -161,7 +175,7 @@ describe('put()', () => {
 
 describe('exists()', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     test('should return `true` when value exists in State', async () => {

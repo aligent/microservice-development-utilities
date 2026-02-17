@@ -1,42 +1,49 @@
 import base64url from 'base64url';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-jest.mock('@adobe/aio-lib-core-logging', () => () => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
+const { mockDeleteOne, mockFindOne, mockReplaceOne, mockStateDelete, mockStateGet, mockStatePut } =
+    vi.hoisted(() => ({
+        mockDeleteOne: vi.fn(),
+        mockFindOne: vi.fn(),
+        mockReplaceOne: vi.fn(),
+        mockStateDelete: vi.fn(),
+        mockStateGet: vi.fn(),
+        mockStatePut: vi.fn(),
+    }));
+
+vi.mock('@adobe/aio-lib-core-logging', () => ({
+    default: () => ({
+        info: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        warn: vi.fn(),
+    }),
 }));
 
-const mockDeleteOne = jest.fn();
-const mockFindOne = jest.fn();
-const mockReplaceOne = jest.fn();
-
-jest.mock('@adobe/aio-lib-db', () => ({
-    init: () => ({
-        connect: () => ({
-            collection: jest.fn().mockResolvedValue({
-                deleteOne: mockDeleteOne,
-                findOne: mockFindOne,
-                replaceOne: mockReplaceOne,
+vi.mock('@adobe/aio-lib-db', () => ({
+    init: () =>
+        Promise.resolve({
+            connect: () => ({
+                collection: vi.fn().mockResolvedValue({
+                    deleteOne: mockDeleteOne,
+                    findOne: mockFindOne,
+                    replaceOne: mockReplaceOne,
+                }),
             }),
         }),
-    }),
 }));
 
-const mockStateDelete = jest.fn();
-const mockStateGet = jest.fn();
-const mockStatePut = jest.fn();
-
-jest.mock('@adobe/aio-lib-state', () => ({
-    init: jest.fn().mockResolvedValue({
-        delete: mockStateDelete,
-        get: mockStateGet,
-        put: mockStatePut,
-    }),
+vi.mock('@adobe/aio-lib-state', () => ({
+    init: () =>
+        Promise.resolve({
+            delete: mockStateDelete,
+            get: mockStateGet,
+            put: mockStatePut,
+        }),
 }));
 
-import { DEFAULT_ONE_YEAR_TTL_SECONDS } from '../src/constants';
-import { createDatabaseStorageClient } from '../src/state-database';
+import { DEFAULT_ONE_YEAR_TTL_SECONDS } from '../constants';
+import { createDatabaseStorageClient } from '../state-database';
 
 describe('createDatabaseStorageClient()', () => {
     test('should throw when encoded key exceeds maximum size', async () => {
@@ -54,7 +61,7 @@ describe('createDatabaseStorageClient()', () => {
 
 describe('get()', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockFindOne.mockResolvedValue({
             _id: '123',
             'mocked-database-key': 'mocked-database-value',
@@ -139,7 +146,7 @@ describe('get()', () => {
 
 describe('put()', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     test('should encode the key, write to file, and put to state', async () => {
@@ -204,7 +211,7 @@ describe('put()', () => {
 
 describe('exists()', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     test('should return `true` when value exists in State', async () => {
