@@ -18,13 +18,16 @@
  * cache entirely. On read, such values are served directly from Files
  * without being cached in State.
  */
-import { Core, File, State } from '@adobe/aio-sdk';
+import { type Files, init as initialiseFiles } from '@adobe/aio-lib-files';
+import { type AdobeState, init as initialiseState } from '@adobe/aio-lib-state';
 import base64url from 'base64url';
 
-const logger = Core.Logger('aio-persistent-state', { level: 'info' });
+import { defaultLogger } from './utils';
 
-let stateLibPromise: Promise<State.AdobeState> | undefined;
-let filesLibPromise: Promise<File.Files> | undefined;
+const logger = defaultLogger;
+
+let stateLibPromise: Promise<AdobeState> | undefined;
+let filesLibPromise: Promise<Files> | undefined;
 
 /**
  * Returns a lazily-initialised Adobe I/O State instance.
@@ -33,8 +36,8 @@ let filesLibPromise: Promise<File.Files> | undefined;
  *
  * @returns A promise that resolves to the Adobe I/O State instance.
  */
-function getStateLib(): Promise<State.AdobeState> {
-    stateLibPromise ??= State.init().catch(err => {
+function getStateLib(): Promise<AdobeState> {
+    stateLibPromise ??= initialiseState().catch(err => {
         stateLibPromise = undefined;
         throw err;
     });
@@ -48,8 +51,8 @@ function getStateLib(): Promise<State.AdobeState> {
  *
  * @returns A promise that resolves to the Adobe I/O Files instance.
  */
-function getFilesLib(): Promise<File.Files> {
-    filesLibPromise ??= File.init().catch(err => {
+function getFilesLib(): Promise<Files> {
+    filesLibPromise ??= initialiseFiles().catch(err => {
         filesLibPromise = undefined;
         throw err;
     });
