@@ -6,34 +6,67 @@
 
 # Module: aio-persistent-state
 
-A utility library for persistent, high-performance key-value storage
-using Adobe I/O State (for caching) and Adobe I/O File (for durability).
+A utility library for persistent, high-performance key-value storage in Adobe App Builder runtime. Provides two hybrid storage clients:
+
+- **State + Files** — for string data up to 1 MB with automatic overflow handling
+- **State + Database** — for typed JSON objects with MongoDB-like storage
 
 ## Overview
 
-This library provides a high-level abstraction for key-value storage using Adobe App Builder's runtime services. It combines:
-- **Adobe I/O Lib State** — fast access and short-term caching
-- **Adobe I/O Lib Files** — long-term durability and backup
+This library provides high-level abstractions for key-value storage using Adobe App Builder's runtime services. Both clients use a two-tier architecture:
 
-### Why both State and Files?
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  State (fast, TTL-based)  ←──cache──→  Files/Database (permanent)       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-Adobe I/O State enforces a **TTL (Time-To-Live)** on all entries, so cached data will eventually expire and be evicted. Files storage has no such expiration, making it suitable for persistent, long-lived data. By writing to Files for durability and using State as a fast-access cache, we get speed from State and persistence from Files.
+### Why two tiers?
 
-### 1 MB State size limit
+Adobe I/O State enforces a **TTL (Time-To-Live)** on all entries, so cached data will eventually expire. Files and Database storage have no such expiration, making them suitable for persistent data. By combining both, we get speed from State and persistence from the durable tier.
 
-Adobe I/O State imposes a **maximum value size of 1 MB** per entry. This library works around the limit automatically:
-- **On write (`put`)**: values exceeding 1 MB are stored in Files only; the State cache is skipped.
-- **On read (`get`)**: if the value retrieved from Files exceeds 1 MB, it is returned directly without being cached in State.
+### Storage options
 
-Values within the 1 MB limit are stored in both layers so that subsequent reads are served from the faster State cache.
+| Feature        | State + Files             | State + Database                |
+|----------------|---------------------------|---------------------------------|
+| Data type      | `string`                  | Generic `T` (JSON-serializable) |
+| Max value size | Unlimited (1 MB cached)   | Limited by Database             |
+| Query support  | Key-based only            | MongoDB-like queries            |
+| Best for       | Large strings, JSON blobs | Structured typed data           |
 
-### How it works
+## Interfaces
 
-- Data is retrieved quickly from State if present (cache hit)
-- If not found in State (cache miss, e.g. due to TTL expiry), the library loads from Files, then re-populates the State cache
-- On updates, the value is written to Files first for durability, then cached in State
+- [FileStorageClientConfig](../interfaces/FileStorageClientConfig.md)
+- [FileStorageClient](../interfaces/FileStorageClient.md)
+- [DatabaseStorageClientConfig](../interfaces/DatabaseStorageClientConfig.md)
+- [DatabaseStorageClient](../interfaces/DatabaseStorageClient.md)
 
 ## Functions
 
-- [PersistentState.get](../functions/get.md)
-- [PersistentState.put](../functions/put.md)
+- [createFileStorageClient](../functions/createFileStorageClient.md)
+- [createDatabaseStorageClient](../functions/createDatabaseStorageClient.md)
+
+## Constants
+
+- `DEFAULT_ONE_YEAR_TTL_SECONDS` — Default TTL for State: 31,536,000 seconds (1 year)
+- `MAX_KEY_SIZE` — Maximum encoded key length: 1,024 characters
+- `MAX_STATE_VALUE_SIZE` — Maximum State value size: 1,048,576 bytes (1 MB)
+
+## Behaviour
+
+### Read flow
+
+1. Try State first (fast path)
+2. On cache miss, fall back to Files/Database
+3. Self-heal: restore data to State cache for future reads
+
+### Write flow
+
+- **Files client**: Write to Files first (durability), then cache in State
+- **Database client**: Write to Database first, then cache in State
+
+### Error handling
+
+- `get()` returns `undefined` when data is not found
+- All methods throw on actual storage errors (connection failures, etc.)
+- Errors are logged before being re-thrown
