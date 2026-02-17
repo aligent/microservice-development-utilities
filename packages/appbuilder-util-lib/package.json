@@ -16,5 +16,8 @@
     "base64url": "^3.0.1"
   },
   "author": "Aligent",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mongodb": "^7.1.0"
+  }
 }
