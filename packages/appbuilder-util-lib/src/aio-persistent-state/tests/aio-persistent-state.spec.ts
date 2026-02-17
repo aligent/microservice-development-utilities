@@ -30,7 +30,7 @@ vi.mock('@adobe/aio-sdk', () => ({
     },
 }));
 
-import { get, put } from './aio-persistent-state';
+import { get, put } from '../aio-persistent-state';
 
 describe('get()', () => {
     beforeEach(() => {
