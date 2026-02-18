@@ -187,7 +187,7 @@ export function createDatabaseStorageClient<T extends Document>(
                     ...data,
                 };
 
-                await collection.replaceOne({ _id: fullConfig.dbDocumentId }, dbDocument);
+                await collection.replaceOne({ _id: fullConfig.dbDocumentId }, dbDocument, { upsert: true });
                 (logger ?? defaultLogger).debug(`Data saved to Database (key: ${fullConfig.key})`);
 
                 // Values exceeding the 1MB State limit are stored in Database only
