@@ -161,7 +161,11 @@ describe('put()', () => {
 
         await client.put({ value });
 
-        expect(mockReplaceOne).toHaveBeenCalledWith({ _id: '123' }, { _id: '123', value });
+        expect(mockReplaceOne).toHaveBeenCalledWith(
+            { _id: '123' },
+            { _id: '123', value },
+            { upsert: true }
+        );
         expect(mockStatePut).toHaveBeenCalledWith(encodedKey, JSON.stringify({ value }), {
             ttl: DEFAULT_ONE_YEAR_TTL_SECONDS,
         });
@@ -203,7 +207,8 @@ describe('put()', () => {
 
         expect(mockReplaceOne).toHaveBeenCalledWith(
             { _id: '123' },
-            { _id: '123', value: largeValue }
+            { _id: '123', value: largeValue },
+            { upsert: true }
         );
         expect(mockStatePut).not.toHaveBeenCalled();
     });
@@ -230,7 +235,7 @@ describe('exists()', () => {
     });
 
     test("should return `true` when value doesn't exist in State, but exists in Database", async () => {
-        mockStateGet.mockResolvedValue(null);
+        mockStateGet.mockResolvedValue(undefined);
 
         const client = createDatabaseStorageClient({
             key: 'testKey',
@@ -243,7 +248,7 @@ describe('exists()', () => {
     });
 
     test("should return `false` when value doesn't exist in either State, nor Database", async () => {
-        mockStateGet.mockResolvedValue(null);
+        mockStateGet.mockResolvedValue(undefined);
         mockFindOne.mockResolvedValue(null);
 
         const client = createDatabaseStorageClient({

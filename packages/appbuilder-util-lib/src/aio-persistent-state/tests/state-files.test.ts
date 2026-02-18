@@ -89,7 +89,7 @@ describe('get()', () => {
         const key = 'testKey';
         const client = createFileStorageClient({ key: 'testKey' });
 
-        mockStateGet.mockResolvedValue(null);
+        mockStateGet.mockResolvedValue(undefined);
         const result = await client.get();
 
         expect(result).toBe('mocked-files-value');
@@ -113,7 +113,7 @@ describe('get()', () => {
     test('should return value from files but skip caching when it exceeds maximum size', async () => {
         const largeValue = 'x'.repeat(1024 * 1024 + 1); // 1MB + 1 byte
         mockFilesRead.mockResolvedValue(Buffer.from(largeValue));
-        mockStateGet.mockResolvedValue(null);
+        mockStateGet.mockResolvedValue(undefined);
 
         const key = 'testKey';
         const client = createFileStorageClient({ key });
@@ -191,7 +191,7 @@ describe('exists()', () => {
     });
 
     test("should return `true` when value doesn't exist in State, but exists in Files", async () => {
-        mockStateGet.mockResolvedValue(null);
+        mockStateGet.mockResolvedValue(undefined);
         mockFilesRead.mockResolvedValue(Buffer.from('secret-value-that-shouldnt-be-returned'));
 
         const key = 'testKey';
@@ -202,7 +202,7 @@ describe('exists()', () => {
     });
 
     test("should return `false` when value doesn't exist in either State, nor Files", async () => {
-        mockStateGet.mockResolvedValue(null);
+        mockStateGet.mockResolvedValue(undefined);
         mockFilesRead.mockResolvedValue(Buffer.from(''));
 
         const key = 'testKey';
