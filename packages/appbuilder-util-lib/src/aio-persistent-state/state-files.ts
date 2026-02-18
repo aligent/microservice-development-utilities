@@ -251,7 +251,7 @@ export function createFileStorageClient(config: FileStorageClientConfig): FileSt
          */
         async exists(logger?: ReturnType<typeof AioLogger>): Promise<boolean> {
             const value = await this.get(logger);
-            return !!value;
+            return value !== undefined;
         },
 
         /**

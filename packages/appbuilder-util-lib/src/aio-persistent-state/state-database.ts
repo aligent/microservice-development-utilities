@@ -187,7 +187,9 @@ export function createDatabaseStorageClient<T extends Document>(
                     ...data,
                 };
 
-                await collection.replaceOne({ _id: fullConfig.dbDocumentId }, dbDocument, { upsert: true });
+                await collection.replaceOne({ _id: fullConfig.dbDocumentId }, dbDocument, {
+                    upsert: true,
+                });
                 (logger ?? defaultLogger).debug(`Data saved to Database (key: ${fullConfig.key})`);
 
                 // Values exceeding the 1MB State limit are stored in Database only
@@ -275,7 +277,7 @@ export function createDatabaseStorageClient<T extends Document>(
          */
         async exists(logger?: ReturnType<typeof AioLogger>): Promise<boolean> {
             const data = await this.get(logger);
-            return !!data;
+            return data !== undefined;
         },
 
         /**
