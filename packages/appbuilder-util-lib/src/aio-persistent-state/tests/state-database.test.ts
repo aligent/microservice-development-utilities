@@ -229,7 +229,7 @@ describe('exists()', () => {
         expect(result).toBe(true);
     });
 
-    test("should return `true` when value doesn't exist in State, but exists in Files", async () => {
+    test("should return `true` when value doesn't exist in State, but exists in Database", async () => {
         mockStateGet.mockResolvedValue(null);
 
         const client = createDatabaseStorageClient({
@@ -242,7 +242,7 @@ describe('exists()', () => {
         expect(result).toBe(true);
     });
 
-    test("should return `false` when value doesn't exist in either State, nor Files", async () => {
+    test("should return `false` when value doesn't exist in either State, nor Database", async () => {
         mockStateGet.mockResolvedValue(null);
         mockFindOne.mockResolvedValue(null);
 
