@@ -25,9 +25,9 @@ This file provides guidance to Claude Code (claude.ai/claude-code) when working 
 |------|---------|
 | `state-files.ts` | FileStorageClient: State + Files hybrid (string values, 1MB limit handling) |
 | `state-database.ts` | DatabaseStorageClient: State + Database hybrid (generic typed objects) |
-| `utils.ts` | Shared utilities (`encodeKey`, `defaultLogger`) |
-| `constants.ts` | Shared constants (`DEFAULT_ONE_YEAR_TTL_SECONDS`, `MAX_KEY_SIZE`, `MAX_STATE_VALUE_SIZE`) |
-| `index.ts` | Barrel exports |
+| `utils.ts` | Internal utilities (`encodeKey`, `defaultLogger`) |
+| `constants.ts` | Internal constants (`DEFAULT_ONE_YEAR_TTL_SECONDS`, `MAX_KEY_SIZE`, `MAX_STATE_VALUE_SIZE`) |
+| `index.ts` | Barrel exports (only exports `state-database` and `state-files`) |
 | `tests/state-files.test.ts` | Tests for FileStorageClient |
 | `tests/state-database.test.ts` | Tests for DatabaseStorageClient |
 

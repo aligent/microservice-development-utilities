@@ -46,12 +46,6 @@ Adobe I/O State enforces a **TTL (Time-To-Live)** on all entries, so cached data
 - [createFileStorageClient](../functions/createFileStorageClient.md)
 - [createDatabaseStorageClient](../functions/createDatabaseStorageClient.md)
 
-## Constants
-
-- `DEFAULT_ONE_YEAR_TTL_SECONDS` — Default TTL for State: 31,536,000 seconds (1 year)
-- `MAX_KEY_SIZE` — Maximum encoded key length: 1,024 characters
-- `MAX_STATE_VALUE_SIZE` — Maximum State value size: 1,048,576 bytes (1 MB)
-
 ## Behaviour
 
 ### Read flow
