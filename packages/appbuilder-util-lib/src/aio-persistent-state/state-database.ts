@@ -102,7 +102,7 @@ export interface DatabaseStorageClient<T extends Document> {
      * Includes self-healing: restores to State if found in Database and if the value is within the 1MB size limit.
      * `undefined` is returned if no data is found.
      */
-    get(logger?: ReturnType<typeof AioLogger>): Promise<Document | undefined>;
+    get(logger?: ReturnType<typeof AioLogger>): Promise<T | undefined>;
 
     /**
      * Check if data exists without returning it.
@@ -216,7 +216,7 @@ export function createDatabaseStorageClient<T extends Document>(
          * from Database automatically (self-healing). `undefined` is returned if no data is found in either State or
          * Database.
          */
-        async get(logger?: ReturnType<typeof AioLogger>): Promise<Document | undefined> {
+        async get(logger?: ReturnType<typeof AioLogger>): Promise<T | undefined> {
             try {
                 // Try State first (fast path)
                 const state = await getStateLib();
@@ -236,9 +236,12 @@ export function createDatabaseStorageClient<T extends Document>(
                 const dbClient = await db.connect();
                 const collection = await dbClient.collection(fullConfig.dbCollection);
 
-                const doc = await collection.findOne({
-                    _id: fullConfig.dbDocumentId,
-                });
+                const doc = await collection.findOne<T>(
+                    {
+                        _id: fullConfig.dbDocumentId,
+                    },
+                    { projection: { _id: 0 } } // Exclude _id from the result to get original data shape
+                );
 
                 // Return `undefined` when document not found (this is expected, not an error)
                 if (doc === null) {
@@ -246,11 +249,8 @@ export function createDatabaseStorageClient<T extends Document>(
                     return undefined;
                 }
 
-                // Extract data from document (remove `_id` to get original data)
-                const { _id, ...data } = doc;
-
                 // Re-populate State cache if value is within the 1MB size limit
-                const jsonData = JSON.stringify(data);
+                const jsonData = JSON.stringify(doc);
                 if (Buffer.byteLength(jsonData) <= MAX_STATE_VALUE_SIZE) {
                     await state.put(encodedKey, jsonData, {
                         ttl: fullConfig.ttl,
@@ -262,7 +262,7 @@ export function createDatabaseStorageClient<T extends Document>(
                     );
                 }
 
-                return data;
+                return doc;
             } catch (error) {
                 (logger ?? defaultLogger).error(
                     `Failed to get key: ${fullConfig.key}`,
