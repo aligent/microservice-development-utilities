@@ -103,7 +103,7 @@ describe('get()', () => {
         expect(result).toMatchObject({
             'mocked-database-key': 'mocked-database-value',
         });
-        expect(mockFindOne).toHaveBeenCalledWith({ _id: '123' });
+        expect(mockFindOne).toHaveBeenCalledWith({ _id: '123' }, { projection: { _id: 0 } });
         expect(mockStatePut).toHaveBeenCalledWith(base64url.encode(key), JSON.stringify(result), {
             ttl: DEFAULT_ONE_YEAR_TTL_SECONDS,
         });
