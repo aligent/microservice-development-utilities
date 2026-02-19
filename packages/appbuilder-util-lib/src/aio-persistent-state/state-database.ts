@@ -222,7 +222,7 @@ export function createDatabaseStorageClient<T extends Document>(
                 const state = await getStateLib();
                 const stateResult = await state.get(encodedKey);
 
-                if (stateResult) {
+                if (stateResult?.value !== undefined) {
                     (logger ?? defaultLogger).debug(
                         `Data retrieved from State (key: ${fullConfig.key})`
                     );
