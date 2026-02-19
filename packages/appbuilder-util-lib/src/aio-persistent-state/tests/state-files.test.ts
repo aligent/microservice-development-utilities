@@ -203,7 +203,11 @@ describe('exists()', () => {
 
     test("should return `false` when value doesn't exist in either State, nor Files", async () => {
         mockStateGet.mockResolvedValue(undefined);
-        mockFilesRead.mockResolvedValue(Buffer.from(''));
+
+        // File doesn't exist - Adobe I/O Files throws ERROR_FILE_NOT_EXISTS
+        const fileNotFoundError = new Error('File not found');
+        (fileNotFoundError as NodeJS.ErrnoException).code = 'ERROR_FILE_NOT_EXISTS';
+        mockFilesRead.mockRejectedValue(fileNotFoundError);
 
         const key = 'testKey';
         const client = createFileStorageClient({ key });

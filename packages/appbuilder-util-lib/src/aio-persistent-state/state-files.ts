@@ -248,6 +248,12 @@ export function createFileStorageClient(config: FileStorageClientConfig): FileSt
 
         /**
          * Check if data exists without returning it.
+         *
+         * Returns `true` if data is found in either State or Files storage,
+         * even if the stored value is an empty string. Returns `false` only
+         * when the underlying file does not exist (i.e., `get()` returns `undefined`).
+         *
+         * @returns `true` if data exists (including empty strings), `false` if not found.
          */
         async exists(logger?: ReturnType<typeof AioLogger>): Promise<boolean> {
             const value = await this.get(logger);
