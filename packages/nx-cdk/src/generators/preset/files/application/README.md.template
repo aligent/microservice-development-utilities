@@ -9,31 +9,31 @@ This application manages the deployment of microservices and their shared infras
 ##### Synthesize
 
 ```bash
-# Synthesize for default stage (dev)
+# Synthesize for default environment/stage (dev)
 yarn pg:synth
 
-# Synthesize for a custom stage
-yarn pg:synth --args="-c stage=plg"
+# Synthesize for a custom environment/stage
+yarn pg:synth --args="-c environment=plg"
 ```
 
 ##### Deploy
 
 ```bash
-# Deploy for default stage (dev)
+# Deploy for default environment/stage (dev)
 yarn pg:deploy
 
-# Deploy to a custom stage
-yarn pg:deploy --args="-c stage=plg"
+# Deploy to a custom environment/stage
+yarn pg:deploy --args="-c environment=plg"
 ```
 
 ##### Destroy
 
 ```bash
-# Destroy a default stage
+# Destroy a default environment/stage (dev)
 yarn pg:deploy
 
-# Destroy a custom stage
-yarn pg:destroy --args="-c stage=plg"
+# Destroy a custom environment/stage
+yarn pg:destroy --args="-c environment=plg"
 ```
 
 ### Direct Nx Commands

@@ -12,5 +12,6 @@ jobs:
     with:
       deploy: true
       deploy-command: yarn nx run application:cdk deploy
+      environment-target: stg
       github-environment: staging
     secrets: inherit

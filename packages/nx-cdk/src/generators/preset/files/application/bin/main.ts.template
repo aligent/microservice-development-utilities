@@ -24,9 +24,9 @@ Aspects.of(app).add(new StepFunctionsDefaultsAspect());
 Aspects.of(app).add(new MicroserviceChecks());
 
 /**
- * Dynamic Stage Creation
+ * Dynamic Stage (Environment) Creation
  *
- * The stage name is provided via CDK context: `cdk synth -c stage=dev`
+ * The stage (environment) name is provided via CDK context: `cdk synth -c environment=dev`
  *
  * - Stage name must be exactly 3 lowercase alphanumeric characters (e.g., dev (default), stg, prd)
  * - Production-specific aspects (versioning, long log retention) are applied only to `prd`
@@ -34,11 +34,11 @@ Aspects.of(app).add(new MicroserviceChecks());
  *
  * @see {@link https://dev.to/aws-heroes/how-to-use-aws-cdk-stage-and-when-to-choose-static-vs-dynamic-stack-creation-35h|Static vs Dynamic Stack Creation}
  */
-const stageName = app.node.tryGetContext('stage') ?? 'dev';
+const stageName = app.node.tryGetContext('environment') ?? 'dev';
 
 if (typeof stageName !== 'string' || !/^[a-z0-9]{3}$/.test(stageName)) {
     throw new Error(
-        `Invalid stage name: "${stageName}". Stage must be exactly 3 lowercase alphanumeric characters (e.g., dev, stg, prd)`
+        `Invalid stage (environment) name: "${stageName}". Stage must be exactly 3 lowercase alphanumeric characters (e.g., dev, stg, prd)`
     );
 }
 
