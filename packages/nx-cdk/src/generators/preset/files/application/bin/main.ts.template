@@ -28,13 +28,13 @@ Aspects.of(app).add(new MicroserviceChecks());
  *
  * The stage name is provided via CDK context: `cdk synth -c stage=dev`
  *
- * - Stage name must be exactly 3 lowercase alphanumeric characters (e.g., dev, stg, prd)
+ * - Stage name must be exactly 3 lowercase alphanumeric characters (e.g., dev (default), stg, prd)
  * - Production-specific aspects (versioning, long log retention) are applied only to `prd`
  * - Non-production stages get shorter log retention and debug-level logging
  *
  * @see {@link https://dev.to/aws-heroes/how-to-use-aws-cdk-stage-and-when-to-choose-static-vs-dynamic-stack-creation-35h|Static vs Dynamic Stack Creation}
  */
-const stageName = app.node.tryGetContext('stage');
+const stageName = app.node.tryGetContext('stage') ?? 'dev';
 
 if (typeof stageName !== 'string' || !/^[a-z0-9]{3}$/.test(stageName)) {
     throw new Error(
