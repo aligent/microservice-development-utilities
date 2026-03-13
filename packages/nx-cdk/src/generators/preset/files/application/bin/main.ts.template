@@ -1,27 +1,13 @@
 #!/usr/bin/env node
 import {
     LambdaAndStepFunctionVersioningAspect,
-    LogGroupDefaultsAspect,
-    MicroserviceChecks,
-    NodeJsFunctionDefaultsAspect,
-    StepFunctionsDefaultsAspect,
+    LogGroupDefaultsAspect
 } from '@aligent/cdk-aspects';
-import { App, Aspects, Tags } from 'aws-cdk-lib';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { App, Aspects } from 'aws-cdk-lib';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
-const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'aligent' } as const;
-
+const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'Aligent' } as const;
 const app = new App({ context: APPLICATION_CONTEXT });
-Tags.of(app).add('OWNER', APPLICATION_CONTEXT.OWNER);
-
-/**
- * Apply Application-Level Aspects
- * These aspects are applied to all resources across all stages
- */
-Aspects.of(app).add(new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_<%= nodeRuntime %> }));
-Aspects.of(app).add(new StepFunctionsDefaultsAspect());
-Aspects.of(app).add(new MicroserviceChecks());
 
 /**
  * Dynamic Stage (Environment) Creation
@@ -43,26 +29,65 @@ if (typeof stageName !== 'string' || !/^[a-z0-9]{3}$/.test(stageName)) {
 }
 
 const stage = new ApplicationStage(app, stageName);
+Tags.of(stage).add('APPLICATION', APPLICATION_CONTEXT.NAME);
+Tags.of(stage).add('OWNER', APPLICATION_CONTEXT.OWNER);
+Tags.of(stage).add('STAGE', stageName);
 
- /**
- * @remarks
- * Aspects visit all constructs in the tree after synthesis and can modify them
- * (e.g., applying log retention policies, enabling tracing).
+/**
+ * Common aspects applied to every stage.
  *
- * For Production only
- * - Long log retention (2 years) for compliance and debugging
- * - Resources retained on stack deletion
- * - Lambda functions and Step Functions are automatically versioned, enabled for zero-downtime deployments
+ * Aspects must be registered on each `Stage` individually — a `Stage` creates a
+ * synthesis boundary that prevents `App`-level aspects from traversing into it.
+ *
+ * Order matters: `ResourcePrefixAspect` runs first (priority 100) so that
+ * resource names are finalised before the versioning aspect reads them.
  */
+const commonAspectsWithOptions: Array<{ aspect: IAspect; options: AspectOptions }> = [
+    {
+        aspect: new ResourcePrefixAspect({ prefix: `${APPLICATION_CONTEXT.NAME}-${stageName}` }),
+        options: { priority: 100 },
+    },
+    {
+        aspect: new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_24_X }),
+        options: { priority: AspectPriority.MUTATING },
+    },
+    { aspect: new StepFunctionsDefaultsAspect(), options: { priority: AspectPriority.MUTATING } },
+    { aspect: new MicroserviceChecks(), options: { priority: AspectPriority.READONLY } },
+];
+
+/**
+ * Apply common aspects to the stage, then add stage-specific aspects.
+ *
+ * @remarks
+ * Aspects visit every construct in the tree after synthesis and may mutate them
+ * (e.g. setting log retention, enabling X-Ray tracing).
+ *
+ * Stage-specific behaviour:
+ * - `prd`: long log retention (2 years) for compliance; Lambda and Step Function
+ *   versioning enabled for zero-downtime deployments.
+ * - `stg`: medium log retention.
+ * - all others: short log retention.
+ */
+commonAspectsWithOptions.forEach(({ aspect, options }) => {
+    Aspects.of(stage).add(aspect, options);
+});
 
 switch (stageName) {
     case 'prd':
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'LONG' }));
-        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect());
+        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'LONG' }), {
+            priority: AspectPriority.MUTATING,
+        });
+        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect(), {
+            priority: AspectPriority.MUTATING,
+        });
         break;
     case 'stg':
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }));
+        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }), {
+            priority: AspectPriority.MUTATING,
+        });
         break;
     default:
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }));
+        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }), {
+            priority: AspectPriority.MUTATING,
+        });
 }

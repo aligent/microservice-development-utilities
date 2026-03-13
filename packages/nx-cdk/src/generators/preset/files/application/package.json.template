@@ -8,20 +8,37 @@
       "scope:application"
     ],
     "targets": {
-      "cdk": {
+      "synth": {
         "executor": "nx:run-commands",
         "options": {
           "color": true,
-          "command": "cdk",
+          "command": "cdk synth",
           "cwd": "{projectRoot}"
-        },
-        "dependsOn": [
-          {
-            "target": "build",
-            "params": "forward",
-            "projects": "@services/*"
-          }
-        ]
+        }
+      },
+      "deploy": {
+        "executor": "nx:run-commands",
+        "options": {
+          "color": true,
+          "command": "cdk deploy",
+          "cwd": "{projectRoot}"
+        }
+      },
+      "diff": {
+        "executor": "nx:run-commands",
+        "options": {
+          "color": true,
+          "command": "cdk diff",
+          "cwd": "{projectRoot}"
+        }
+      },
+      "destroy": {
+        "executor": "nx:run-commands",
+        "options": {
+          "color": true,
+          "command": "cdk destroy",
+          "cwd": "{projectRoot}"
+        }
       }
     }
   }

@@ -56,6 +56,6 @@ Resources that are used by multiple services are created once in the shared infr
 
 The `SharedInfraStack` must be instantiated within a CDK Stage to properly resolve the stage name for resource naming and tagging.
 
-### Application Context
+### Resource Naming
 
-Requires the `NAME` context variable to be set for proper resource naming conventions.
+Resource prefixes are automatically applied via a CDK aspect, ensuring consistent naming conventions across all resources without manual configuration.
