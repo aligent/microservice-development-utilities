@@ -48,6 +48,10 @@ nvm use
 yarn install
 ```
 
+### Deployment
+
+For deployment instructions (synthesize, deploy, destroy), see the [CDK Application README](./application/README.md).
+
 ## Contributing
 
 We follow [trunk-based development framework](https://trunkbaseddevelopment.com/) as a start and will evolve depending on our need.

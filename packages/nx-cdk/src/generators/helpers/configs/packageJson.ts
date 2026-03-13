@@ -11,9 +11,9 @@ export const PACKAGE_JSON = {
         typecheck: 'nx affected -t typecheck',
         'typecheck:all': 'nx run-many -t typecheck',
         postinstall: `[ -d .git ] && git config core.hooksPath '.git-hooks' && chmod +x .git-hooks/* || true`,
-        'pg:synth': `nx run application:cdk synth 'dev/**' --exclusively --bundle-mode=dev --profile=playground`,
-        'pg:deploy': `nx run application:cdk deploy 'dev/**' --method=direct --require-approval=never --exclusively --bundle-mode=dev --profile=playground`,
-        'pg:destroy': "nx run application:cdk destroy 'dev/**' --profile playground",
+        'pg:synth': `nx run application:cdk synth --bundle-mode=dev --profile playground`,
+        'pg:deploy': `nx run application:cdk deploy --bundle-mode=dev --method=direct --require-approval never --profile playground`,
+        'pg:destroy': 'nx run application:cdk destroy --profile playground',
         audit: 'nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache',
     },
     dependencies: {

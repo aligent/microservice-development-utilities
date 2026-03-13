@@ -6,12 +6,34 @@ This application manages the deployment of microservices and their shared infras
 
 ### Using yarn script from workspace root (Recommended)
 
+##### Synthesize
+
 ```bash
-# Synthesize templates
+# Synthesize for default environment/stage (dev)
 yarn pg:synth
 
-# Deploy to playground
+# Synthesize for a custom environment/stage
+yarn pg:synth --args="-c environment=plg"
+```
+
+##### Deploy
+
+```bash
+# Deploy for default environment/stage (dev)
 yarn pg:deploy
+
+# Deploy to a custom environment/stage
+yarn pg:deploy --args="-c environment=plg"
+```
+
+##### Destroy
+
+```bash
+# Destroy a default environment/stage (dev)
+yarn pg:deploy
+
+# Destroy a custom environment/stage
+yarn pg:destroy --args="-c environment=plg"
 ```
 
 ### Direct Nx Commands

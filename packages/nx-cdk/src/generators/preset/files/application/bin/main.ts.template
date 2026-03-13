@@ -11,7 +11,6 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
 const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'aligent' } as const;
-const STAGE_NAMES = { DEV: 'dev', STG: 'stg', PRD: 'prd' } as const;
 
 const app = new App({ context: APPLICATION_CONTEXT });
 Tags.of(app).add('OWNER', APPLICATION_CONTEXT.OWNER);
@@ -25,45 +24,45 @@ Aspects.of(app).add(new StepFunctionsDefaultsAspect());
 Aspects.of(app).add(new MicroserviceChecks());
 
 /**
- * Static Stage Creation Approach
+ * Dynamic Stage (Environment) Creation
  *
- * We use static stage creation (explicitly defining dev, stg, prd) for several reasons:
+ * The stage (environment) name is provided via CDK context: `cdk synth -c environment=dev`
  *
- * 1. **Predictability**: All stages are known at synthesis time, making the CDK app
- *    behavior deterministic and easier to reason about.
- *
- * 2. **Type Safety**: Static definitions provide better IDE support, autocompletion,
- *    and compile-time type checking for stage-specific configurations.
- *
- * 3. **Explicit Configuration**: Each stage's unique settings (e.g., log retention
- *    durations, aspects) are clearly visible in the code without needing to trace
- *    through dynamic logic.
- *
- * 4. **Simpler Deployment**: CDK can synthesize all stages in a single pass without
- *    requiring runtime context lookups or conditional logic.
- *
- * 5. **CI/CD Integration**: Static stages integrate seamlessly with standard CI/CD
- *    pipelines where environment configuration is managed externally.
+ * - Stage name must be exactly 3 lowercase alphanumeric characters (e.g., dev (default), stg, prd)
+ * - Production-specific aspects (versioning, long log retention) are applied only to `prd`
+ * - Non-production stages get shorter log retention and debug-level logging
  *
  * @see {@link https://dev.to/aws-heroes/how-to-use-aws-cdk-stage-and-when-to-choose-static-vs-dynamic-stack-creation-35h|Static vs Dynamic Stack Creation}
- *
+ */
+const stageName = app.node.tryGetContext('environment') ?? 'dev';
+
+if (typeof stageName !== 'string' || !/^[a-z0-9]{3}$/.test(stageName)) {
+    throw new Error(
+        `Invalid stage (environment) name: "${stageName}". Stage must be exactly 3 lowercase alphanumeric characters (e.g., dev, stg, prd)`
+    );
+}
+
+const stage = new ApplicationStage(app, stageName);
+
+ /**
  * @remarks
  * Aspects visit all constructs in the tree after synthesis and can modify them
  * (e.g., applying log retention policies, enabling tracing).
- */
-
-const dev = new ApplicationStage(app, STAGE_NAMES.DEV);
-Aspects.of(dev).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }));
-
-const stg = new ApplicationStage(app, STAGE_NAMES.STG);
-Aspects.of(stg).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }));
-
-/**
- * Production Stage
+ *
+ * For Production only
  * - Long log retention (2 years) for compliance and debugging
  * - Resources retained on stack deletion
  * - Lambda functions and Step Functions are automatically versioned, enabled for zero-downtime deployments
  */
-const prd = new ApplicationStage(app, STAGE_NAMES.PRD);
-Aspects.of(prd).add(new LogGroupDefaultsAspect({ duration: 'LONG' }));
-Aspects.of(prd).add(new LambdaAndStepFunctionVersioningAspect());
+
+switch (stageName) {
+    case 'prd':
+        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'LONG' }));
+        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect());
+        break;
+    case 'stg':
+        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }));
+        break;
+    default:
+        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }));
+}
