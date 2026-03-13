@@ -25,7 +25,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
             cache: true,
             dependsOn: ['^build'],
             inputs: ['production', '^production'],
-            outputs: ['{projectRoot}/dist'],
+            outputs: ['{projectRoot}/dist'], // FIXME: It seems that this doesn't cache correctly. Investigate this.
         },
         lint: { cache: true, inputs: ['default', '^production'] },
         test: {
@@ -36,5 +36,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
             configurations: { coverage: { coverage: true } },
         },
         typecheck: { cache: true, inputs: ['default', '^production'] },
+        cdk: { dependsOn: [{ target: 'build', params: 'forward', projects: '@services/*' }] },
+        pg: { dependsOn: [{ target: 'build', params: 'forward', projects: '@services/*' }] },
     },
 } as const;
