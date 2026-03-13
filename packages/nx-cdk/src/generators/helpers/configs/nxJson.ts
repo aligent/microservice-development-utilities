@@ -36,7 +36,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
             configurations: { coverage: { coverage: true } },
         },
         typecheck: { cache: true, inputs: ['default', '^production'] },
-        synth: { dependsOn: [{ target: 'build', params: 'forward', projects: '@services/*' }] },
-        deploy: { dependsOn: [{ target: 'build', params: 'forward', projects: '@services/*' }] },
+        cdk: { dependsOn: [{ target: 'build', params: 'forward', projects: '@services/*' }] },
+        pg: { dependsOn: [{ target: 'build', params: 'forward', projects: '@services/*' }] },
     },
 } as const;

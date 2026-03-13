@@ -11,11 +11,11 @@ export const PACKAGE_JSON = {
         typecheck: 'nx affected -t typecheck',
         'typecheck:all': 'nx run-many -t typecheck',
         audit: 'nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache',
-        'pg:synth': 'nx run application:synth --bundle-mode=dev --profile playground',
+        'pg:synth': 'nx run application:pg:synth --bundle-mode=dev --profile playground',
         'pg:deploy':
-            'nx run application:deploy --bundle-mode=dev --method=direct --require-approval never --profile playground',
-        'pg:diff': 'nx run application:diff --profile playground',
-        'pg:destroy': 'nx run application:destroy --profile playground',
+            'nx run application:pg:deploy --bundle-mode=dev --method=direct --require-approval never --profile playground',
+        'pg:diff': 'nx run application:pg:diff --profile playground',
+        'pg:destroy': 'nx run application:pg:destroy --profile playground',
         postinstall: `[ -d .git ] && git config core.hooksPath '.git-hooks' && chmod +x .git-hooks/* || true`,
     },
     dependencies: {
