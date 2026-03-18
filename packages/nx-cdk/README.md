@@ -21,6 +21,13 @@ npx create-nx-workspace@latest --preset=@aligent/nx-cdk
 | `name`        | string | Yes      | -         | The name of the project/application (alphanumeric and dashes only)               |
 | `nodeVersion` | string | No       | `24.11.0` | The target Node.js version for the project (must be valid semver, e.g., 22.10.0) |
 
+#### Post-generation setup
+
+After running the preset generator, review these defaults before committing:
+
+- **AWS profile** — The `pg:synth`, `pg:deploy`, `pg:diff`, and `pg:destroy` scripts in `package.json` use `--profile playground`. This assumes a profile named `playground` exists in your `~/.aws/config`. Update the profile name in the `pg:*` scripts if yours differs.
+- **`.github/CODEOWNERS`** — The generated file references Aligent's GitHub teams (`@aligent/microservices`, `@aligent/devops`). Replace these with your organisation's team handles.
+
 #### What it creates
 
 The preset generator scaffolds:
