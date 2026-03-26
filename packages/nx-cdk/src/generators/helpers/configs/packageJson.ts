@@ -22,7 +22,7 @@ export const PACKAGE_JSON = {
         '@aligent/microservice-util-lib': '^1.2.0',
     },
     devDependencies: {
-        '@aligent/cdk-aspects': '^0.4.0',
+        '@aligent/cdk-aspects': '^0.5.0',
         '@aligent/cdk-step-function-from-file': '^0.3.2',
         '@aligent/nx-openapi': '^1.0.0',
         '@aligent/ts-code-standards': '^4.1.0',

@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import {
+    DynamoDbDefaultsAspect,
     LambdaAndStepFunctionVersioningAspect,
     LogGroupDefaultsAspect,
     MicroserviceChecks,
     NodeJsFunctionDefaultsAspect,
     ResourcePrefixAspect,
+    S3DefaultsAspect,
     StepFunctionsDefaultsAspect,
 } from '@aligent/cdk-aspects';
 import { App, AspectOptions, AspectPriority, Aspects, IAspect, Runtime, Tags } from 'aws-cdk-lib';
@@ -76,22 +78,21 @@ commonAspectsWithOptions.forEach(({ aspect, options }) => {
     Aspects.of(stage).add(aspect, options);
 });
 
+const defaultAspectsDuration = { duration: 'SHORT' };
+const defaultAspectsOptions: AspectOptions = { priority: AspectPriority.MUTATING };
+
 switch (stageName) {
     case 'prd':
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'LONG' }), {
-            priority: AspectPriority.MUTATING,
-        });
-        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect(), {
-            priority: AspectPriority.MUTATING,
-        });
+        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect(), defaultAspectsOptions);
+        defaultAspectsDuration.duration = 'LONG';
         break;
     case 'stg':
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }), {
-            priority: AspectPriority.MUTATING,
-        });
+        defaultAspectsDuration.duration = 'MEDIUM';
         break;
     default:
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }), {
-            priority: AspectPriority.MUTATING,
-        });
+        defaultAspectsDuration.duration = 'SHORT';
 }
+
+Aspects.of(stage).add(new LogGroupDefaultsAspect(defaultAspectsDuration), defaultAspectsOptions);
+Aspects.of(stage).add(new DynamoDbDefaultsAspect(defaultAspectsDuration), defaultAspectsOptions);
+Aspects.of(stage).add(new S3DefaultsAspect(defaultAspectsDuration), defaultAspectsOptions);
