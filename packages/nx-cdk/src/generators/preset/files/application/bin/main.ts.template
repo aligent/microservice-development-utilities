@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 import {
     LambdaAndStepFunctionVersioningAspect,
-    LogGroupDefaultsAspect
+    LogGroupDefaultsAspect,
+    MicroserviceChecks,
+    NodeJsFunctionDefaultsAspect,
+    ResourcePrefixAspect,
+    StepFunctionsDefaultsAspect,
 } from '@aligent/cdk-aspects';
-import { App, Aspects } from 'aws-cdk-lib';
+import { App, AspectOptions, AspectPriority, Aspects, IAspect, Runtime, Tags } from 'aws-cdk-lib';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
 const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'Aligent' } as const;
