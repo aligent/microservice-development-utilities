@@ -14,14 +14,28 @@
           "color": true,
           "command": "cdk",
           "cwd": "{projectRoot}"
-        },
-        "dependsOn": [
-          {
-            "target": "build",
-            "params": "forward",
-            "projects": "@services/*"
+        }
+      },
+      "pg": {
+        "executor": "nx:run-commands",
+        "configurations": {
+          "synth": {
+            "command": "cdk synth"
+          },
+          "deploy": {
+            "command": "cdk deploy"
+          },
+          "diff": {
+            "command": "cdk diff"
+          },
+          "destroy": {
+            "command": "cdk destroy"
           }
-        ]
+        },
+        "options": {
+          "color": true,
+          "cwd": "{projectRoot}"
+        }
       }
     }
   }

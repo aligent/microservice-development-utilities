@@ -1,3 +1,5 @@
-# Both Microservice and DevOps teams own everything in this repo
-# We'll review this in few months time and adjust when needed
-* @aligent/microservices @aligent/devops
+# Default owners
+* @aligent/microservices
+
+# DevOps owns files inside .github/
+.github/** @aligent/devops

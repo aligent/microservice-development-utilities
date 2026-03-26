@@ -48,6 +48,21 @@ nvm use
 yarn install
 ```
 
+### Initial Setup Checklist
+
+Before committing this repository, review and update the following generated defaults:
+
+- **`.github/CODEOWNERS`** — The default file references Aligent's GitHub teams (`@aligent/microservices`, `@aligent/devops`). Replace these with your own organisation's team handles.
+- **`package.json` `pg:*` scripts** — The playground scripts use `--profile playground`. Ensure you have a matching profile in your `~/.aws/config` file:
+
+    ```ini
+    [profile playground]
+    source_profile = default
+    role_arn = arn:aws:iam::11111111111:role/RoleName
+    ```
+
+    If your profile has a different name, update the `pg:*` scripts in the root `package.json` to match.
+
 ### Deployment
 
 For deployment instructions (synthesize, deploy, destroy), see the [CDK Application README](./application/README.md).
