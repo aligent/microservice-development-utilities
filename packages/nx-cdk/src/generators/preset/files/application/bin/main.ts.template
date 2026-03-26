@@ -52,7 +52,7 @@ const commonAspectsWithOptions: Array<{ aspect: IAspect; options: AspectOptions 
         options: { priority: 100 },
     },
     {
-        aspect: new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_24_X }),
+        aspect: new NodeJsFunctionDefaultsAspect({ runtime: Runtime.NODEJS_<%= nodeRuntime %> }),
         options: { priority: AspectPriority.MUTATING },
     },
     { aspect: new StepFunctionsDefaultsAspect(), options: { priority: AspectPriority.MUTATING } },

@@ -40,7 +40,7 @@ yarn pg:diff --args="-c environment=plg"
 
 ```bash
 # Destroy default environment/stage (dev)
-yarn pg:deploy
+yarn pg:destroy
 
 # Destroy a custom environment/stage
 yarn pg:destroy --args="-c environment=plg"
