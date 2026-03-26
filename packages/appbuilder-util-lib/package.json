@@ -20,6 +20,6 @@
   "author": "Aligent",
   "license": "MIT",
   "devDependencies": {
-    "mongodb": "^7.1.0"
+    "mongodb": "^7.1.1"
   }
 }
