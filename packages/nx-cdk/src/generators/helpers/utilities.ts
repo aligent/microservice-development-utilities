@@ -1,8 +1,7 @@
 /* v8 ignore start */
 import { readJsonFile, readProjectConfiguration, Tree } from '@nx/devkit';
-import { existsSync } from 'fs';
 import { join } from 'path';
-import { Project } from 'ts-morph';
+import { InMemoryFileSystemHost, Project } from 'ts-morph';
 import { PACKAGE_JSON } from './configs/packageJson';
 import { TS_CONFIG_JSON, TS_CONFIG_LIB_JSON, TS_CONFIG_SPEC_JSON } from './configs/tsConfigs';
 
@@ -88,7 +87,7 @@ export function getGeneratorVersion() {
  *
  * @throws {Error} If the ApplicationStage constructor cannot be found in service-stacks.ts
  */
-export async function addServiceStackToMainApplication(
+export function addServiceStackToMainApplication(
     tree: Tree,
     service: Service,
     projectName: string
@@ -99,15 +98,24 @@ export async function addServiceStackToMainApplication(
         throw new Error('Invalid application root path');
     }
 
-    const stacksPath = join(tree.root, application.root, 'lib/service-stacks.ts');
+    const stacksRelativePath = join(application.root, 'lib/service-stacks.ts');
 
-    if (!existsSync(stacksPath)) {
+    if (!tree.exists(stacksRelativePath)) {
         console.log('Service Stacks does not exist, skipping service stacks registration.');
         return;
     }
 
-    const project = new Project();
-    const stackSource = project.addSourceFileAtPath(stacksPath);
+    const content = tree.read(stacksRelativePath, 'utf-8');
+
+    if (content === null) {
+        throw new Error(`Failed to read file: ${stacksRelativePath}`);
+    }
+
+    const fs = new InMemoryFileSystemHost();
+    fs.writeFileSync(stacksRelativePath, content);
+
+    const project = new Project({ fileSystem: fs });
+    const stackSource = project.addSourceFileAtPath(stacksRelativePath);
 
     const applicationStage = stackSource.getClassOrThrow('ApplicationStage');
     const stageConstructor = applicationStage.getConstructors()[0];
@@ -128,7 +136,7 @@ export async function addServiceStackToMainApplication(
         `new ${service.stack}(this, ${service.constant}.NAME, { ...props, ${sharedPropsStatement} description: ${service.constant}.DESCRIPTION });`
     );
 
-    await stackSource.save();
+    tree.write(stacksRelativePath, stackSource.getFullText());
 }
 
 /**
