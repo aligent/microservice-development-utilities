@@ -3,14 +3,18 @@ import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import type { Construct } from 'constructs';
 
+// EXAMPLE ONLY: The following interface, class, and all related resource references
+// (eCommerceBaseUrl, eCommerceCredentials, etc.) are illustrative examples.
+// Replace them with your own resources and props that match your actual infrastructure.
 export interface SharedInfraProps {
-    eCommerceBaseUrl: IStringParameter;
-    eCommerceCredentials: Secret;
+    // eCommerceBaseUrl: IStringParameter;
+    // eCommerceCredentials: Secret;
 }
 
 export class SharedInfraStack extends Stack {
-    readonly eCommerceBaseUrl: IStringParameter;
-    readonly eCommerceCredentials: Secret;
+    // EXAMPLE: Replace these properties with your own shared resources
+    // readonly eCommerceBaseUrl: IStringParameter;
+    // readonly eCommerceCredentials: Secret;
 
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
@@ -19,22 +23,26 @@ export class SharedInfraStack extends Stack {
             throw new Error('This construct must be used within a CDK Stage');
         }
 
-        this.eCommerceBaseUrl = StringParameter.fromStringParameterName(
-            this,
-            'ECommerceBaseUrl',
-            `/e-commerce/base-url`
-        );
+        Tags.of(this).add('SERVICE', id);
 
-        // Create secrets once in the shared stack
-        this.eCommerceCredentials = new Secret(this, 'ECommerceCredentials', {
-            description: 'E-Commerce API credentials shared across services',
-        });
+        // EXAMPLE: Replace with your own SSM parameter lookup
+        // this.eCommerceBaseUrl = StringParameter.fromStringParameterName(
+        //     this,
+        //     'ECommerceBaseUrl',
+        //     `/e-commerce/base-url`
+        // );
+
+        // EXAMPLE: Replace with your own secrets/resources
+        // this.eCommerceCredentials = new Secret(this, 'ECommerceCredentials', {
+        //     description: 'E-Commerce API credentials shared across services',
+        // });
     }
 
+    // EXAMPLE: Update getProps() to return your own resource props
     getProps(): SharedInfraProps {
         return {
-            eCommerceBaseUrl: this.eCommerceBaseUrl,
-            eCommerceCredentials: this.eCommerceCredentials,
+            // eCommerceBaseUrl: this.eCommerceBaseUrl,
+            // eCommerceCredentials: this.eCommerceCredentials,
         };
     }
 }

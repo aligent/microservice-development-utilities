@@ -27,11 +27,10 @@ interface Props extends StackProps, SharedInfraProps {
  * Use 'resolve' helpers below when referencing lambda handlers, step function files etc.
  */
 export class <%= stack %> extends Stack {
-    constructor(scope: Construct, id: Id, props?: Props) {
+    constructor(scope: Construct, id: Id, props: Props) {
         super(scope, id, props);
 
-        const STAGE = Stage.of(this)?.stageName;
-        if (!STAGE) {
+        if (!Stage.of(this)?.stageName) {
             throw new Error('This construct must be used within a CDK Stage');
         }
 
