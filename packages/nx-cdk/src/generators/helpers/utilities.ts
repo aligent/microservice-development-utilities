@@ -2,7 +2,6 @@
 import { readJsonFile, readProjectConfiguration, Tree } from '@nx/devkit';
 import { join } from 'path';
 import { InMemoryFileSystemHost, Project } from 'ts-morph';
-import { PACKAGE_JSON } from './configs/packageJson';
 import { TS_CONFIG_JSON, TS_CONFIG_LIB_JSON, TS_CONFIG_SPEC_JSON } from './configs/tsConfigs';
 
 interface PackageJsonInput {
@@ -18,11 +17,39 @@ interface Service {
     stack: string;
 }
 
+interface PackageJsonConfig {
+    author: string;
+    private: boolean;
+    license: string;
+    type: string;
+    scripts: Record<string, string>;
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+    nx: Record<string, unknown>;
+    workspaces: string[];
+    packageManager: string;
+}
+
+/**
+ * Reads the base package.json configuration from a JSON file.
+ *
+ * The configuration is stored as a standalone JSON file rather than a TypeScript constant
+ * so that Dependabot can automatically detect and upgrade the dependency versions within it.
+ *
+ * @returns The parsed package.json configuration.
+ */
+function readPackageJsonConfig() {
+    const configPath = join(__dirname, './configs/base-package/package.json');
+    return readJsonFile<PackageJsonConfig>(configPath);
+}
+
 export function constructPackageJsonFile(input: PackageJsonInput) {
+    const config = readPackageJsonConfig();
+
     const devDependencies = Object.fromEntries(
         Object.entries({
             '@aligent/nx-cdk': input.version,
-            ...PACKAGE_JSON.devDependencies,
+            ...config.devDependencies,
         }).sort()
     );
 
@@ -31,10 +58,10 @@ export function constructPackageJsonFile(input: PackageJsonInput) {
             name: `@${input.name}/integrations`,
             description: `${input.projectName} integrations mono-repository`,
             version: input.version,
-            ...PACKAGE_JSON,
+            ...config,
             devDependencies,
             engines: { node: `^${input.nodeVersion}` },
-            nx: { name: `${input.name}-int`, ...PACKAGE_JSON.nx },
+            nx: { name: `${input.name}-int`, ...config.nx },
         })
     );
 

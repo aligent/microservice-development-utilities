@@ -1,5 +1,5 @@
 {
-    "app": "yarn tsx bin/main.ts",
+    "app": "npx tsx bin/main.ts",
     "watch": {
         "include": ["**"],
         "exclude": [
