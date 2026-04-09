@@ -24,7 +24,6 @@ const eslintBaseConfig = [
                 'error',
                 {
                     allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
-                    enforceBuildableLibDependency: true,
                     depConstraints: [
                         {
                             sourceTag: 'scope:application',
