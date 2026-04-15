@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 import {
+    DynamoDbDefaultsAspect,
     LambdaAndStepFunctionVersioningAspect,
     LogGroupDefaultsAspect,
     MicroserviceChecks,
     NodeJsFunctionDefaultsAspect,
     ResourcePrefixAspect,
+    S3DefaultsAspect,
     StepFunctionsDefaultsAspect,
 } from '@aligent/cdk-aspects';
-import { App, AspectOptions, AspectPriority, Aspects, IAspect, Runtime, Tags } from 'aws-cdk-lib';
+import { App, AspectOptions, AspectPriority, Aspects, IAspect, Tags } from 'aws-cdk-lib';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
 const APPLICATION_CONTEXT = { NAME: '<%= name %>-int', OWNER: 'Aligent' } as const;
@@ -76,22 +79,21 @@ commonAspectsWithOptions.forEach(({ aspect, options }) => {
     Aspects.of(stage).add(aspect, options);
 });
 
+const defaultAspectsOptions: AspectOptions = { priority: AspectPriority.MUTATING };
+let duration: 'SHORT' | 'MEDIUM' | 'LONG' = 'SHORT';
+
 switch (stageName) {
     case 'prd':
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'LONG' }), {
-            priority: AspectPriority.MUTATING,
-        });
-        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect(), {
-            priority: AspectPriority.MUTATING,
-        });
+        Aspects.of(stage).add(new LambdaAndStepFunctionVersioningAspect(), defaultAspectsOptions);
+        duration = 'LONG';
         break;
     case 'stg':
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'MEDIUM' }), {
-            priority: AspectPriority.MUTATING,
-        });
+        duration = 'MEDIUM';
         break;
     default:
-        Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration: 'SHORT' }), {
-            priority: AspectPriority.MUTATING,
-        });
+        duration = 'SHORT';
 }
+
+Aspects.of(stage).add(new LogGroupDefaultsAspect({ duration }), defaultAspectsOptions);
+Aspects.of(stage).add(new DynamoDbDefaultsAspect({ duration }), defaultAspectsOptions);
+Aspects.of(stage).add(new S3DefaultsAspect({ duration }), defaultAspectsOptions);
