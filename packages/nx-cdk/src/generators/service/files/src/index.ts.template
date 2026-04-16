@@ -24,7 +24,20 @@ interface Props extends StackProps, SharedInfraProps {
  *
  * Instantiate in a CDK Application Stage to deploy to AWS.
  *
- * Use 'resolve' helpers below when referencing lambda handlers, step function files etc.
+ * @note Aligent provides the following standard CDK constructs:
+ * - {@link NodejsFunctionFromEntry} from '@aligent/cdk-nodejs-function-from-entry'
+ * - {@link StepFunctionFromFile} from '@aligent/cdk-step-function-from-file'
+ *
+ * @example
+ * new NodejsFunctionFromEntry(this, 'ExampleLambda', {
+ *     baseDir: import.meta.dirname,
+ *     entry: 'runtime/handlers/example.ts',
+ * });
+ *
+ * new StepFunctionFromFile(this, 'ExampleStepFunction', {
+ *     baseDir: import.meta.dirname,
+ *     filepath: 'infra/stepfunctions/example.json',
+ * });
  */
 export class <%= stack %> extends Stack {
     constructor(scope: Construct, id: Id, props: Props) {
@@ -36,40 +49,4 @@ export class <%= stack %> extends Stack {
 
         Tags.of(this).add('SERVICE', id);
     }
-}
-
-/**
- * Resolves a path to infra assets relative to this stack
- *
- * @param assetPath - The path to the asset.
- * @returns The resolved path.
- */
-export function resolveAssetPath(assetPath: `${'infra/'}${string}`) {
-    return path.resolve(import.meta.dirname, assetPath);
-}
-
-/**
- * Return an object with the default bundled code asset and
- * handler property for use with the NodejsFunction construct.
- *
- * @example
- * ```ts
- * new NodejsFunction(this, 'FetchData', {
- *     ...resolveLambdaHandler('runtime/handlers/fetch-data.ts'),
- * });
- * ```
- *
- * @param assetPath - The path to the typescript handler file.
- * @returns The resolved bundled code path and handler name.
- */
-export function resolveLambdaHandler(assetPath: `${'runtime/handlers/'}${string}${'.ts'}`) {
-    // Replace 'runtime/handlers/' with '..dist/' and remove the file extension
-    const bundledPath = assetPath.replace(
-        /^runtime\/handlers\/(?<path>.*)\.ts$/,
-        '../dist/$<path>'
-    );
-    return {
-        code: Code.fromAsset(path.resolve(import.meta.dirname, bundledPath)),
-        handler: 'index.handler',
-    };
 }
