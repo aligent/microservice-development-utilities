@@ -1,8 +1,6 @@
 import { SharedInfraProps } from '@libs/infra';
 import { Stack, StackProps, Stage, Tags } from 'aws-cdk-lib';
-import { Code } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
-import path from 'node:path';
 
 /**
 * @important

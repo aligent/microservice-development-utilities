@@ -17,4 +17,22 @@ describe('preset generator', () => {
         const config = readNxJson(tree);
         expect(config).toBeDefined();
     });
+
+    it('should generate example code when example is true', async () => {
+        await presetGenerator(tree, options);
+
+        const infraIndex = tree.read('libs/infra/src/index.ts', 'utf-8');
+        expect(infraIndex).toBeDefined();
+        expect(infraIndex).toContain('paramExample');
+        expect(infraIndex).toContain('secretExample');
+    });
+
+    it('should generate without example code when example is false', async () => {
+        await presetGenerator(tree, { ...options, example: false });
+
+        const infraIndex = tree.read('libs/infra/src/index.ts', 'utf-8');
+        expect(infraIndex).toBeDefined();
+        expect(infraIndex).not.toContain('paramExample');
+        expect(infraIndex).not.toContain('secretExample');
+    });
 });
