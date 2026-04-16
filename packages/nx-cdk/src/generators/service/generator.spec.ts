@@ -45,4 +45,23 @@ describe('service generator', () => {
 
         expect(references).toEqual([{ path: './services/test' }]);
     });
+
+    it('should throw when a duplicate reference path already exists', async () => {
+        const options: ServiceGeneratorSchema = { name: 'test' };
+
+        await serviceGenerator(tree, options);
+
+        await expect(serviceGenerator(tree, options)).rejects.toThrow(
+            'You already have a library using the import path'
+        );
+    });
+
+    it('should not recreate the services folder if it already exists', async () => {
+        tree.write('services/.gitkeep', '');
+
+        const options: ServiceGeneratorSchema = { name: 'test' };
+        await serviceGenerator(tree, options);
+
+        expect(tree.exists('services/.gitkeep')).toBe(true);
+    });
 });
