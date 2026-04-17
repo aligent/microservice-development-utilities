@@ -699,6 +699,140 @@ describe('retry middleware', () => {
         });
     });
 
+    describe('throwOnNotOk behavior', () => {
+        it('should throw on non-OK response by default (throwOnNotOk defaults to true)', async () => {
+            mockFetch.mockResolvedValue(
+                new Response(JSON.stringify({ error: 'Bad Request' }), {
+                    status: 400,
+                    statusText: 'Bad Request',
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(retryMiddleware({ retries: 3, baseDelay: 10 }));
+
+            await expect(client.GET('/test')).rejects.toThrow('400: Bad Request');
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not throw on non-OK response when throwOnNotOk is false', async () => {
+            mockFetch.mockResolvedValue(
+                new Response(JSON.stringify({ error: 'Bad Request' }), {
+                    status: 400,
+                    statusText: 'Bad Request',
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(retryMiddleware({ retries: 3, baseDelay: 10, throwOnNotOk: false }));
+
+            const result = await client.GET('/test');
+
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            expect(result.response.status).toBe(400);
+        });
+
+        it('should return non-OK response after exhausting retries when throwOnNotOk is false', async () => {
+            mockFetch.mockResolvedValue(
+                new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+                    status: 500,
+                    statusText: 'Internal Server Error',
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    throwOnNotOk: false,
+                    fetch: mockFetch as typeof fetch,
+                })
+            );
+
+            const result = await client.GET('/test');
+
+            // Initial request + 2 retries = 3 total calls
+            expect(mockFetch).toHaveBeenCalledTimes(3);
+            expect(result.response.status).toBe(500);
+        });
+
+        it('should return non-OK response when retryOn does not match and throwOnNotOk is false', async () => {
+            mockFetch.mockResolvedValue(
+                new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+                    status: 500,
+                    statusText: 'Internal Server Error',
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    retryOn: [502, 503],
+                    throwOnNotOk: false,
+                    fetch: mockFetch as typeof fetch,
+                })
+            );
+
+            const result = await client.GET('/test');
+
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            expect(result.response.status).toBe(500);
+        });
+
+        it('should still retry retryable errors and return final response when throwOnNotOk is false', async () => {
+            mockFetch
+                .mockResolvedValueOnce(
+                    new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+                        status: 500,
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    new Response(JSON.stringify({ message: 'success' }), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 3,
+                    baseDelay: 10,
+                    throwOnNotOk: false,
+                    fetch: mockFetch as typeof fetch,
+                })
+            );
+
+            const result = await client.GET('/test');
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(result.response.status).toBe(200);
+        });
+    });
+
     it('should throw error when final response is not ok after exhausting retries', async () => {
         mockFetch.mockResolvedValue(
             new Response(JSON.stringify({ error: 'Internal Server Error' }), {

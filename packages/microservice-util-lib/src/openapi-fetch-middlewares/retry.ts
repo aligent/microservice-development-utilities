@@ -2,6 +2,7 @@ import type { Middleware } from 'openapi-fetch';
 import type { NormalisedConfig, RetryConfig, RetryContext, RetryDelayFn } from './types/retry';
 import { HttpResponseError, isHttpResponseError } from './utils/http-response-error';
 import { isNetworkError } from './utils/is-network-error';
+export type { HttpRequestData, HttpResponseData } from './utils/http-response-error';
 
 const IDEMPOTENT_HTTP_METHODS: string[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'] as const;
 
@@ -98,15 +99,17 @@ function shouldRetryOnStatus(status: number, retryOn: number[]): boolean {
 }
 
 /**
- * Checks the response status and throws HttpResponseError if it's not "ok".
+ * Checks the response status and throws HttpResponseError if it's not "ok"
+ * and throwOnNotOk is enabled.
  *
  * @param {Response} response - The HTTP response object.
  * @param {Request} request - The HTTP request object.
- * @throws {HttpResponseError} When the response is not an "ok" response.
+ * @param {boolean} throwOnNotOk - Whether to throw on non-ok responses.
+ * @throws {HttpResponseError} When throwOnNotOk is true and the response is not "ok".
  */
-function throwErrorIfNotOkResponse(response: Response, request: Request) {
-    if (!response.ok) {
-        throw new HttpResponseError(response, request);
+async function throwErrorIfNotOkResponse(response: Response, request: Request, throwOnNotOk: boolean) {
+    if (throwOnNotOk && !response.ok) {
+        throw await HttpResponseError.create(response, request);
     }
 }
 
@@ -167,6 +170,7 @@ function retryMiddleware(config?: RetryConfig): Middleware {
         retryDelay: getRetryDelayFn(config),
         idempotentOnly: config?.idempotentOnly ?? true,
         fetch: config?.fetch ?? fetch,
+        throwOnNotOk: config?.throwOnNotOk ?? true,
     };
 
     return {
@@ -176,7 +180,7 @@ function retryMiddleware(config?: RetryConfig): Middleware {
             // If retryOn is specified, only use that list
             if (config?.retryOn && config.retryOn.length > 0) {
                 if (!shouldRetryOnStatus(response.status, config.retryOn)) {
-                    throwErrorIfNotOkResponse(response, request);
+                    await throwErrorIfNotOkResponse(response, request, normalisedConfig.throwOnNotOk);
                     return response;
                 }
 
@@ -189,7 +193,7 @@ function retryMiddleware(config?: RetryConfig): Middleware {
                 normalisedConfig.idempotentOnly
             );
             if (!shouldRetry) {
-                throwErrorIfNotOkResponse(response, request);
+                await throwErrorIfNotOkResponse(response, request, normalisedConfig.throwOnNotOk);
                 return response;
             }
 
@@ -248,13 +252,13 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
         }
 
         if (config.retryOn && !shouldRetryOnStatus(response?.status, config.retryOn)) {
-            throwErrorIfNotOkResponse(response, context.request);
+            await throwErrorIfNotOkResponse(response, context.request, config.throwOnNotOk);
             return response;
         }
 
         const shouldRetry = await config.retryCondition(context, config.idempotentOnly);
         if (!shouldRetry) {
-            throwErrorIfNotOkResponse(response, context.request);
+            await throwErrorIfNotOkResponse(response, context.request, config.throwOnNotOk);
             return response;
         }
     } while (attempt <= maxRetries);
@@ -263,7 +267,7 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
         throw context.error;
     }
 
-    throwErrorIfNotOkResponse(response, context.request);
+    await throwErrorIfNotOkResponse(response, context.request, config.throwOnNotOk);
     return response;
 }
 
