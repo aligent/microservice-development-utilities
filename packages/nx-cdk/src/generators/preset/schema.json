@@ -26,6 +26,17 @@
             "x-prompt": "What is the target Node.js version the project?",
             "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
             "patternErrorMessage": "Node.js version must be a valid semantic version (semver), e.g. 22.10.0 or 24.10.0"
+        },
+        "destination": {
+            "type": "string",
+            "description": "The destination directory for the generated workspace",
+            "pattern": "^[a-zA-Z0-9_./-]+$",
+            "patternErrorMessage": "Destination must be a valid path containing only alphanumeric characters, dashes, underscores, dots, and slashes"
+        },
+        "example": {
+            "type": "boolean",
+            "description": "Generate example code with sample resources",
+            "default": false
         }
     },
     "required": ["name"]

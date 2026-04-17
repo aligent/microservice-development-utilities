@@ -1,20 +1,16 @@
 import { Stack, Stage, StackProps, Tags } from 'aws-cdk-lib';
-import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
+<% if (example) { %>import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';<% } %>
 
-// EXAMPLE ONLY: The following interface, class, and all related resource references
-// (eCommerceBaseUrl, eCommerceCredentials, etc.) are illustrative examples.
-// Replace them with your own resources and props that match your actual infrastructure.
 export interface SharedInfraProps {
-    // eCommerceBaseUrl: IStringParameter;
-    // eCommerceCredentials: Secret;
+    <% if (example) { %>paramExample: IStringParameter;
+    secretExample: Secret;<% } %>
 }
 
 export class SharedInfraStack extends Stack {
-    // EXAMPLE: Replace these properties with your own shared resources
-    // readonly eCommerceBaseUrl: IStringParameter;
-    // readonly eCommerceCredentials: Secret;
+    <% if (example) { %>readonly paramExample: IStringParameter;
+    readonly secretExample: Secret;<% } %>
 
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
@@ -24,25 +20,24 @@ export class SharedInfraStack extends Stack {
         }
 
         Tags.of(this).add('SERVICE', id);
+        <% if (example) { %>
+        this.paramExample = StringParameter.fromStringParameterName(
+            this,
+            'ParamExample',
+            `/example/param`
+        );
 
-        // EXAMPLE: Replace with your own SSM parameter lookup
-        // this.eCommerceBaseUrl = StringParameter.fromStringParameterName(
-        //     this,
-        //     'ECommerceBaseUrl',
-        //     `/e-commerce/base-url`
-        // );
-
-        // EXAMPLE: Replace with your own secrets/resources
-        // this.eCommerceCredentials = new Secret(this, 'ECommerceCredentials', {
-        //     description: 'E-Commerce API credentials shared across services',
-        // });
+        this.secretExample = new Secret(this, 'SecretExample', {
+            description: 'Example secret shared across services',
+        });
+        <% } %>
     }
 
-    // EXAMPLE: Update getProps() to return your own resource props
     getProps(): SharedInfraProps {
         return {
-            // eCommerceBaseUrl: this.eCommerceBaseUrl,
-            // eCommerceCredentials: this.eCommerceCredentials,
+            <% if (example) { %>paramExample: this.paramExample,
+            secretExample: this.secretExample,
+            <% } %>
         };
     }
 }
