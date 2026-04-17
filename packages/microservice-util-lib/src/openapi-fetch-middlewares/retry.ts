@@ -107,7 +107,11 @@ function shouldRetryOnStatus(status: number, retryOn: number[]): boolean {
  * @param {boolean} throwOnNotOk - Whether to throw on non-ok responses.
  * @throws {HttpResponseError} When throwOnNotOk is true and the response is not "ok".
  */
-async function throwErrorIfNotOkResponse(response: Response, request: Request, throwOnNotOk: boolean) {
+async function throwErrorIfNotOkResponse(
+    response: Response,
+    request: Request,
+    throwOnNotOk: boolean
+) {
     if (throwOnNotOk && !response.ok) {
         throw await HttpResponseError.create(response, request);
     }
@@ -180,7 +184,11 @@ function retryMiddleware(config?: RetryConfig): Middleware {
             // If retryOn is specified, only use that list
             if (config?.retryOn && config.retryOn.length > 0) {
                 if (!shouldRetryOnStatus(response.status, config.retryOn)) {
-                    await throwErrorIfNotOkResponse(response, request, normalisedConfig.throwOnNotOk);
+                    await throwErrorIfNotOkResponse(
+                        response,
+                        request,
+                        normalisedConfig.throwOnNotOk
+                    );
                     return response;
                 }
 
