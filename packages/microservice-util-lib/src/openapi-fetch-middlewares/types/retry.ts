@@ -19,7 +19,7 @@ export interface RetryContext {
  * Returns true if the request should be retried.
  *
  * @param {RetryContext} context - The retry context containing attempt information.
- * @param {boolean} idempotentOnly - Whether to retry only when the HTTP method is an idempotent methods.
+ * @param {boolean} idempotentOnly - Whether to retry only when the HTTP method is idempotent.
  * @returns {boolean | Promise<boolean>} Whether to retry the request.
  */
 export type RetryConditionFn = (
@@ -65,16 +65,21 @@ export type OnRetryFn = (context: RetryContext) => void | Promise<void>;
  *      - 'exponential': Exponential backoff (100ms * 2^attemptNumber)
  *      - 'linear': Linear backoff (100ms * attemptNumber)
  *      - Custom function: Allows custom delay calculation
- * @property {number} [retryDelayBase=100] - Base delay in milliseconds for built-in delay strategies.
- * @property {number} [maxRetryDelay=30000] - Maximum delay in milliseconds between retry attempts.
+ * @property {number} [baseDelay=100] - Base delay in milliseconds for built-in delay strategies.
+ * @property {number} [maxDelay=30000] - Maximum delay in milliseconds between retry attempts.
  * @property {boolean} [shouldResetTimeout=false] - Whether to reset the timeout between retries.
  * @property {OnRetryFn} [onRetry] - Callback function executed before each retry attempt.
  * @property {number[]} [retryOn]
  * - Array of HTTP status codes that should trigger a retry.
- * - If not specified, defaults to 5xx, 429 and 408 errors.
- * @property {boolean} [idempotentOnly]
- * - Whether to retry only when the HTTP method is an idempotent methods.
- * - If not specified, defaults to true and retry only on GET, HEAD, OPTIONS, PUT or DELETE method.
+ * - Defaults to 5xx, 429, and 408 errors.
+ * @property {boolean} [idempotentOnly=true]
+ * - Whether to retry only when the HTTP method is idempotent.
+ * - Defaults to `true`, retrying only on GET, HEAD, OPTIONS, PUT, or DELETE methods.
+ * @property {boolean} [throwOnNotOk=true]
+ * - Whether to throw an `HttpResponseError` when the final response has a non-OK status (i.e. not 2xx).
+ * - Defaults to `true` for backward compatibility.
+ * - Set to `false` to return the response as-is, which allows downstream middlewares
+ *   (e.g. logging middleware) to inspect the response before the caller handles the error.
  * @property {typeof fetch} [fetch]
  * - Custom fetch function to use for retries. Defaults to the global fetch function.
  * - Useful for testing or using a custom fetch implementation.
@@ -89,16 +94,18 @@ export interface RetryConfig {
     onRetry?: OnRetryFn;
     retryOn?: number[];
     idempotentOnly?: boolean;
+    throwOnNotOk?: boolean;
     fetch?: typeof fetch;
 }
 
 export type NormalisedConfig = Omit<
     RetryConfig,
-    'retries' | 'retryCondition' | 'retryDelay' | 'idempotentOnly' | 'fetch'
+    'retries' | 'retryCondition' | 'retryDelay' | 'idempotentOnly' | 'throwOnNotOk' | 'fetch'
 > & {
     retries: number;
     retryCondition: RetryConditionFn;
     retryDelay: RetryDelayFn;
     idempotentOnly: boolean;
+    throwOnNotOk: boolean;
     fetch: typeof fetch;
 };
