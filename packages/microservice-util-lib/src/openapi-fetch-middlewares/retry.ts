@@ -4,7 +4,7 @@ import { HttpResponseError, isHttpResponseError } from './utils/http-response-er
 import { isNetworkError } from './utils/is-network-error';
 export type { HttpRequestData, HttpResponseData } from './utils/http-response-error';
 
-const IDEMPOTENT_HTTP_METHODS: string[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'] as const;
+const IDEMPOTENT_HTTP_METHODS: readonly string[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
 
 /**
  * Default retry condition function.
@@ -133,7 +133,7 @@ async function throwErrorIfNotOkResponse(response: Response, request: Request, t
  * const middleware = retryMiddleware({
  *     retries: 5,
  *     retryDelay: 'linear',
- *     retryDelayBase: 200,
+ *     baseDelay: 200,
  *     retryOn: [500, 502, 503, 504],
  *     onRetry: (context) => {
  *         console.log(`Retrying request (attempt ${context.attemptNumber})`);
