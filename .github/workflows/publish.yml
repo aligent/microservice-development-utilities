@@ -42,5 +42,7 @@ jobs:
         shell: bash
 
       - name: 🚀 Publish versioned packages
-        run: npx nx release publish --verbose ${{ inputs.publish-options }}
+        env:
+          PUBLISH_OPTIONS: ${{ inputs.publish-options }}
+        run: npx nx release publish --verbose $PUBLISH_OPTIONS
         shell: bash
