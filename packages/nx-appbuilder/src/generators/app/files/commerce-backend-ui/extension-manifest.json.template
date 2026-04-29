@@ -1,0 +1,8 @@
+{
+    "name": "<%= name %>",
+    "displayName": "<%= displayName %>",
+    "description": "<%= description %>",
+    "platform": "web",
+    "id": "<%= extensionId %>",
+    "version": "1.0.0"
+}

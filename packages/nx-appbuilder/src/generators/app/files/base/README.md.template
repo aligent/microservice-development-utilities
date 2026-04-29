@@ -1,0 +1,40 @@
+# <%= displayName %>
+
+<%= description %>
+
+## Development
+
+```bash
+# Install dependencies (run from monorepo root):
+npm install
+
+# Lint
+npm run lint --workspace=<%= name %>
+
+# Type-check
+npm run check-types --workspace=<%= name %>
+
+# Test
+npm test --workspace=<%= name %>
+
+# Deploy
+cd <%= name %> && aio app deploy
+```
+
+## Structure
+
+<%_ const usesCommerceLib = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks; _%>
+<%_ if (usesCommerceLib) { _%>
+This app integrates with Adobe Commerce via App Management
+(`@adobe/aio-commerce-lib-app`). The merchant-facing config, eventing, webhook
+subscriptions, and custom install steps are all declared in
+`app.commerce.config.ts`; the lib provisions them at install time.
+<%_ if (hasAdminUI) { _%>
+
+The admin UI lives under `src/commerce-backend-ui-1/`. Add pages and
+components inside `web-src/src/components/`.
+<%_ } _%>
+<%_ } else { _%>
+This is a standalone Adobe App Builder integration. Backend actions live under
+`src/actions/`. There is no Commerce admin UI and no business configuration.
+<%_ } _%>

@@ -1,0 +1,2 @@
+@aligent:registry=https://npm.corp.aligent.consulting/
+//npm.corp.aligent.consulting/:_authToken=${NPM_TOKEN}

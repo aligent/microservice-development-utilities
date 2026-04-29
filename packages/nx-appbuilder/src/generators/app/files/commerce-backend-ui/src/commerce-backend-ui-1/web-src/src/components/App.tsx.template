@@ -1,0 +1,37 @@
+import { Content, Heading, lightTheme, Provider, View } from '@adobe/react-spectrum';
+import { Route, Routes, useNavigate } from 'react-router';
+
+import { PageContextProvider } from '@/web/context/PageContextProvider.tsx';
+
+function App() {
+    const navigate = useNavigate();
+
+    return (
+        <PageContextProvider title="<%= displayName %>">
+            <Provider
+                theme={lightTheme}
+                colorScheme={'light'}
+                router={{
+                    navigate,
+                }}
+            >
+                <View padding="size-300">
+                    <Routes>
+                        <Route path="/" element={<LandingPage />} />
+                    </Routes>
+                </View>
+            </Provider>
+        </PageContextProvider>
+    );
+}
+
+function LandingPage() {
+    return (
+        <>
+            <Heading level={1}><%= displayName %></Heading>
+            <Content><%= description %></Content>
+        </>
+    );
+}
+
+export default App;

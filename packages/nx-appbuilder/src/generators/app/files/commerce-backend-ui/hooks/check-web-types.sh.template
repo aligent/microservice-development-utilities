@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+echo -e "\n⏩ Checking web types before build... 🔍\n"
+
+if npm run check-types:web; then
+  echo -e "\n⏩ Web type checking completed successfully! ✅\n"
+  exit 0
+else
+  echo -e "\n⏩ Web type checking failed: ❌\n"
+  exit 1
+fi

@@ -1,0 +1,30 @@
+import { Core } from '@adobe/aio-sdk';
+
+/**
+ * Stub REST endpoint. Adjust the response shape and add domain logic as needed.
+ *
+ * Invoked at:
+ *   https://{namespace}.adobeioruntime.net/api/v1/web/<runtime-package-name>/rest-sample
+ */
+
+interface ActionParams {
+    __ow_method?: string;
+    __ow_query?: string;
+    __ow_body?: string;
+    __ow_headers: Record<string, string | undefined>;
+    LOG_LEVEL?: string;
+}
+
+export async function main(params: ActionParams) {
+    const logger = Core.Logger('rest-sample', { level: params.LOG_LEVEL || 'info' });
+
+    logger.info('REST request received', {
+        method: params.__ow_method,
+        query: params.__ow_query,
+    });
+
+    return {
+        statusCode: 200,
+        body: { message: 'Hello from rest-sample' },
+    };
+}

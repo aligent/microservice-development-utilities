@@ -1,0 +1,78 @@
+import page from '@adobe/exc-app/page';
+import topbar from '@adobe/exc-app/topbar';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
+
+import { useAdobeRuntimeContext } from '@/web/context/AdobeRuntimeContextProvider';
+
+interface PageContextType {
+    title: string;
+    shortTitle: string;
+}
+
+export const PageContext = createContext<PageContextType>({
+    title: 'Adobe App Builder',
+    shortTitle: 'AAB',
+});
+
+/**
+ * Format a short title from the full title.
+ *
+ * If the title is less than 3 words, use the first 5 characters.
+ * If the title is 3 or more words, make an acronym from the first 5 words.
+ */
+function formatShortTitle(title: string) {
+    return title.split(' ').length >= 3
+        ? title.split(' ').slice(0, 5).join('').toUpperCase()
+        : title.slice(0, 5);
+}
+
+/**
+ * Provides page properties to the application.
+ *
+ * If wrapped with AdobeRuntimeContextProvider, updates the topbar and page
+ * title once the Adobe runtime is ready.
+ */
+export const PageContextProvider = ({
+    children,
+    title,
+    shortTitle,
+}: {
+    children: ReactNode;
+    title?: string;
+    shortTitle?: string;
+}) => {
+    const formattedTitle = title?.trim() || 'Adobe App Builder';
+    const formattedShortTitle = shortTitle?.trim() || formatShortTitle(formattedTitle);
+
+    const { loading, error } = useAdobeRuntimeContext();
+    useEffect(() => {
+        document.title = formattedTitle;
+
+        if (loading || error) {
+            return;
+        }
+
+        // topbar/page APIs are only available when running inside the Experience Cloud Shell.
+        // In the Commerce Admin iframe they are not available, so we catch and ignore.
+        try {
+            topbar.solution = {
+                icon: 'AdobeExperienceCloud',
+                title: formattedTitle,
+                shortTitle: formattedShortTitle,
+            };
+            page.title = formattedTitle;
+        } catch {
+            // Not running in Experience Cloud Shell — topbar APIs unavailable.
+        }
+    }, [loading, error, formattedTitle, formattedShortTitle]);
+
+    return (
+        <PageContext value={{ title: formattedTitle, shortTitle: formattedShortTitle }}>
+            {children}
+        </PageContext>
+    );
+};
+
+export const usePageContext = () => {
+    return useContext(PageContext);
+};

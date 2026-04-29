@@ -17,6 +17,12 @@
         },
         {
             "path": "./tools/generators"
+        },
+        {
+            "path": "./packages/appbuilder-util-lib"
+        },
+        {
+            "path": "./packages/nx-appbuilder"
         }
     ]
 }
