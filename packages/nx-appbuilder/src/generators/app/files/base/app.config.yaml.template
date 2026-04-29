@@ -21,7 +21,7 @@ application:
                     rest-sample:
                         function: src/actions/rest-sample.ts
                         web: 'yes'
-                        runtime: nodejs:22
+                        runtime: nodejs:24
                         inputs:
                             LOG_LEVEL: debug
                         annotations:
@@ -32,7 +32,7 @@ application:
                     handle-sample-event:
                         function: src/actions/handle-sample-event.ts
                         web: 'yes'
-                        runtime: nodejs:22
+                        runtime: nodejs:24
                         inputs:
                             LOG_LEVEL: debug
                         annotations:
