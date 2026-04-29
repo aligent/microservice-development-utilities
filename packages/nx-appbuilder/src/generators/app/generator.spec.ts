@@ -135,23 +135,24 @@ describe('app generator', () => {
         });
     });
 
-    describe('project.json', () => {
-        it('declares the standard nx targets wired to npm scripts', async () => {
+    describe('nx targets', () => {
+        it('does not write a project.json (lint/test rely on inferred plugin targets)', async () => {
             await generate(tree, { name: 'my-app' });
-            const project = readJson(tree, 'my-app/project.json');
+            expect(tree.exists('my-app/project.json')).toBe(false);
+        });
 
-            expect(project.name).toBe('my-app');
-            expect(project.projectType).toBe('application');
-            expect(project.sourceRoot).toBe('my-app/src');
-            expect(Object.keys(project.targets).sort()).toEqual([
-                'check-types',
-                'deploy',
-                'lint',
-                'lint:fix',
-                'test',
-            ]);
-            expect(project.targets.deploy.options.command).toBe('aio app deploy');
-            expect(project.targets.deploy.options.cwd).toBe('my-app');
+        it('declares custom check-types and deploy targets in package.json nx block', async () => {
+            await generate(tree, { name: 'my-app' });
+            const pkg = readJson(tree, 'my-app/package.json');
+
+            expect(pkg.nx.targets['check-types']).toEqual({
+                executor: 'nx:run-commands',
+                options: { command: 'npm run check-types', cwd: '{projectRoot}' },
+            });
+            expect(pkg.nx.targets.deploy).toEqual({
+                executor: 'nx:run-commands',
+                options: { command: 'aio app deploy', cwd: '{projectRoot}' },
+            });
         });
     });
 

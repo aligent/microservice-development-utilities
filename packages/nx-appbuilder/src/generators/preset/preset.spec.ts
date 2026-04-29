@@ -82,6 +82,30 @@ describe('preset generator', () => {
 
             expect(config?.installation?.version).toBe('22.4.5');
         });
+
+        it('declares the inference plugins so generated apps get lint/test for free', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const config = readNxJson(tree);
+
+            const pluginNames = (config?.plugins ?? []).map(p =>
+                typeof p === 'string' ? p : p.plugin
+            );
+            expect(pluginNames).toContain('@nx/eslint/plugin');
+            expect(pluginNames).toContain('@nx/js/typescript');
+            expect(pluginNames).toContain('@nx/vitest');
+        });
+
+        it('disables the @nx/js/typescript plugin inferred targets we override ourselves', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const config = readNxJson(tree);
+
+            const tsPlugin = (config?.plugins ?? []).find(
+                p => typeof p !== 'string' && p.plugin === '@nx/js/typescript'
+            );
+            expect(tsPlugin).toBeDefined();
+            if (typeof tsPlugin === 'string' || tsPlugin === undefined) return;
+            expect(tsPlugin.options).toMatchObject({ build: false, typecheck: false });
+        });
     });
 
     describe('templated files', () => {

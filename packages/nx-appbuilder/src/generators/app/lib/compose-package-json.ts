@@ -88,6 +88,18 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
         dependencies: sortObject(dependencies),
         devDependencies: sortObject(devDependencies),
         engines: { node: '>=18' },
+        nx: {
+            targets: {
+                'check-types': {
+                    executor: 'nx:run-commands',
+                    options: { command: 'npm run check-types', cwd: '{projectRoot}' },
+                },
+                deploy: {
+                    executor: 'nx:run-commands',
+                    options: { command: 'aio app deploy', cwd: '{projectRoot}' },
+                },
+            },
+        },
     };
 
     tree.write(`${options.appRoot}/package.json`, JSON.stringify(json, null, 4) + '\n');

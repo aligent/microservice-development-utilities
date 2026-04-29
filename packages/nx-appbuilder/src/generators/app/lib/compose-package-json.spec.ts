@@ -179,6 +179,31 @@ describe('writePackageJson', () => {
         });
     });
 
+    describe('nx targets block', () => {
+        it('declares check-types and deploy under nx.targets', () => {
+            writePackageJson(tree, makeOptions());
+            const pkg = readPackageJson(tree);
+            const nx = pkg['nx'] as { targets: Record<string, unknown> };
+
+            expect(nx.targets['check-types']).toEqual({
+                executor: 'nx:run-commands',
+                options: { command: 'npm run check-types', cwd: '{projectRoot}' },
+            });
+            expect(nx.targets.deploy).toEqual({
+                executor: 'nx:run-commands',
+                options: { command: 'aio app deploy', cwd: '{projectRoot}' },
+            });
+        });
+
+        it('keeps the nx targets identical regardless of feature flags', () => {
+            writePackageJson(tree, makeOptions({ hasAdminUI: true, hasEvents: true }));
+            const pkg = readPackageJson(tree);
+            const nx = pkg['nx'] as { targets: Record<string, unknown> };
+
+            expect(Object.keys(nx.targets).sort()).toEqual(['check-types', 'deploy']);
+        });
+    });
+
     describe('alphabetical sort', () => {
         it('sorts dependencies alphabetically', () => {
             writePackageJson(tree, makeOptions({ hasAdminUI: true }));

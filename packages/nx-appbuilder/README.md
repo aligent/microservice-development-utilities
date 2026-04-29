@@ -88,7 +88,7 @@ The app generator always renders a **base** subtree into `<app-name>/`:
 - **App-level files**:
   - `app.config.yaml` - App Builder manifest with the runtime package, action declarations, triggers and rules (composed from the selected flags)
   - `package.json` - Pinned dependencies and `lint` / `lint:fix` / `check-types` / `test` scripts (per-target variants for actions, web and tests)
-  - `project.json` - Nx targets (`lint`, `lint:fix`, `check-types`, `test`, `deploy`) wired to the app's npm scripts
+  - `package.json` `nx.targets` block - declares the custom `check-types` and `deploy` targets; `lint` and `test` are inferred by the `@nx/eslint/plugin` and `@nx/vitest` plugins from `eslint.config.mjs` and `vitest.config.ts`
   - `tsconfig.json` / `tsconfig.base.json` - TypeScript project config
   - `babel.actions.config.js` - Babel preset for App Builder actions
   - `eslint.config.mjs` / `prettier.config.mjs` - Lint and formatter config (`@aligent/ts-code-standards`)
@@ -154,8 +154,7 @@ my-workspace/
 │   ├── app.config.yaml
 │   ├── app.commerce.config.ts    # only if any commerce-lib flag
 │   ├── install.yaml              # only if any commerce-lib flag
-│   ├── project.json
-│   ├── package.json
+│   ├── package.json              # includes nx.targets for check-types and deploy
 │   └── ...
 ├── nx.json
 ├── package.json

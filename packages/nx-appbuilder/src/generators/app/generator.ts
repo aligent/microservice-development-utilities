@@ -4,7 +4,6 @@ import { applyFeatureFiles } from './lib/apply-feature-files';
 import { writePackageJson } from './lib/compose-package-json';
 import { normalizeOptions } from './lib/normalize-options';
 import { updateRootPackageJson } from './lib/update-root-package';
-import { writeProjectJson } from './lib/write-project-json';
 import type { AppGeneratorSchema, SidebarCategory } from './schema';
 
 export default async function appGenerator(tree: Tree, rawOptions: AppGeneratorSchema) {
@@ -14,7 +13,6 @@ export default async function appGenerator(tree: Tree, rawOptions: AppGeneratorS
 
     applyFeatureFiles(tree, options);
     writePackageJson(tree, options);
-    writeProjectJson(tree, options);
     updateRootPackageJson(tree, options);
 
     await formatFiles(tree);
