@@ -43,7 +43,7 @@ application:
                     cron-sample:
                         function: src/actions/cron-sample.ts
                         web: 'no'
-                        runtime: nodejs:22
+                        runtime: nodejs:24
                         inputs:
                             LOG_LEVEL: debug
                         annotations:
