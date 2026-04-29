@@ -5,8 +5,5 @@ export default mergeConfig(
     vitestBaseConfig,
     defineConfig({
         cacheDir: '../../node_modules/.vitest/nx-appbuilder',
-        test: {
-            passWithNoTests: true,
-        },
     })
 );
