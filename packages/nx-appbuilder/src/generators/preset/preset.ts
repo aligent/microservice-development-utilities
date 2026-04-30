@@ -10,7 +10,6 @@ import * as path from 'path';
 import { NX_JSON } from './nx-json';
 import type { PresetGeneratorSchema } from './schema';
 
-const KEBAB = /^[a-z][a-z0-9-]*$/;
 const DEFAULT_NODE_VERSION = '24.0.1';
 
 /**
@@ -19,14 +18,11 @@ const DEFAULT_NODE_VERSION = '24.0.1';
  * Scaffolds the workspace shell — root package.json, nx.json, .npmrc, etc. —
  * but does NOT scaffold any apps. Apps are added afterwards via the `app`
  * generator (`npx nx g @aligent/nx-appbuilder:app <name>`).
+ *
+ * Name shape (kebab-case) and nodeVersion semver are enforced by the schema's
+ * `pattern` fields before this function runs.
  */
 export default async function presetGenerator(tree: Tree, options: PresetGeneratorSchema) {
-    if (!KEBAB.test(options.name)) {
-        throw new Error(
-            `Workspace name "${options.name}" must be kebab-case (lowercase letters, digits, hyphens).`
-        );
-    }
-
     const nodeVersion = options.nodeVersion ?? DEFAULT_NODE_VERSION;
 
     const subs = {

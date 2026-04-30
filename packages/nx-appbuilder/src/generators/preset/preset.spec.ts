@@ -11,24 +11,6 @@ describe('preset generator', () => {
         tree = createTreeWithEmptyWorkspace();
     });
 
-    describe('name validation', () => {
-        it('rejects names that are not kebab-case', async () => {
-            await expect(presetGenerator(tree, { name: 'MyWorkspace' })).rejects.toThrow(
-                /must be kebab-case/
-            );
-            await expect(presetGenerator(tree, { name: '1foo' })).rejects.toThrow(
-                /must be kebab-case/
-            );
-            await expect(presetGenerator(tree, { name: 'foo_bar' })).rejects.toThrow(
-                /must be kebab-case/
-            );
-        });
-
-        it('accepts kebab-case names', async () => {
-            await expect(presetGenerator(tree, { name: 'acme-apps' })).resolves.not.toThrow();
-        });
-    });
-
     describe('package.json', () => {
         it('writes a workspace package.json with @aligent/<name> as the name', async () => {
             await presetGenerator(tree, { name: 'acme-apps' });

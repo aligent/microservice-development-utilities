@@ -11,28 +11,6 @@ describe('normalizeOptions', () => {
     });
 
     describe('name validation', () => {
-        it('accepts kebab-case names', () => {
-            expect(() => normalizeOptions(tree, { name: 'my-app' })).not.toThrow();
-            expect(() => normalizeOptions(tree, { name: 'a' })).not.toThrow();
-            expect(() => normalizeOptions(tree, { name: 'a1-b2' })).not.toThrow();
-        });
-
-        it('rejects names with uppercase letters', () => {
-            expect(() => normalizeOptions(tree, { name: 'MyApp' })).toThrow(/must be kebab-case/);
-        });
-
-        it('rejects names starting with a digit', () => {
-            expect(() => normalizeOptions(tree, { name: '1app' })).toThrow(/must be kebab-case/);
-        });
-
-        it('rejects names with underscores', () => {
-            expect(() => normalizeOptions(tree, { name: 'my_app' })).toThrow(/must be kebab-case/);
-        });
-
-        it('rejects empty names', () => {
-            expect(() => normalizeOptions(tree, { name: '' })).toThrow(/must be kebab-case/);
-        });
-
         it('throws when the path already exists in the tree', () => {
             tree.write('my-app/.gitkeep', '');
             expect(() => normalizeOptions(tree, { name: 'my-app' })).toThrow(/already exists/);

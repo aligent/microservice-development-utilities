@@ -56,10 +56,6 @@ describe('app generator', () => {
     });
 
     describe('name validation', () => {
-        it('throws on non-kebab-case names', async () => {
-            await expect(generate(tree, { name: 'BadName' })).rejects.toThrow(/must be kebab-case/);
-        });
-
         it('throws when the destination path already exists', async () => {
             tree.write('my-app/.gitkeep', '');
             await expect(generate(tree, { name: 'my-app' })).rejects.toThrow(/already exists/);

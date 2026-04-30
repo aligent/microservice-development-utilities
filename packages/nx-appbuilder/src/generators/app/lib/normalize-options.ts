@@ -1,7 +1,6 @@
 import type { Tree } from '@nx/devkit';
 import type { AppGeneratorSchema, NormalizedSchema, SidebarCategory } from '../schema';
 
-const KEBAB = /^[a-z][a-z0-9-]*$/;
 const SEMVER = /^v?(\d+\.\d+\.\d+)\s*$/m;
 const DEFAULT_NODE_VERSION = '24.0.1';
 
@@ -13,11 +12,8 @@ const SIDEBAR_TITLES: Record<Exclude<SidebarCategory, 'none'>, string> = {
 };
 
 export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): NormalizedSchema {
-    if (!KEBAB.test(options.name)) {
-        throw new Error(
-            `App name "${options.name}" must be kebab-case (lowercase letters, digits, hyphens).`
-        );
-    }
+    // Name shape (kebab-case) is enforced by the schema's `pattern` field,
+    // which Nx validates before this function runs.
     if (tree.exists(options.name)) {
         throw new Error(`Path "${options.name}" already exists in the workspace.`);
     }
