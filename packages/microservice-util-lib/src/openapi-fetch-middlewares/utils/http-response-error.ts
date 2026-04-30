@@ -60,10 +60,14 @@ export class HttpResponseError extends Error {
      */
     static async create(response: Response, request: Request): Promise<HttpResponseError> {
         const url = new URL(request.url);
-        const [requestBody, responseBody] = await Promise.all([
-            parseBody(request.clone(), request.headers.get('content-type')),
-            parseBody(response.clone(), response.headers.get('content-type')),
-        ]);
+
+        // If request.bodyUsed is true then it can't be cloned and will throw a type error
+        const requestBody = request.bodyUsed
+            ? null
+            : parseBody(request.clone(), request.headers.get('content-type'));
+        const responseBody = response.bodyUsed
+            ? null
+            : parseBody(response.clone(), response.headers.get('content-type'));
 
         const requestData: HttpRequestData = {
             method: request.method,
