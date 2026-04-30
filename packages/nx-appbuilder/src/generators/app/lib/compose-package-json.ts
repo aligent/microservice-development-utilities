@@ -1,47 +1,75 @@
-import type { Tree } from '@nx/devkit';
+import { readJsonFile, type Tree } from '@nx/devkit';
+import * as path from 'path';
 import type { NormalizedSchema } from '../schema';
 
 /**
  * Builds the new app's package.json based on selected flags.
  *
- * Versions are pinned to what the existing apps in the monorepo use; bump
- * them in one place (the maps below) when the SDKs move forward.
+ * Versions are sourced from `template-package/package.json` (a real package.json
+ * that Dependabot watches) — bumping a dependency there flows into every app
+ * scaffolded thereafter without code changes. The manifest lives in its own
+ * directory because Dependabot's npm ecosystem only discovers files named
+ * exactly `package.json`.
  */
-const BASE_DEPS: Record<string, string> = {
-    '@adobe/aio-sdk': '^6.0.0',
-    '@adobe/aio-lib-telemetry': '^1.1.3',
-};
+interface PackageJson {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+}
 
-const COMMERCE_DEPS: Record<string, string> = {
-    '@adobe/aio-commerce-lib-app': '^1.2.0',
-    '@adobe/aio-commerce-lib-config': '^1.1.0',
-};
+const TEMPLATE = readJsonFile<PackageJson>(
+    path.join(__dirname, 'template-package', 'package.json')
+);
 
-const ADMIN_UI_DEPS: Record<string, string> = {
-    '@adobe/uix-guest': '^1.1.5',
-    '@adobe/exc-app': '^1.4.13',
-    '@adobe/react-spectrum': '^3.46.1',
-    react: '^19.1.0',
-    'react-dom': '^19.1.0',
-    'react-router': '^7.13.0',
-};
+function pickVersions(
+    source: Record<string, string> | undefined,
+    names: readonly string[]
+): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const name of names) {
+        const version = source?.[name];
+        if (version === undefined) {
+            throw new Error(`Missing "${name}" in template-package.json`);
+        }
+        result[name] = version;
+    }
+    return result;
+}
 
-const BASE_DEV_DEPS: Record<string, string> = {
-    '@aligent/ts-code-standards': '^4.2.0',
-    '@babel/preset-env': '^7.26.9',
-    '@babel/preset-typescript': '^7.27.0',
-    '@types/node': '^22.14.0',
-    'babel-loader': '^10.0.0',
-    'ts-loader': '^9.5.2',
-    'type-fest': '^4.39.1',
-    typescript: '^5.8.3',
-    vitest: '^2.1.8',
-};
+const BASE_DEPS = pickVersions(TEMPLATE.dependencies, [
+    '@adobe/aio-sdk',
+    '@adobe/aio-lib-telemetry',
+]);
 
-const ADMIN_UI_DEV_DEPS: Record<string, string> = {
-    '@types/react': '^19.1.0',
-    '@types/react-dom': '^19.1.2',
-};
+const COMMERCE_DEPS = pickVersions(TEMPLATE.dependencies, [
+    '@adobe/aio-commerce-lib-app',
+    '@adobe/aio-commerce-lib-config',
+]);
+
+const ADMIN_UI_DEPS = pickVersions(TEMPLATE.dependencies, [
+    '@adobe/uix-guest',
+    '@adobe/exc-app',
+    '@adobe/react-spectrum',
+    'react',
+    'react-dom',
+    'react-router',
+]);
+
+const BASE_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
+    '@aligent/ts-code-standards',
+    '@babel/preset-env',
+    '@babel/preset-typescript',
+    '@types/node',
+    'babel-loader',
+    'ts-loader',
+    'type-fest',
+    'typescript',
+    'vitest',
+]);
+
+const ADMIN_UI_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
+    '@types/react',
+    '@types/react-dom',
+]);
 
 export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
     const dependencies: Record<string, string> = { ...BASE_DEPS };
