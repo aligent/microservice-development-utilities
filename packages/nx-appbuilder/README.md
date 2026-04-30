@@ -6,13 +6,19 @@ The `@aligent/nx-appbuilder` package provides Nx generators for Adobe App Builde
 
 ### Preset Generator
 
-The preset generator initialises a new App Builder monorepo. It is invoked indirectly via `create-nx-workspace` and produces the workspace shell only — apps are added afterwards with the `app` generator.
+The preset generator initialises a new App Builder monorepo. It is invoked indirectly via either `@aligent/create-workspace` (the Aligent-flavoured wrapper) or vanilla `create-nx-workspace`, and produces the workspace shell only — apps are added afterwards with the `app` generator.
 
 #### Usage
 
 ```bash
+# Recommended: the Aligent wrapper. Requires corepack to be enabled.
+npx @aligent/create-workspace@latest --preset=@aligent/nx-appbuilder
+
+# Or directly via create-nx-workspace (will prompt for nodeVersion if omitted):
 npx create-nx-workspace@latest --preset=@aligent/nx-appbuilder
 ```
+
+> The `@aligent/create-workspace` wrapper calls `create-nx-workspace` under the hood, prompts for the preset's options (workspace name, target Node.js version), and removes the npm-bootstrap artefacts (`package-lock.json`, `node_modules`, `.nx`) afterwards so the workspace is ready for `yarn install`.
 
 #### Options
 
