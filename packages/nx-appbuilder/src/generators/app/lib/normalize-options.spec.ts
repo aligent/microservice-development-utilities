@@ -114,6 +114,25 @@ describe('normalizeOptions', () => {
         });
     });
 
+    describe('nodeVersion', () => {
+        it('reads the workspace .nvmrc and strips the leading v', () => {
+            tree.write('.nvmrc', 'v24.0.1\n');
+            const result = normalizeOptions(tree, { name: 'my-app' });
+            expect(result.nodeVersion).toBe('24.0.1');
+        });
+
+        it('falls back to 24.0.1 when .nvmrc is missing', () => {
+            const result = normalizeOptions(tree, { name: 'my-app' });
+            expect(result.nodeVersion).toBe('24.0.1');
+        });
+
+        it('falls back to 24.0.1 when .nvmrc content is unparseable', () => {
+            tree.write('.nvmrc', 'lts/iron\n');
+            const result = normalizeOptions(tree, { name: 'my-app' });
+            expect(result.nodeVersion).toBe('24.0.1');
+        });
+    });
+
     describe('feature flag defaults', () => {
         it('defaults all feature flags to false when omitted', () => {
             const result = normalizeOptions(tree, { name: 'my-app' });

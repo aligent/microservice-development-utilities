@@ -23,6 +23,7 @@ function makeOptions(overrides: Partial<NormalizedSchema> = {}): NormalizedSchem
         appSlug: 'my_app',
         extensionId: 'myAppExtension',
         sidebarCategoryTitle: '',
+        nodeVersion: '24.0.1',
         ...overrides,
     };
 }
@@ -62,7 +63,7 @@ describe('writePackageJson', () => {
             expect(pkg['version']).toBe('0.0.1');
             expect(pkg['private']).toBe(true);
             expect(pkg['type']).toBe('commonjs');
-            expect(pkg['engines']).toEqual({ node: '>=18' });
+            expect(pkg['engines']).toEqual({ node: '>=24' });
         });
 
         it('always includes the base @adobe deps and dev tooling', () => {

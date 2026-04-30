@@ -108,6 +108,26 @@ describe('preset generator', () => {
         });
     });
 
+    describe('nodeVersion', () => {
+        it('writes .nvmrc and engines.node from the default 24.0.1', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const nvmrc = tree.read('.nvmrc', 'utf-8');
+            const pkg = readJson(tree, 'package.json');
+
+            expect(nvmrc?.trim()).toBe('v24.0.1');
+            expect(pkg.engines).toEqual({ node: '>=24' });
+        });
+
+        it('honours an explicit nodeVersion option', async () => {
+            await presetGenerator(tree, { name: 'acme-apps', nodeVersion: '22.18.0' });
+            const nvmrc = tree.read('.nvmrc', 'utf-8');
+            const pkg = readJson(tree, 'package.json');
+
+            expect(nvmrc?.trim()).toBe('v22.18.0');
+            expect(pkg.engines).toEqual({ node: '>=22' });
+        });
+    });
+
     describe('templated files', () => {
         it('writes the dotted template files at their unsuffixed destinations', async () => {
             await presetGenerator(tree, { name: 'acme-apps' });

@@ -78,6 +78,8 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
     checkTypeSteps.push('npm run check-types:tests');
     scripts['check-types'] = checkTypeSteps.join(' && ');
 
+    const major = options.nodeVersion.split('.')[0];
+
     const json = {
         name: options.packageName,
         version: '0.0.1',
@@ -87,7 +89,7 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
         scripts: orderScripts(scripts),
         dependencies: sortObject(dependencies),
         devDependencies: sortObject(devDependencies),
-        engines: { node: '>=18' },
+        engines: { node: `>=${major}` },
         nx: {
             targets: {
                 'check-types': {

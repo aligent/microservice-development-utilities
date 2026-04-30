@@ -11,6 +11,7 @@ import { NX_JSON } from './nx-json';
 import type { PresetGeneratorSchema } from './schema';
 
 const KEBAB = /^[a-z][a-z0-9-]*$/;
+const DEFAULT_NODE_VERSION = '24.0.1';
 
 /**
  * Preset generator invoked by `create-nx-workspace --preset=@aligent/nx-appbuilder`.
@@ -26,15 +27,18 @@ export default async function presetGenerator(tree: Tree, options: PresetGenerat
         );
     }
 
+    const nodeVersion = options.nodeVersion ?? DEFAULT_NODE_VERSION;
+
     const subs = {
         ...options,
+        nodeVersion,
         packageName: `@aligent/${options.name}`,
     } as unknown as Record<string, unknown>;
 
     generateFiles(tree, path.join(__dirname, 'files'), '.', subs);
 
     updateNxJson(tree, { ...NX_JSON });
-    writeJson(tree, 'package.json', buildWorkspacePackageJson(options.name));
+    writeJson(tree, 'package.json', buildWorkspacePackageJson(options.name, nodeVersion));
 
     await formatFiles(tree);
 }
@@ -45,12 +49,14 @@ export default async function presetGenerator(tree: Tree, options: PresetGenerat
  * with what the preset declares — otherwise npm fails the post-preset install
  * with an arborist "must provide string spec" error.
  */
-function buildWorkspacePackageJson(name: string) {
+function buildWorkspacePackageJson(name: string, nodeVersion: string) {
+    const major = nodeVersion.split('.')[0];
     return {
         name: `@aligent/${name}`,
         version: '0.0.0',
         author: 'Aligent Consulting',
         private: true,
+        engines: { node: `>=${major}` },
         scripts: {
             lint: 'nx affected -t lint',
             'lint:all': 'nx run-many -t lint',

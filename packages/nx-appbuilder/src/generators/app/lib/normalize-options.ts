@@ -2,6 +2,8 @@ import type { Tree } from '@nx/devkit';
 import type { AppGeneratorSchema, NormalizedSchema, SidebarCategory } from '../schema';
 
 const KEBAB = /^[a-z][a-z0-9-]*$/;
+const SEMVER = /^v?(\d+\.\d+\.\d+)\s*$/m;
+const DEFAULT_NODE_VERSION = '24.0.1';
 
 const SIDEBAR_TITLES: Record<Exclude<SidebarCategory, 'none'>, string> = {
     catalog: 'Catalog Apps',
@@ -47,7 +49,21 @@ export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): Norma
         appSlug: options.name.replace(/-/g, '_'),
         extensionId: `${camel}Extension`,
         sidebarCategoryTitle: sidebarCategory === 'none' ? '' : SIDEBAR_TITLES[sidebarCategory],
+        nodeVersion: readNodeVersion(tree),
     };
+}
+
+/**
+ * Reads the workspace's `.nvmrc` and extracts the Node version. Falls back to
+ * a sensible default if the file is missing or doesn't contain a parseable
+ * semver — keeping the .nvmrc as the single source of truth without making
+ * the app generator brittle to non-AppBuilder workspaces.
+ */
+function readNodeVersion(tree: Tree): string {
+    const raw = tree.read('.nvmrc', 'utf-8');
+    if (raw === null) return DEFAULT_NODE_VERSION;
+    const match = SEMVER.exec(raw);
+    return match?.[1] ?? DEFAULT_NODE_VERSION;
 }
 
 function toCamelCase(input: string): string {

@@ -135,6 +135,33 @@ describe('app generator', () => {
         });
     });
 
+    describe('nodeVersion inheritance from workspace', () => {
+        it("inherits the workspace's .nvmrc into the app's .nvmrc and engines.node", async () => {
+            tree.write('.nvmrc', 'v22.18.0\n');
+            await generate(tree, { name: 'my-app', hasRestActions: true });
+
+            const nvmrc = tree.read('my-app/.nvmrc', 'utf-8');
+            expect(nvmrc?.trim()).toBe('v22.18.0');
+
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.engines).toEqual({ node: '>=22' });
+
+            const yaml = readText(tree, 'my-app/app.config.yaml');
+            expect(yaml).toContain('runtime: nodejs:22');
+            expect(yaml).not.toContain('runtime: nodejs:24');
+        });
+
+        it('falls back to 24.0.1 when the workspace has no .nvmrc', async () => {
+            await generate(tree, { name: 'my-app' });
+
+            const nvmrc = tree.read('my-app/.nvmrc', 'utf-8');
+            expect(nvmrc?.trim()).toBe('v24.0.1');
+
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.engines).toEqual({ node: '>=24' });
+        });
+    });
+
     describe('nx targets', () => {
         it('does not write a project.json (lint/test rely on inferred plugin targets)', async () => {
             await generate(tree, { name: 'my-app' });

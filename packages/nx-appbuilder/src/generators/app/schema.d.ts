@@ -27,4 +27,6 @@ export interface NormalizedSchema extends Required<AppGeneratorSchema> {
     extensionId: string;
     /** Title-cased section title for the sidebar (e.g. "Content Apps") */
     sidebarCategoryTitle: string;
+    /** Full Node.js version read from the workspace's .nvmrc, e.g. "24.0.1" */
+    nodeVersion: string;
 }
