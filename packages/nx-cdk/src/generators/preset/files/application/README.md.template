@@ -6,6 +6,16 @@ This application manages the deployment of microservices and their shared infras
 
 ### Using yarn script from workspace root (Recommended)
 
+**The `pg:*` scripts** — The playground scripts use `--profile playground`. Ensure you have a matching profile in your `~/.aws/config` file:
+
+    ```ini
+    [profile playground]
+    source_profile = default
+    role_arn = arn:aws:iam::11111111111:role/RoleName
+    ```
+
+    If your profile has a different name, update the `pg:*` scripts in the root `package.json` to match.
+
 ##### Synthesize
 
 ```bash
