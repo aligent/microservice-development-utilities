@@ -112,11 +112,11 @@ describe('writePackageJson', () => {
             ]);
         });
 
-        it('chains check-types steps in the right order', () => {
+        it('chains check-types steps as direct tsc invocations (no npm run)', () => {
             const optsBare = makeOptions();
             writePackageJson(tree, optsBare);
             expect(readPackageJson(tree).scripts['check-types']).toBe(
-                'npm run check-types:actions && npm run check-types:tests'
+                'tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
             );
 
             const treeUI = createTreeWithEmptyWorkspace();
@@ -124,8 +124,18 @@ describe('writePackageJson', () => {
             const raw = treeUI.read('my-app/package.json', 'utf-8');
             const json = JSON.parse(raw ?? '{}');
             expect(json.scripts['check-types']).toBe(
-                'npm run check-types:actions && npm run check-types:web && npm run check-types:tests'
+                'tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project src/commerce-backend-ui-1/web-src/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
             );
+        });
+
+        it('uses direct binaries (eslint, tsc, vitest) so scripts are package-manager agnostic', () => {
+            writePackageJson(tree, makeOptions({ hasAdminUI: true }));
+            const scripts = readPackageJson(tree).scripts;
+
+            for (const [name, command] of Object.entries(scripts)) {
+                expect(command, `${name} should not use npm run`).not.toMatch(/\bnpm run\b/);
+            }
+            expect(scripts['lint:fix']).toBe('eslint . --fix');
         });
     });
 
@@ -181,15 +191,19 @@ describe('writePackageJson', () => {
     });
 
     describe('nx targets block', () => {
-        it('declares check-types and deploy under nx.targets', () => {
+        it('declares check-types and deploy under nx.targets without npm run', () => {
             writePackageJson(tree, makeOptions());
             const pkg = readPackageJson(tree);
-            const nx = pkg['nx'] as { targets: Record<string, unknown> };
+            const nx = pkg['nx'] as {
+                targets: {
+                    'check-types': { options: { command: string } };
+                    deploy: unknown;
+                };
+            };
 
-            expect(nx.targets['check-types']).toEqual({
-                executor: 'nx:run-commands',
-                options: { command: 'npm run check-types', cwd: '{projectRoot}' },
-            });
+            expect(nx.targets['check-types'].options.command).toBe(
+                'tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
+            );
             expect(nx.targets.deploy).toEqual({
                 executor: 'nx:run-commands',
                 options: { command: 'aio app deploy', cwd: '{projectRoot}' },

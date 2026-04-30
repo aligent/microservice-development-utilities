@@ -172,14 +172,44 @@ describe('app generator', () => {
             await generate(tree, { name: 'my-app' });
             const pkg = readJson(tree, 'my-app/package.json');
 
-            expect(pkg.nx.targets['check-types']).toEqual({
-                executor: 'nx:run-commands',
-                options: { command: 'npm run check-types', cwd: '{projectRoot}' },
-            });
+            expect(pkg.nx.targets['check-types'].options.command).toContain(
+                'tsc --noEmit --project src/actions/tsconfig.json'
+            );
+            expect(pkg.nx.targets['check-types'].options.command).not.toMatch(/\bnpm run\b/);
             expect(pkg.nx.targets.deploy).toEqual({
                 executor: 'nx:run-commands',
                 options: { command: 'aio app deploy', cwd: '{projectRoot}' },
             });
+        });
+    });
+
+    describe('workspace tsconfig.json integration', () => {
+        beforeEach(() => {
+            tree.write(
+                'tsconfig.json',
+                JSON.stringify({ files: [], references: [] }, null, 4) + '\n'
+            );
+        });
+
+        it('adds the new app to the workspace tsconfig.json references', async () => {
+            await generate(tree, { name: 'my-app' });
+            const ts = readJson(tree, 'tsconfig.json');
+
+            expect(ts.references).toContainEqual({ path: './my-app' });
+        });
+
+        it('does not add a duplicate reference when the path already exists', async () => {
+            await generate(tree, { name: 'my-app' });
+            await generate(tree, { name: 'other-app' });
+            const ts = readJson(tree, 'tsconfig.json');
+
+            const myAppRefs = ts.references.filter((r: { path: string }) => r.path === './my-app');
+            expect(myAppRefs).toHaveLength(1);
+        });
+
+        it('skips silently when the workspace tsconfig.json is missing', async () => {
+            tree.delete('tsconfig.json');
+            await expect(generate(tree, { name: 'my-app' })).resolves.not.toThrow();
         });
     });
 

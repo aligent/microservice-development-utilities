@@ -59,23 +59,30 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
         Object.assign(devDependencies, ADMIN_UI_DEV_DEPS);
     }
 
+    // Inline tsc invocations rather than going through `npm run` so the
+    // scripts (and the nx target that wraps them) work the same under npm,
+    // yarn, pnpm, etc. — none of them need a specific package manager binary
+    // to be on PATH.
+    const TYPECHECK_ACTIONS = 'tsc --noEmit --project src/actions/tsconfig.json';
+    const TYPECHECK_TESTS = 'tsc --noEmit --project tests/tsconfig.json';
+    const TYPECHECK_WEB = 'tsc --noEmit --project src/commerce-backend-ui-1/web-src/tsconfig.json';
+
     const scripts: Record<string, string> = {
         lint: 'eslint .',
-        'lint:fix': 'npm run lint -- --fix',
-        'check-types:actions': 'tsc --noEmit --project src/actions/tsconfig.json',
-        'check-types:tests': 'tsc --noEmit --project tests/tsconfig.json',
+        'lint:fix': 'eslint . --fix',
+        'check-types:actions': TYPECHECK_ACTIONS,
+        'check-types:tests': TYPECHECK_TESTS,
         test: 'vitest run --passWithNoTests',
     };
 
-    const checkTypeSteps: string[] = ['npm run check-types:actions'];
+    const checkTypeSteps: string[] = [TYPECHECK_ACTIONS];
 
     if (options.hasAdminUI) {
-        scripts['check-types:web'] =
-            'tsc --noEmit --project src/commerce-backend-ui-1/web-src/tsconfig.json';
-        checkTypeSteps.push('npm run check-types:web');
+        scripts['check-types:web'] = TYPECHECK_WEB;
+        checkTypeSteps.push(TYPECHECK_WEB);
     }
 
-    checkTypeSteps.push('npm run check-types:tests');
+    checkTypeSteps.push(TYPECHECK_TESTS);
     scripts['check-types'] = checkTypeSteps.join(' && ');
 
     const major = options.nodeVersion.split('.')[0];
@@ -94,7 +101,7 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
             targets: {
                 'check-types': {
                     executor: 'nx:run-commands',
-                    options: { command: 'npm run check-types', cwd: '{projectRoot}' },
+                    options: { command: scripts['check-types'], cwd: '{projectRoot}' },
                 },
                 deploy: {
                     executor: 'nx:run-commands',

@@ -4,21 +4,25 @@
 
 ## Development
 
+Run any of these from the monorepo root. Replace `npm install` with
+`yarn install` / `pnpm install` if that's your preferred package manager —
+the workspace works the same either way.
+
 ```bash
-# Install dependencies (run from monorepo root):
+# Install dependencies
 npm install
 
 # Lint
-npm run lint --workspace=<%= name %>
+npx nx lint <%= name %>
 
 # Type-check
-npm run check-types --workspace=<%= name %>
+npx nx run <%= name %>:check-types
 
 # Test
-npm test --workspace=<%= name %>
+npx nx test <%= name %>
 
 # Deploy
-cd <%= name %> && aio app deploy
+npx nx run <%= name %>:deploy
 ```
 
 ## Structure

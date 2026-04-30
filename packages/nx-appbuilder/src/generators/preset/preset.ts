@@ -70,7 +70,19 @@ function buildWorkspacePackageJson(name: string, nodeVersion: string) {
         workspaces: [],
         devDependencies: {
             '@aligent/nx-appbuilder': getGeneratorVersion(),
+            // Resolved by the workspace's tsconfig.json's `extends` line and
+            // by every generated app's tsconfig chain. Pinned at the workspace
+            // root so all apps share one resolution.
+            '@aligent/ts-code-standards': '^4.2.0',
+            // The @nx plugin packages need to be installed at the workspace
+            // root so the plugins declared in nx.json can actually load.
+            '@nx/eslint': '^22.4.5',
+            '@nx/js': '^22.4.5',
+            '@nx/vitest': '^22.4.5',
+            eslint: '^9.0.0',
             nx: '^22.4.5',
+            typescript: '^5.8.3',
+            vitest: '^2.1.8',
         },
     };
 }

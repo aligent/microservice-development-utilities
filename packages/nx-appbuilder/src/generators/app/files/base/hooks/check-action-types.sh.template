@@ -2,7 +2,7 @@
 
 echo -e "\n⏩ Checking action types before build... 🔍\n"
 
-if npm run check-types:actions; then
+if npx tsc --noEmit --project src/actions/tsconfig.json; then
   echo -e "\n⏩ Action type checking completed successfully! ✅\n"
   # Exiting with 0 allows the build to continue
   exit 0

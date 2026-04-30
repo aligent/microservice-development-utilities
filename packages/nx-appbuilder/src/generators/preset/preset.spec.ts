@@ -48,6 +48,22 @@ describe('preset generator', () => {
             expect(pkg.devDependencies.nx).toBe('^22.4.5');
         });
 
+        it('declares @aligent/ts-code-standards so the workspace tsconfig extends resolve', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const pkg = readJson(tree, 'package.json');
+
+            expect(pkg.devDependencies['@aligent/ts-code-standards']).toBeDefined();
+        });
+
+        it('declares the @nx plugin packages required by nx.json', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const pkg = readJson(tree, 'package.json');
+
+            expect(pkg.devDependencies['@nx/eslint']).toBeDefined();
+            expect(pkg.devDependencies['@nx/js']).toBeDefined();
+            expect(pkg.devDependencies['@nx/vitest']).toBeDefined();
+        });
+
         it('emits the canonical workspace scripts', async () => {
             await presetGenerator(tree, { name: 'acme-apps' });
             const pkg = readJson(tree, 'package.json');
@@ -138,6 +154,16 @@ describe('preset generator', () => {
             expect(tree.exists('README.md')).toBe(true);
             expect(tree.exists('.gitignore.template')).toBe(false);
             expect(tree.exists('.npmrc.template')).toBe(false);
+        });
+
+        it('writes a workspace tsconfig.json that extends @aligent/ts-code-standards', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+
+            expect(tree.exists('tsconfig.json')).toBe(true);
+            const ts = readJson(tree, 'tsconfig.json');
+            expect(ts.extends).toBe('@aligent/ts-code-standards/tsconfigs-extend');
+            expect(ts.files).toEqual([]);
+            expect(ts.references).toEqual([]);
         });
 
         it('substitutes the workspace name into the README', async () => {

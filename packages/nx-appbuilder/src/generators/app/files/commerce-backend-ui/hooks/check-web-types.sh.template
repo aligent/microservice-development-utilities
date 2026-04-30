@@ -2,7 +2,7 @@
 
 echo -e "\n⏩ Checking web types before build... 🔍\n"
 
-if npm run check-types:web; then
+if npx tsc --noEmit --project src/commerce-backend-ui-1/web-src/tsconfig.json; then
   echo -e "\n⏩ Web type checking completed successfully! ✅\n"
   exit 0
 else

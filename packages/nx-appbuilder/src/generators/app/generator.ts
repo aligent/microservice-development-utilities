@@ -4,6 +4,7 @@ import { applyFeatureFiles } from './lib/apply-feature-files';
 import { writePackageJson } from './lib/compose-package-json';
 import { normalizeOptions } from './lib/normalize-options';
 import { updateRootPackageJson } from './lib/update-root-package';
+import { addTsConfigReference } from './lib/update-root-tsconfig';
 import type { AppGeneratorSchema, SidebarCategory } from './schema';
 
 export default async function appGenerator(tree: Tree, rawOptions: AppGeneratorSchema) {
@@ -14,6 +15,7 @@ export default async function appGenerator(tree: Tree, rawOptions: AppGeneratorS
     applyFeatureFiles(tree, options);
     writePackageJson(tree, options);
     updateRootPackageJson(tree, options);
+    addTsConfigReference(tree, options);
 
     await formatFiles(tree);
 
