@@ -20,8 +20,6 @@ interface Props extends StackProps, SharedInfraProps {
 /**
  * Entrypoint for the <%= name %> service
  *
- * Instantiate in a CDK Application Stage to deploy to AWS.
- *
  * @note Aligent provides the following standard CDK constructs:
  * - {@link NodejsFunctionFromEntry} from '@aligent/cdk-nodejs-function-from-entry'
  * - {@link StepFunctionFromFile} from '@aligent/cdk-step-function-from-file'
@@ -34,7 +32,7 @@ interface Props extends StackProps, SharedInfraProps {
  *
  * new StepFunctionFromFile(this, 'ExampleStepFunction', {
  *     baseDir: import.meta.dirname,
- *     filepath: 'infra/stepfunctions/example.json',
+ *     filepath: 'infra/stepfunctions/example.yml',
  * });
  */
 export class <%= stack %> extends Stack {
