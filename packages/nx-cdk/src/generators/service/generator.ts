@@ -36,13 +36,19 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
         tree.write(`${SERVICES_FOLDER}/.gitkeep`, '');
     }
 
-    generateFiles(tree, join(__dirname, 'files'), projectRoot, {
+    const templateVars = {
         ...options,
         serviceName: nameParts.join(' '),
         constant,
         stack,
         template: '',
-    });
+    };
+
+    generateFiles(tree, join(__dirname, 'files'), projectRoot, templateVars);
+
+    if (options.example) {
+        generateFiles(tree, join(__dirname, 'files-example'), projectRoot, templateVars);
+    }
 
     // Generate service's tsconfigs
     const { tsConfig, tsConfigLib, tsConfigSpec } = constructProjectTsConfigFiles('service');

@@ -1,0 +1,45 @@
+import { SharedInfraProps } from '@libs/infra';
+import { Stack, StackProps, Stage, Tags } from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import { NodejsFunctionFromEntry } from '@aligent/cdk-nodejs-function-from-entry';
+import { StepFunctionFromFile } from '@aligent/cdk-step-function-from-file';
+
+/**
+* @important
+* Due to the immutable nature of CloudFormation,
+* CDK will generate new CloudFormation template and deploy if you change stack name
+*/
+export const <%= constant %> = {
+    NAME: '<%= name %>',
+    DESCRIPTION: '<%= name %> service description'
+} as const;
+
+type Id = typeof <%= constant %>.NAME | (string & {});
+interface Props extends StackProps, SharedInfraProps {
+    description: string;
+}
+
+/**
+ * Entrypoint for the <%= name %> service
+ */
+export class <%= stack %> extends Stack {
+    constructor(scope: Construct, id: Id, props: Props) {
+        super(scope, id, props);
+
+        if (!Stage.of(this)?.stageName) {
+            throw new Error('This construct must be used within a CDK Stage');
+        }
+
+        Tags.of(this).add('SERVICE', id);
+
+        new NodejsFunctionFromEntry(this, 'ExampleLambda', {
+            baseDir: import.meta.dirname,
+            entry: 'runtime/handlers/example.ts',
+        });
+
+        new StepFunctionFromFile(this, 'ExampleStepFunction', {
+            baseDir: import.meta.dirname,
+            filepath: 'infra/stepfunctions/example.yml',
+        });
+    }
+}

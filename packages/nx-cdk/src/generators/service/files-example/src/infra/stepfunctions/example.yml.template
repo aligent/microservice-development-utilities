@@ -1,0 +1,7 @@
+Comment: Example Step Function for <%= name %>
+StartAt: Hello
+States:
+  Hello:
+    Type: Pass
+    Result: Hello from <%= name %>
+    End: true

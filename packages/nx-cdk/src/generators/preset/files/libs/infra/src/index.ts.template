@@ -1,16 +1,12 @@
 import { Stack, Stage, StackProps, Tags } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-<% if (example) { %>import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';<% } %>
 
 export interface SharedInfraProps {
-    <% if (example) { %>paramExample: IStringParameter;
-    secretExample: Secret;<% } %>
+    // TODO: Add shared infrastructure properties (e.g. SSM parameters, secrets)
 }
 
 export class SharedInfraStack extends Stack {
-    <% if (example) { %>readonly paramExample: IStringParameter;
-    readonly secretExample: Secret;<% } %>
+    // TODO: Add readonly properties for shared resources
 
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
@@ -20,24 +16,9 @@ export class SharedInfraStack extends Stack {
         }
 
         Tags.of(this).add('SERVICE', id);
-        <% if (example) { %>
-        this.paramExample = StringParameter.fromStringParameterName(
-            this,
-            'ParamExample',
-            `/example/param`
-        );
-
-        this.secretExample = new Secret(this, 'SecretExample', {
-            description: 'Example secret shared across services',
-        });
-        <% } %>
     }
 
     getProps(): SharedInfraProps {
-        return {
-            <% if (example) { %>paramExample: this.paramExample,
-            secretExample: this.secretExample,
-            <% } %>
-        };
+        return {};
     }
 }

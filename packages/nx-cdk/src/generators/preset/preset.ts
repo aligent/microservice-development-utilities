@@ -15,13 +15,19 @@ export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema
     const nameParts = splitInputName(name);
     const projectName = nameParts.join(' ');
 
-    generateFiles(tree, join(__dirname, 'files'), '.', {
+    const templateVars = {
         ...options,
         projectName,
         folderName: destination || name,
         nodeRuntime: `${nodeVersionMajor}_X`,
         template: '',
-    });
+    };
+
+    generateFiles(tree, join(__dirname, 'files'), '.', templateVars);
+
+    if (options.example) {
+        generateFiles(tree, join(__dirname, 'files-example'), '.', templateVars);
+    }
 
     updateNxJson(tree, { ...NX_JSON });
 
