@@ -49,4 +49,5 @@ npx nx g @tools/generators:package
 - Whenever the user says "No" or corrects an approach, update this file with the relevant rule so the same mistake is not repeated.
 - After completing a task, search for and update any related documentation (READMEs, docs/ files, CLAUDE.md) that references the modified code before offering to commit. For larger features, treat this as an implicit final step.
 - Always run `/review` before creating a Pull Request.
+- Check for version plan in `.nx/version-plan` and create one using `npm run release-plan` if needed.
 - Always create Pull Request using provided `pull_request_template.md`.
