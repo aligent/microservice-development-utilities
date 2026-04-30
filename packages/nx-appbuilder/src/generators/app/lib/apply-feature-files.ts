@@ -10,10 +10,10 @@ import type { NormalizedSchema } from '../schema';
  */
 export function applyFeatureFiles(tree: Tree, options: NormalizedSchema): void {
     const filesRoot = path.join(__dirname, '..', 'files');
-    const subs = {
+    const subs: Record<string, unknown> = {
         ...options,
         nodeMajor: options.nodeVersion.split('.')[0],
-    } as unknown as Record<string, unknown>;
+    };
 
     generateFiles(tree, path.join(filesRoot, 'base'), options.appRoot, subs);
 
