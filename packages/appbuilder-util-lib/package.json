@@ -13,13 +13,13 @@
   "dependencies": {
     "@adobe/aio-lib-core-logging": "^3.0.2",
     "@adobe/aio-lib-db": "^0.1.0-beta.6",
-    "@adobe/aio-lib-files": "^4.1.2",
+    "@adobe/aio-lib-files": "^4.1.3",
     "@adobe/aio-lib-state": "^5.3.1",
     "base64url": "^3.0.1"
   },
   "author": "Aligent",
   "license": "MIT",
   "devDependencies": {
-    "mongodb": "^7.1.0"
+    "mongodb": "^7.2.0"
   }
 }
