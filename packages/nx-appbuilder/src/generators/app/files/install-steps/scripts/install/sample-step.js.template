@@ -1,0 +1,14 @@
+/**
+ * Custom installation step.
+ *
+ * Referenced from `installation.customInstallationSteps` in
+ * `app.commerce.config.ts`. Runs once during merchant install of the app.
+ *
+ * The script receives the runtime context as its argument and should return
+ * `{ success: true }` to proceed, or throw to halt installation.
+ */
+
+module.exports = async function sampleStep(_context) {
+    // TODO: implement the install step.
+    return { success: true };
+};

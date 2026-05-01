@@ -1,0 +1,41 @@
+import { useEffect, useRef } from 'react';
+
+import {
+    useLazyAppBuilderAction,
+    type UseLazyAppBuilderActionOptions,
+} from '@/web/hooks/useLazyAppBuilderAction';
+
+/**
+ * React hook that invokes an App Builder action immediately on mount.
+ *
+ * Use this when you need to fetch data as soon as the component renders.
+ * For manual invocation, use `useLazyAppBuilderAction` directly.
+ *
+ * @example
+ * ```tsx
+ * const { response, loading } = useAppBuilderAction<ConfigData>({
+ *     name: 'my-package/get-config',
+ *     method: 'GET',
+ * });
+ *
+ * if (loading) return <Spinner />;
+ * return <ConfigForm initialValues={response} />;
+ * ```
+ */
+export function useAppBuilderAction<T = unknown>(options: UseLazyAppBuilderActionOptions) {
+    const hasInvokedRef = useRef(false);
+
+    const { response, loading: isInvoking, error, invoke } = useLazyAppBuilderAction<T>(options);
+
+    useEffect(() => {
+        if (hasInvokedRef.current) {
+            return;
+        }
+        hasInvokedRef.current = true;
+        invoke();
+    }, [invoke]);
+
+    const loading = isInvoking || (!response && !error);
+
+    return { response, loading, error };
+}

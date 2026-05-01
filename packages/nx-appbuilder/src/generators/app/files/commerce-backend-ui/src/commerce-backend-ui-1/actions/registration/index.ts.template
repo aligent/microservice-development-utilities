@@ -1,0 +1,32 @@
+<%_ if (sidebarCategory !== 'none') { _%>
+import { EXTENSION_ID } from '../../web-src/src/constants/extension.ts';
+
+<%_ } _%>
+export function main() {
+    return {
+        statusCode: 200,
+        body: {
+            registration: {
+<%_ if (sidebarCategory !== 'none') { _%>
+                menuItems: [
+                    {
+                        id: `${EXTENSION_ID}::<%= appSlug %>`,
+                        title: '<%= displayName %>',
+                        parent: 'aligentApps::<%= sidebarCategory %>',
+                        sortOrder: 10,
+                    },
+                    {
+                        id: 'aligentApps::<%= sidebarCategory %>',
+                        title: '<%= sidebarCategoryTitle %>',
+                        isSection: true,
+                        sortOrder: 20,
+                    },
+                ],
+<%_ } _%>
+                page: {
+                    title: '<%= displayName %>',
+                },
+            },
+        },
+    };
+}

@@ -1,0 +1,73 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "$id": "AligentAppBuilderApp",
+    "title": "Adobe App Builder app",
+    "description": "Scaffolds a new Adobe App Builder app",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "App name (kebab-case, used as directory name and package name suffix)",
+            "$default": { "$source": "argv", "index": 0 },
+            "x-prompt": "What is the app name? (kebab-case, e.g. 'my-app')",
+            "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "description": {
+            "type": "string",
+            "description": "Short description of the app",
+            "x-prompt": "Short description of the app"
+        },
+        "displayName": {
+            "type": "string",
+            "description": "Human-readable display name (defaults to title-cased app name)"
+        },
+        "hasAdminUI": {
+            "type": "boolean",
+            "description": "Does the app need a Commerce admin UI (custom pages, sidebar menu items)?",
+            "default": false,
+            "x-prompt": "Will the app add an admin UI in Commerce (custom pages or menu items)?"
+        },
+        "sidebarCategory": {
+            "type": "string",
+            "description": "Commerce admin sidebar category for the menu item (only used when hasAdminUI=true). Prompted when hasAdminUI=true and the value isn't passed on the CLI.",
+            "enum": ["catalog", "sales", "customers", "content", "none"]
+        },
+        "hasBusinessConfig": {
+            "type": "boolean",
+            "description": "Does the app expose business configuration in the Commerce admin?",
+            "default": false,
+            "x-prompt": "Will the app store business configuration?"
+        },
+        "hasCommerceWebhooks": {
+            "type": "boolean",
+            "description": "Will the app receive Adobe Commerce webhooks? Implies the commerce lib (app management) is required.",
+            "default": false,
+            "x-prompt": "Will the app receive Adobe Commerce webhooks?"
+        },
+        "hasEvents": {
+            "type": "boolean",
+            "description": "Will the app subscribe to Adobe IO events?",
+            "default": false,
+            "x-prompt": "Will the app subscribe to Adobe IO events?"
+        },
+        "hasRestActions": {
+            "type": "boolean",
+            "description": "Will the app expose custom REST actions?",
+            "default": false,
+            "x-prompt": "Will the app expose custom REST actions?"
+        },
+        "hasScheduledActions": {
+            "type": "boolean",
+            "description": "Will the app run scheduled (cron-triggered) actions?",
+            "default": false,
+            "x-prompt": "Will the app run scheduled actions?"
+        },
+        "hasCustomInstallSteps": {
+            "type": "boolean",
+            "description": "Does the app need custom installation steps? (only relevant when commerce extensions are used)",
+            "default": false,
+            "x-prompt": "Does the app need custom installation steps?"
+        }
+    },
+    "required": ["name"]
+}

@@ -1,0 +1,138 @@
+import { defineConfig } from '@adobe/aio-commerce-lib-app/config';
+
+export default defineConfig({
+    metadata: {
+        id: '<%= name %>',
+        displayName: '<%= displayName %>',
+        description: '<%= description %>',
+        version: '0.0.1',
+    },
+<%_ if (hasBusinessConfig) { _%>
+    businessConfig: {
+        schema: [
+            // Add merchant-facing configuration fields here. Each field
+            // renders a control in the Commerce admin under
+            // Stores → Configuration for this app's section.
+            //
+            // Examples:
+            //
+            // {
+            //     type: 'text',
+            //     name: 'api_key',
+            //     label: 'API Key',
+            //     description: 'Authentication key for the upstream service.',
+            // },
+            // {
+            //     type: 'list',
+            //     name: 'environment',
+            //     label: 'Environment',
+            //     selectionMode: 'single',
+            //     options: [
+            //         { label: 'Staging', value: 'staging' },
+            //         { label: 'Production', value: 'production' },
+            //     ],
+            //     default: 'staging',
+            // },
+        ],
+    },
+<%_ } _%>
+<%_ if (hasEvents) { _%>
+    eventing: {
+        // Commerce events fire from Adobe Commerce instances. Subscribe a
+        // runtime action by name; pre-app-build wires it up.
+        commerce: [
+            {
+                provider: {
+                    label: '<%= displayName %> Commerce Events',
+                    description: 'Events emitted by the connected Commerce instance.',
+                },
+                events: [
+                    {
+                        name: 'observer.sales_order_place_after',
+                        label: 'Order placed',
+                        description: 'Fired after an order is successfully placed.',
+                        fields: [
+                            { name: 'order.entity_id' },
+                            { name: 'order.increment_id' },
+                            { name: 'order.customer_email' },
+                        ],
+                        runtimeActions: ['<%= runtimePackageName %>/handle-sample-event'],
+                    },
+                ],
+            },
+        ],
+        // External events come from third-party systems (ERP, CRM, etc.).
+        // Remove this block if you don't subscribe to any.
+        external: [
+            {
+                provider: {
+                    label: '<%= displayName %> External Events',
+                    description: 'Events emitted by an external integration.',
+                },
+                events: [
+                    {
+                        name: 'be-observer.sample_event',
+                        label: 'Sample external event',
+                        description: 'Use case description for the event.',
+                        runtimeActions: ['<%= runtimePackageName %>/handle-sample-event'],
+                    },
+                ],
+            },
+        ],
+    },
+<%_ } _%>
+<%_ if (hasCommerceWebhooks) { _%>
+    webhooks: [
+        // Each webhook binds a Commerce extensibility hook to one of your
+        // runtime actions (declared in app.config.yaml). At install time the
+        // lib provisions the subscription on the Commerce instance.
+        //
+        // Schema reference:
+        //   https://developer.adobe.com/commerce/extensibility/app-management/installation/webhooks/
+        //
+        // Worked example — point at a runtime action you've defined:
+        //
+        // {
+        //     label: 'Validate order before placement',
+        //     description: 'Halt order placement when a custom rule fails.',
+        //     category: 'validation',
+        //     runtimeAction: '<%= runtimePackageName %>/validate-order',
+        //     requireAdobeAuth: true,
+        //     webhook: {
+        //         webhook_method: 'observer.sales_order_place_before',
+        //         webhook_type: 'before',
+        //         batch_name: '<%= runtimePackageName %>_validate_batch',
+        //         hook_name: '<%= runtimePackageName %>_validate_hook',
+        //         method: 'POST',
+        //         priority: 100,
+        //         required: true,
+        //         timeout: 5000,
+        //         fallback_error_message: '<%= displayName %> validation unavailable',
+        //         fields: [
+        //             { name: 'grand_total', source: 'data.order.grand_total' },
+        //         ],
+        //         rules: [],
+        //         headers: [],
+        //     },
+        // },
+        //
+        // Or send to an external URL instead of a runtime action — drop
+        // `runtimeAction`/`requireAdobeAuth` and add `url` under `webhook`.
+    ],
+<%_ } _%>
+<%_ if (hasCustomInstallSteps) { _%>
+    installation: {
+        messages: {
+            // preInstallation: 'Shown to the merchant before installing the app.',
+            // postInstallation: 'Shown to the merchant after the app installs successfully.',
+        },
+        customInstallationSteps: [
+            {
+                name: 'sample-step',
+                description: 'Use case description for the step.',
+                script: './scripts/install/sample-step.js',
+            },
+        ],
+    },
+<%_ } _%>
+});

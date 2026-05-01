@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Parcel
+.parcel-cache/
+
+# Nx
+.nx/installation
+.nx/cache
+.nx/workspace-data
+
+# Build outputs
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Adobe AppBuilder
+.aio
