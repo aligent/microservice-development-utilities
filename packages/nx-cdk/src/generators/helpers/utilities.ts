@@ -1,7 +1,8 @@
 /* v8 ignore start */
-import { readJsonFile, readProjectConfiguration, Tree } from '@nx/devkit';
+import { readJsonFile, readProjectConfiguration, Tree, updateJson } from '@nx/devkit';
 import { join } from 'path';
 import { InMemoryFileSystemHost, Project } from 'ts-morph';
+import { SERVICES_SCOPE } from '../constants';
 import { TS_CONFIG_JSON, TS_CONFIG_LIB_JSON, TS_CONFIG_SPEC_JSON } from './configs/tsConfigs';
 
 interface PackageJsonInput {
@@ -152,7 +153,7 @@ export function addServiceStackToMainApplication(
     }
 
     stackSource.addImportDeclaration({
-        moduleSpecifier: `@services/${service.name}`,
+        moduleSpecifier: `${SERVICES_SCOPE}/${service.name}`,
         namedImports: [service.constant, service.stack],
     });
 
@@ -164,6 +165,88 @@ export function addServiceStackToMainApplication(
     );
 
     tree.write(stacksRelativePath, stackSource.getFullText());
+}
+
+/**
+ * Removes a service stack registration from the main CDK application's ApplicationStage.
+ *
+ * This function modifies the service-stacks.ts file by:
+ * 1. Removing import statements that reference the service's module specifier
+ * 2. Removing statements in the ApplicationStage constructor that reference the service's stack class
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param serviceName - The name of the service (e.g., "companies")
+ * @param projectName - The name of the main application project
+ */
+export function removeServiceFromMainApplication(
+    tree: Tree,
+    serviceName: string,
+    projectName: string
+) {
+    const application = readProjectConfiguration(tree, projectName);
+
+    if (application.root.includes('..')) {
+        throw new Error('Invalid application root path');
+    }
+
+    const stacksRelativePath = join(application.root, 'lib/service-stacks.ts');
+
+    if (!tree.exists(stacksRelativePath)) {
+        console.log('Service Stacks does not exist, skipping service stacks cleanup.');
+        return;
+    }
+
+    const content = tree.read(stacksRelativePath, 'utf-8');
+
+    if (content === null) {
+        throw new Error(`Failed to read file: ${stacksRelativePath}`);
+    }
+
+    const fs = new InMemoryFileSystemHost();
+    fs.writeFileSync(stacksRelativePath, content);
+
+    const project = new Project({ fileSystem: fs });
+    const stackSource = project.addSourceFileAtPath(stacksRelativePath);
+
+    const imports = stackSource.getImportDeclarations();
+    for (const importDecl of imports) {
+        if (importDecl.getModuleSpecifierValue() === `${SERVICES_SCOPE}/${serviceName}`) {
+            importDecl.remove();
+        }
+    }
+
+    const nameParts = splitInputName(serviceName);
+    const stackClassName = `${nameParts.join('')}Stack`;
+
+    const applicationStage = stackSource.getClass('ApplicationStage');
+    if (applicationStage) {
+        const stageConstructor = applicationStage.getConstructors()[0];
+        if (stageConstructor) {
+            const statements = stageConstructor.getStatements();
+            for (const statement of statements) {
+                if (statement.getText().includes(`new ${stackClassName}(`)) {
+                    statement.remove();
+                }
+            }
+        }
+    }
+
+    tree.write(stacksRelativePath, stackSource.getFullText());
+}
+
+/**
+ * Removes a project reference from the root tsconfig.json.
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param referencePath - The path to remove from the references array
+ */
+export function removeTsConfigReference(tree: Tree, referencePath: string) {
+    updateJson(tree, 'tsconfig.json', json => {
+        json.references = (json.references ?? []).filter(
+            (r: { path: string }) => r.path !== referencePath
+        );
+        return json;
+    });
 }
 
 /**

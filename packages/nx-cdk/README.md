@@ -59,13 +59,17 @@ The service generator creates a new CDK service within the `services/` folder of
 
 ```bash
 yarn nx g @aligent/nx-cdk:service <service-name>
+
+# Or simply (since the generator name is unique):
+yarn nx g service <service-name>
 ```
 
 #### Options
 
-| Option | Type   | Required | Description                                                               |
-| ------ | ------ | -------- | ------------------------------------------------------------------------- |
-| `name` | string | Yes      | The name of the service (cannot contain 'Stack' or 'Service' in the name) |
+| Option    | Type    | Required | Default | Description                                                               |
+| --------- | ------- | -------- | ------- | ------------------------------------------------------------------------- |
+| `name`    | string  | Yes      | -       | The name of the service (cannot contain 'Stack' or 'Service' in the name) |
+| `example` | boolean | No       | `false` | Generate example code with sample resources                               |
 
 #### What it creates
 
@@ -89,11 +93,56 @@ The service generator creates a new service in `services/<service-name>/` with:
 #### Example
 
 ```bash
-# Create a new service named "user-management"
-yarn nx g @aligent/nx-cdk:service user-management
+# Create a new service named "user-management" (short form)
+yarn nx g service user-management
 
-# Create a new service named "payment-processing"
-yarn nx g @aligent/nx-cdk:service payment-processing
+# Or with the full plugin prefix
+yarn nx g @aligent/nx-cdk:service user-management
+```
+
+### Remove Service Generator
+
+The remove-service generator cleanly removes a service and all of its references from the project. It reverses the changes made by the service generator, ensuring no dangling imports or references are left behind.
+
+#### Usage
+
+```bash
+yarn nx g @aligent/nx-cdk:remove-service <service-name>
+
+# Or simply (since the generator name is unique):
+yarn nx g remove-service <service-name>
+```
+
+#### Options
+
+| Option        | Type    | Required | Default | Description                                     |
+| ------------- | ------- | -------- | ------- | ----------------------------------------------- |
+| `name`        | string  | Yes      | -       | The name of the service to remove               |
+| `forceRemove` | boolean | No       | `false` | Skip dependency check when removing the project |
+
+#### What it does
+
+The remove generator performs the following cleanup:
+
+- **Application updates**:
+  - Removes the service's import declaration from `application/lib/service-stacks.ts`
+  - Removes the stack instantiation from the `ApplicationStage` constructor
+
+- **Root updates**:
+  - Removes the service from the root `tsconfig.json` references
+  - Removes the service from the root `package.json` workspaces (if present)
+
+- **Service files**:
+  - Deletes the entire `services/<service-name>/` directory
+
+#### Example
+
+```bash
+# Remove the "user-management" service (short form)
+yarn nx g remove-service user-management
+
+# Or with the full plugin prefix
+yarn nx g @aligent/nx-cdk:remove-service user-management
 ```
 
 ## Project Structure
