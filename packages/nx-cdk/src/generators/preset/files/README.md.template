@@ -53,15 +53,6 @@ yarn install
 Before committing this repository, review and update the following generated defaults:
 
 - **`.github/CODEOWNERS`** — The default file references Aligent's GitHub teams (`@aligent/microservices`, `@aligent/devops`). Replace these with your own organisation's team handles.
-- **`package.json` `pg:*` scripts** — The playground scripts use `--profile playground`. Ensure you have a matching profile in your `~/.aws/config` file:
-
-    ```ini
-    [profile playground]
-    source_profile = default
-    role_arn = arn:aws:iam::11111111111:role/RoleName
-    ```
-
-    If your profile has a different name, update the `pg:*` scripts in the root `package.json` to match.
 
 ### Deployment
 
@@ -89,18 +80,7 @@ To add a new service to the monorepo:
     - `services/{service-name}/src/index.ts`
     - `services/{service-name}/src/infra/`
 3. Add Lambda handlers in `services/{service-name}/src/runtime/handlers/`
-
-## Environment Parameters Management
-
-Parameters are managed through the `parameters/{env}.csv` file by default
-
-```bash
-# Import values from `parameters/{env}.csv` to Parameter Store in AWS
-yarn nx run <%= name %>-int:parameters:import --file=dev.csv
-
-# Custom filename and parameter path can be passed in as arguments
-yarn nx run <%= name %>-int:parameters:export --file=dev.csv --path=/my/dev/path
-```
+4. Run `yarn install` again so Yarn Workspace get synced.
 
 ## License
 

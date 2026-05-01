@@ -6,11 +6,21 @@ This application manages the deployment of microservices and their shared infras
 
 ### Using yarn script from workspace root (Recommended)
 
+**The `pg:*` scripts** — The playground scripts use `--profile playground`. Ensure you have a matching profile in your `~/.aws/config` file:
+
+    ```ini
+    [profile playground]
+    source_profile = default
+    role_arn = arn:aws:iam::11111111111:role/RoleName
+    ```
+
+    If your profile has a different name, update the `pg:*` scripts in the root `package.json` to match.
+
 ##### Synthesize
 
 ```bash
 # Synthesize for default environment/stage (dev)
-yarn pg:synth
+yarn pg:synth --args="dev/**"
 
 # Synthesize for a custom environment/stage
 yarn pg:synth --args="plg/** -c environment=plg"
@@ -20,7 +30,7 @@ yarn pg:synth --args="plg/** -c environment=plg"
 
 ```bash
 # Deploy for default environment/stage (dev)
-yarn pg:deploy
+yarn pg:deploy --args="dev/**"
 
 # Deploy to a custom environment/stage
 yarn pg:deploy --args="plg/** -c environment=plg"
@@ -30,20 +40,20 @@ yarn pg:deploy --args="plg/** -c environment=plg"
 
 ```bash
 # Diff checking for default environment/stage (dev)
-yarn pg:diff
+yarn pg:diff --args="dev/**"
 
 # Diff checking for a custom environment/stage
-yarn pg:diff --args="-c environment=plg"
+yarn pg:diff --args="plg/** -c environment=plg"
 ```
 
 ##### Destroy
 
 ```bash
 # Destroy default environment/stage (dev)
-yarn pg:destroy
+yarn pg:destroy --args="dev/**"
 
 # Destroy a custom environment/stage
-yarn pg:destroy --args="-c environment=plg"
+yarn pg:destroy --args="plg/** -c environment=plg"
 ```
 
 ### Direct Nx Commands

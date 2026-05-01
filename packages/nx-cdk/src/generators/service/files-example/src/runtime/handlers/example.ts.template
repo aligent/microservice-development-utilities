@@ -1,0 +1,7 @@
+import type { Handler } from 'aws-lambda';
+
+export const handler: Handler = async (event) => {
+    // TODO: Implement your handler logic here
+
+    return;
+};

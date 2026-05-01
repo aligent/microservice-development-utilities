@@ -7,14 +7,17 @@
 
 **Description of the proposed changes**
 
-- **Screenshots (if applicable)**
+- <!-- enter your change -->
 
-- **Other solutions considered (if any)**
+**Screenshots**
 
-- **Notes to PR author**
+<!-- enter your change or remove if not applicable -->
 
-⚠️ Please make sure the changes adhere to the guidelines mentioned in the [Aligent Contribution Guide](https://github.com/aligent/code-of-conduct/blob/main/CONTRIBUTING.md)
+**Other solutions considered (if any)**
+
+<!-- enter your change or remove if not applicable -->
 
 **Notes to reviewers**
 
-🛈 When you've finished leaving feedback, please add a final comment to the PR tagging the author, letting them know that you have finished leaving feedback
+- 🛈 Toggl Code: _MI-XXX: Code Review_
+- 🛈 When you've finished leaving feedback, please add a final comment to the PR tagging the author, letting them know that you have finished leaving feedback

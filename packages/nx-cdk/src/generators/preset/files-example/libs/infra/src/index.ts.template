@@ -1,0 +1,49 @@
+import { Stack, Stage, StackProps, Tags } from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { IStringParameter, StringParameter } from 'aws-cdk-lib/aws-ssm';
+
+export interface SharedInfraProps {
+    paramExample: IStringParameter;
+    secretExample: Secret;
+}
+
+export class SharedInfraStack extends Stack {
+    readonly paramExample: IStringParameter;
+    readonly secretExample: Secret;
+
+    constructor(scope: Construct, id: string, props?: StackProps) {
+        super(scope, id, props);
+
+        if (!Stage.of(this)?.stageName) {
+            throw new Error('This construct must be used within a CDK Stage');
+        }
+
+        Tags.of(this).add('SERVICE', id);
+
+        this.paramExample = new StringParameter(this,'ParamExample',
+        {
+            parameterName: `/example/param`,
+            stringValue: 'example-value'
+        }
+        );
+
+        this.secretExample = new Secret(this, 'SecretExample', {
+            description: 'Example secret shared across services',
+            generateSecretString: {
+                secretStringTemplate: JSON.stringify({
+                    username: 'placeholder',
+                    password: 'placeholder',
+                }),
+                generateStringKey: '_generatedKey',
+            },
+        });
+    }
+
+    getProps(): SharedInfraProps {
+        return {
+            paramExample: this.paramExample,
+            secretExample: this.secretExample,
+        };
+    }
+}

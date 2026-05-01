@@ -36,7 +36,8 @@
         "example": {
             "type": "boolean",
             "description": "Generate example code with sample resources",
-            "default": false
+            "default": false,
+            "x-prompt": "Would you like to generate example code with sample resources?"
         }
     },
     "required": ["name"]

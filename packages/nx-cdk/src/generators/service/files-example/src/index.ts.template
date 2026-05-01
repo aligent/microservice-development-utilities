@@ -1,6 +1,8 @@
 import { SharedInfraProps } from '@libs/infra';
 import { Stack, StackProps, Stage, Tags } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { NodejsFunctionFromEntry } from '@aligent/cdk-nodejs-function-from-entry';
+import { StepFunctionFromFile } from '@aligent/cdk-step-function-from-file';
 
 /**
 * @important
@@ -19,21 +21,6 @@ interface Props extends StackProps, SharedInfraProps {
 
 /**
  * Entrypoint for the <%= name %> service
- *
- * @note Aligent provides the following standard CDK constructs:
- * - {@link NodejsFunctionFromEntry} from '@aligent/cdk-nodejs-function-from-entry'
- * - {@link StepFunctionFromFile} from '@aligent/cdk-step-function-from-file'
- *
- * @example
- * new NodejsFunctionFromEntry(this, 'ExampleLambda', {
- *     baseDir: import.meta.dirname,
- *     entry: 'runtime/handlers/example.ts',
- * });
- *
- * new StepFunctionFromFile(this, 'ExampleStepFunction', {
- *     baseDir: import.meta.dirname,
- *     filepath: 'infra/stepfunctions/example.yml',
- * });
  */
 export class <%= stack %> extends Stack {
     constructor(scope: Construct, id: Id, props: Props) {
@@ -44,5 +31,15 @@ export class <%= stack %> extends Stack {
         }
 
         Tags.of(this).add('SERVICE', id);
+
+        new NodejsFunctionFromEntry(this, 'ExampleLambda', {
+            baseDir: import.meta.dirname,
+            entry: 'runtime/handlers/example.ts',
+        });
+
+        new StepFunctionFromFile(this, 'ExampleStepFunction', {
+            baseDir: import.meta.dirname,
+            filepath: 'infra/stepfunctions/example.yml',
+        });
     }
 }
