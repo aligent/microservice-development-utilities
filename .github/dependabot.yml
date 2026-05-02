@@ -21,7 +21,7 @@ updates:
       interval: 'monthly'
     open-pull-requests-limit: 5
     commit-message:
-      prefix: 'TEMPLATE-UPDATE'
+      prefix: 'NX-CDK-TEMPLATE'
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -35,7 +35,7 @@ updates:
       interval: 'monthly'
     open-pull-requests-limit: 5
     commit-message:
-      prefix: 'TEMPLATE-UPDATE'
+      prefix: 'NX-APPBUILDER-TEMPLATE'
     groups:
       minor-and-patch:
         applies-to: version-updates
