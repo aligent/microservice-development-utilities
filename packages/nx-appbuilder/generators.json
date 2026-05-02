@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "name": "@aligent/nx-appbuilder",
+    "version": "0.1.0",
+    "generators": {
+        "preset": {
+            "factory": "./src/generators/preset/preset",
+            "schema": "./src/generators/preset/schema.json",
+            "description": "Scaffold a new Aligent AppBuilder monorepo (used by create-nx-workspace).",
+            "x-use-standalone-layout": true
+        },
+        "app": {
+            "factory": "./src/generators/app/generator",
+            "schema": "./src/generators/app/schema.json",
+            "description": "Scaffold a new Adobe App Builder app inside an existing workspace."
+        }
+    }
+}

@@ -1,0 +1,116 @@
+import { useCallback, useState } from 'react';
+
+import ActionRegistry from '@/web/config.json';
+import { type ActionName } from '@/web/types/ActionName.ts';
+
+/**
+ * Payload options that can be passed when invoking an action.
+ * These values merge with and override the options set during hook initialization.
+ */
+export interface ActionPayload {
+    /** URL search parameters to append to the action URL */
+    searchParams?: Record<string, string>;
+
+    /** Request body for non-GET/HEAD requests */
+    body?: object;
+
+    /** Custom headers to include in the request */
+    headers?: Record<string, string>;
+}
+
+/**
+ * Configuration options for the useLazyAppBuilderAction / useAppBuilderAction hooks.
+ */
+export type UseLazyAppBuilderActionOptions = ActionPayload & {
+    /** The name of the action to invoke. Must be a key from the action registry in `config.json`. */
+    name: ActionName;
+
+    /**
+     * HTTP method to use for the request.
+     * @default 'GET'
+     */
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+    /** Adobe IMS authentication credentials */
+    ims?: {
+        token?: string | undefined;
+        org?: string | undefined;
+    };
+};
+
+/**
+ * React hook for invoking App Builder actions with built-in state management.
+ *
+ * Returns `{ invoke, response, loading, error }`. Call `invoke()` to fire the
+ * request manually. For automatic invocation on mount, use `useAppBuilderAction`.
+ *
+ * @example
+ * ```tsx
+ * const { invoke, response, loading, error } = useLazyAppBuilderAction<MyData>({
+ *     name: 'my-package/my-action',
+ *     method: 'POST',
+ *     ims: { token, org },
+ * });
+ *
+ * await invoke({ body: { id: '123' } });
+ * ```
+ */
+export function useLazyAppBuilderAction<T = unknown>(options: UseLazyAppBuilderActionOptions) {
+    const [response, setResponse] = useState<T | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const invoke = useCallback(
+        async (invokeOptions?: ActionPayload) => {
+            setLoading(true);
+            setError(null);
+            setResponse(null);
+
+            try {
+                const actionUrl = ActionRegistry[options.name];
+                if (!actionUrl) {
+                    throw new Error(`Action "${options.name}" not found in config.json`);
+                }
+
+                const headers = new Headers({
+                    'content-type': 'application/json',
+                    ...(options.ims?.org && { 'x-gw-ims-org-id': options.ims.org }),
+                    ...(options.ims?.token && { Authorization: `Bearer ${options.ims.token}` }),
+                    ...options.headers,
+                    ...invokeOptions?.headers,
+                });
+
+                const url = new URL(actionUrl);
+                const allSearchParams = { ...options.searchParams, ...invokeOptions?.searchParams };
+                for (const [k, v] of Object.entries(allSearchParams)) {
+                    if (v != null) url.searchParams.set(k, v);
+                }
+
+                const fetchOptions: RequestInit = {
+                    method: options.method || 'GET',
+                    headers,
+                };
+
+                if (fetchOptions.method !== 'GET' && fetchOptions.method !== 'HEAD') {
+                    const body = invokeOptions?.body || options.body;
+                    if (body) fetchOptions.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(url.toString(), fetchOptions);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                setResponse(data);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+            } finally {
+                setLoading(false);
+            }
+        },
+        [options]
+    );
+
+    return { response, loading, error, invoke };
+}

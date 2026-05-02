@@ -1,0 +1,77 @@
+<%_
+const usesCommerceExtensions = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks;
+const hasAnyAction = hasRestActions || hasEvents || hasScheduledActions;
+const preBuildSteps = ['./hooks/check-action-types.sh'];
+if (hasAdminUI) preBuildSteps.push('./hooks/check-web-types.sh');
+const preAppBuild = preBuildSteps.join(' && ');
+_%>
+application:
+    hooks:
+        pre-app-build: <%- preAppBuild %>
+    actions: src/actions
+    runtimeManifest:
+        packages:
+            <%= runtimePackageName %>:
+                license: Apache-2.0
+<%_ if (!hasAnyAction) { _%>
+                actions: {}
+<%_ } else { _%>
+                actions:
+<%_ if (hasRestActions) { _%>
+                    rest-sample:
+                        function: src/actions/rest-sample.ts
+                        web: 'yes'
+                        runtime: nodejs:<%= nodeMajor %>
+                        inputs:
+                            LOG_LEVEL: debug
+                        annotations:
+                            require-adobe-auth: true
+                            final: true
+<%_ } _%>
+<%_ if (hasEvents) { _%>
+                    handle-sample-event:
+                        function: src/actions/handle-sample-event.ts
+                        web: 'yes'
+                        runtime: nodejs:<%= nodeMajor %>
+                        inputs:
+                            LOG_LEVEL: debug
+                        annotations:
+                            require-adobe-auth: true
+                            final: true
+<%_ } _%>
+<%_ if (hasScheduledActions) { _%>
+                    cron-sample:
+                        function: src/actions/cron-sample.ts
+                        web: 'no'
+                        runtime: nodejs:<%= nodeMajor %>
+                        inputs:
+                            LOG_LEVEL: debug
+                        annotations:
+                            final: true
+<%_ } _%>
+<%_ } _%>
+<%_ if (hasScheduledActions) { _%>
+                triggers:
+                    cron-sample-trigger:
+                        feed: /whisk.system/alarms/alarm
+                        inputs:
+                            cron: '0 * * * *'
+                rules:
+                    cron-sample-rule:
+                        trigger: cron-sample-trigger
+                        action: cron-sample
+<%_ } _%>
+<%_ if (usesCommerceExtensions) { _%>
+
+extensions:
+<%_ if (hasAdminUI) { _%>
+    commerce/backend-ui/1:
+        $include: src/commerce-backend-ui-1/ext.config.yaml
+<%_ } _%>
+<%_ if (hasBusinessConfig) { _%>
+    commerce/configuration/1:
+        $include: src/commerce-configuration-1/ext.config.yaml
+<%_ } _%>
+    commerce/extensibility/1:
+        $include: src/commerce-extensibility-1/ext.config.yaml
+<%_ } _%>

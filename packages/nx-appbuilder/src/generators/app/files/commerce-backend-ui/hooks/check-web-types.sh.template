@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+echo -e "\n⏩ Checking web types before build... 🔍\n"
+
+if npx tsc --noEmit --project src/commerce-backend-ui-1/web-src/tsconfig.json; then
+  echo -e "\n⏩ Web type checking completed successfully! ✅\n"
+  exit 0
+else
+  echo -e "\n⏩ Web type checking failed: ❌\n"
+  exit 1
+fi

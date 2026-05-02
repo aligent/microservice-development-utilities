@@ -1,0 +1,38 @@
+# <%= name %>
+
+An Aligent Adobe App Builder monorepo, scaffolded with `@aligent/nx-appbuilder`.
+
+## Prerequisites
+
+This monorepo uses packages from the Aligent private npm registry at
+`https://npm.corp.aligent.consulting/`. Set `NPM_TOKEN` in your shell before
+installing dependencies:
+
+```bash
+export NPM_TOKEN=<your-token>
+```
+
+(Generate the token by signing in to the registry with your GitHub account.)
+
+Then install with whichever package manager you prefer — `npm install`,
+`yarn install`, or `pnpm install` all work.
+
+## Adding a new app
+
+```bash
+npx nx g @aligent/nx-appbuilder:app <app-name>
+```
+
+The generator will prompt for the app's shape (admin UI, business config,
+events, scheduled actions, etc.) and scaffold the appropriate files.
+
+## Day-to-day commands
+
+```bash
+npx nx affected -t lint           # lint affected projects
+npx nx run-many -t lint           # lint every project
+npx nx affected -t test           # test affected projects
+npx nx affected -t check-types    # type-check affected projects
+npx nx run <app>:deploy           # deploy a specific app via aio
+npx nx graph                      # visualise the project graph
+```

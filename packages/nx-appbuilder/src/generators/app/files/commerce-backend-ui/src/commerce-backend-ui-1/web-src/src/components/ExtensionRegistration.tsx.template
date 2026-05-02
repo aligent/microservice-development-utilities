@@ -1,0 +1,15 @@
+import { register } from '@adobe/uix-guest';
+import { useEffect, type ReactNode } from 'react';
+
+import { EXTENSION_ID } from '@/web/constants/extension.ts';
+
+export default function ExtensionRegistration({ children }: { children: ReactNode }) {
+    useEffect(() => {
+        register({
+            id: EXTENSION_ID,
+            methods: {},
+        }).catch(console.error);
+    }, []);
+
+    return <>{children}</>;
+}

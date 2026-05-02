@@ -1,0 +1,23 @@
+import { Core } from '@adobe/aio-sdk';
+
+/**
+ * Stub cron-triggered action.
+ *
+ * Bound to a `/whisk.system/alarms/alarm` trigger by the rule declared in
+ * app.config.yaml. The default cron expression is hourly — adjust it under
+ * `triggers.cron-sample-trigger.inputs.cron` to suit.
+ */
+
+interface CronParams {
+    LOG_LEVEL?: string;
+}
+
+export async function main(params: CronParams) {
+    const logger = Core.Logger('cron-sample', { level: params.LOG_LEVEL || 'info' });
+
+    logger.info('Scheduled action fired', { timestamp: new Date().toISOString() });
+
+    // TODO: implement scheduled work.
+
+    return { ok: true };
+}

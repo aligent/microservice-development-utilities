@@ -1,0 +1,35 @@
+import { Core } from '@adobe/aio-sdk';
+
+/**
+ * Stub event handler.
+ *
+ * The `eventing` section of `app.commerce.config.ts` references this action by
+ * name. When the user installs the app, `aio-commerce-lib-app` registers the
+ * subscription and routes matching events here as CloudEvent payloads —
+ * `params.type` is the event type, `params.data` is the payload.
+ */
+
+interface EventParams {
+    type?: string;
+    source?: string;
+    id?: string;
+    data?: Record<string, unknown>;
+    LOG_LEVEL?: string;
+}
+
+export async function main(params: EventParams) {
+    const logger = Core.Logger('handle-sample-event', { level: params.LOG_LEVEL || 'info' });
+
+    logger.info('Event received', {
+        type: params.type,
+        source: params.source,
+        id: params.id,
+    });
+
+    // TODO: dispatch on params.type and process params.data.
+
+    return {
+        statusCode: 200,
+        body: { received: true },
+    };
+}

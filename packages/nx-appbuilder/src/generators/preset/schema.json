@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "$id": "AligentAppBuilderPreset",
+    "title": "Aligent AppBuilder workspace",
+    "description": "Scaffolds a new Aligent AppBuilder monorepo (workspace shell only — apps are added via the `app` generator).",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Workspace name (kebab-case). Used as the @aligent/<name> npm package name and the workspace directory name.",
+            "$default": { "$source": "argv", "index": 0 },
+            "x-prompt": "What is the workspace name? (kebab-case, e.g. 'acme-apps')",
+            "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "nodeVersion": {
+            "type": "string",
+            "description": "Target Node.js version pinned in .nvmrc and used as the lower bound of engines.node (e.g. 22.18.0).",
+            "default": "24.0.1",
+            "x-prompt": "What is the target Node.js version?",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "patternErrorMessage": "Node.js version must be a valid semver, e.g. 22.18.0 or 24.0.1"
+        }
+    },
+    "required": ["name"]
+}

@@ -1,0 +1,14 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-react",
+    "compilerOptions": {
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true,
+        "baseUrl": "../../..",
+        "paths": {
+            "@/web/*": ["src/commerce-backend-ui-1/web-src/src/*"],
+            "@/*": ["src/*"]
+        }
+    },
+    "include": ["**/*.tsx", "**/*.ts"],
+    "exclude": []
+}

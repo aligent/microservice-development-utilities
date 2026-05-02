@@ -1,0 +1,32 @@
+// Webpack configuration required to compile typescript action and web source code
+// using the Adobe aio CLI. Adapted from https://github.com/adobe/aio-cli-plugin-app-dev, then switched to babel-loader
+// Appbuilder documentation: https://developer.adobe.com/app-builder/docs/guides/configuration/webpack-configuration/
+
+module.exports = {
+    devtool: 'inline-source-map',
+    resolve: {
+        extensions: ['.ts'],
+        extensionAlias: {
+            '.js': ['.ts', '.js'],
+        },
+        // Stub out unused @adobe/aio-sdk sub-libraries whose transitive
+        // dependencies ship broken packages (ramda missing src/test.js,
+        // @swagger-api/apidom with unresolvable .cjs imports).
+        alias: {
+            '@adobe/aio-lib-target': false,
+            '@adobe/aio-lib-analytics': false,
+            '@adobe/aio-lib-campaign-standard': false,
+            '@adobe/aio-lib-customer-profile': false,
+        },
+    },
+    module: {
+        rules: [
+            {
+                // Test for .ts - in theory actions should never use .tsx
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                loader: 'babel-loader',
+            },
+        ],
+    },
+};

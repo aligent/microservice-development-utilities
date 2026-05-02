@@ -1,0 +1,9 @@
+/**
+ * Known App Builder action names registered in config.json.
+ * Update this type when actions are added or removed in app.config.yaml — it
+ * keeps the useAppBuilderAction / useLazyAppBuilderAction hooks type-safe.
+ *
+ * @example
+ * export type ActionName = 'my-package/my-action' | 'my-package/another-action';
+ */
+export type ActionName = never;

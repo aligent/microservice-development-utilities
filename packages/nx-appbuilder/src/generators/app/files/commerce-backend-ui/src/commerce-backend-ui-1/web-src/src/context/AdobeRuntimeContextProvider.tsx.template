@@ -1,0 +1,65 @@
+import { attach } from '@adobe/uix-guest';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+
+import { EXTENSION_ID } from '@/web/constants/extension.ts';
+
+interface ImsContext {
+    token?: string | undefined;
+    org?: string | undefined;
+}
+
+interface AdobeRuntimeContextType {
+    loading: boolean;
+    error: Error | null;
+    ims: ImsContext;
+}
+
+const AdobeRuntimeContext = createContext<AdobeRuntimeContextType>({
+    loading: true,
+    error: null,
+    ims: {},
+});
+
+/**
+ * Retrieves IMS credentials from the Commerce Admin shared context via attach().
+ *
+ * register() is handled separately by the ExtensionRegistration component.
+ * This provider only calls attach() to access the shared context (imsToken, imsOrgId).
+ */
+export const AdobeRuntimeContextProvider = ({ children }: { children: ReactNode }) => {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+    const [ims, setIms] = useState<ImsContext>({});
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const guestConnection = await attach({ id: EXTENSION_ID });
+                const token = guestConnection.sharedContext.get('imsToken') as string | undefined;
+                const org = guestConnection.sharedContext.get('imsOrgId') as string | undefined;
+
+                setIms({ token, org });
+            } catch (err) {
+                console.error('Failed to retrieve Admin UI SDK shared context', err);
+                setError(err instanceof Error ? err : new Error(String(err)));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        init();
+    }, []);
+
+    return <AdobeRuntimeContext value={{ loading, error, ims }}>{children}</AdobeRuntimeContext>;
+};
+
+/**
+ * React hook to access IMS credentials from the Commerce Admin context.
+ */
+export const useAdobeRuntimeContext = () => {
+    const context = useContext(AdobeRuntimeContext);
+    if (!context) {
+        throw new Error('AdobeRuntimeContext not found');
+    }
+    return context;
+};

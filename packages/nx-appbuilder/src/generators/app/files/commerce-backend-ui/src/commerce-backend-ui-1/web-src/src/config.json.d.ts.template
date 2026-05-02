@@ -1,0 +1,4 @@
+// config.json is generated at build time by the Adobe App Builder CLI.
+// This declaration provides types for TypeScript when the file is absent (e.g. CI type checks).
+declare const config: Record<string, string>;
+export default config;
