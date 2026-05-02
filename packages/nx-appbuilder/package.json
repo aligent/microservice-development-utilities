@@ -10,8 +10,8 @@
     "directory": "packages/nx-appbuilder"
   },
   "dependencies": {
-    "@nx/devkit": "22.4.2",
-    "enquirer": "^2.3.6"
+    "@nx/devkit": "22.7.1",
+    "enquirer": "^2.4.1"
   },
   "generators": "./generators.json",
   "author": "Aligent",
