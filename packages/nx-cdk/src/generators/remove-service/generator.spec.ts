@@ -1,5 +1,5 @@
-import { Tree } from '@nx/devkit';
 import * as devkit from '@nx/devkit';
+import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { serviceGenerator } from '../service/generator';
 import { removeGenerator } from './generator';
@@ -80,12 +80,12 @@ describe('remove generator', () => {
         await serviceGenerator(tree, { name: 'companies' });
 
         const stacksBefore = tree.read('application/lib/service-stacks.ts', 'utf-8');
-        expect(stacksBefore).toContain("@services/companies");
+        expect(stacksBefore).toContain('@services/companies');
 
         await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         const stacksAfter = tree.read('application/lib/service-stacks.ts', 'utf-8');
-        expect(stacksAfter).not.toContain("@services/companies");
+        expect(stacksAfter).not.toContain('@services/companies');
     });
 
     it('should remove the stack instantiation from service-stacks.ts', async () => {
