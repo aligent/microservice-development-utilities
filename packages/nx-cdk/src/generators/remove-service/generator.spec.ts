@@ -1,4 +1,5 @@
 import { Tree } from '@nx/devkit';
+import * as devkit from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { serviceGenerator } from '../service/generator';
 import { removeGenerator } from './generator';
@@ -59,7 +60,7 @@ describe('remove generator', () => {
         await serviceGenerator(tree, { name: 'companies' });
         expect(tree.exists('services/companies')).toBe(true);
 
-        await removeGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
         expect(tree.exists('services/companies')).toBe(false);
     });
 
@@ -69,7 +70,7 @@ describe('remove generator', () => {
         const tsconfigBefore = JSON.parse(tree.read('tsconfig.json', 'utf-8') ?? '{}');
         expect(tsconfigBefore.references).toContainEqual({ path: './services/companies' });
 
-        await removeGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         const tsconfigAfter = JSON.parse(tree.read('tsconfig.json', 'utf-8') ?? '{}');
         expect(tsconfigAfter.references).not.toContainEqual({ path: './services/companies' });
@@ -81,7 +82,7 @@ describe('remove generator', () => {
         const stacksBefore = tree.read('application/lib/service-stacks.ts', 'utf-8');
         expect(stacksBefore).toContain("@services/companies");
 
-        await removeGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         const stacksAfter = tree.read('application/lib/service-stacks.ts', 'utf-8');
         expect(stacksAfter).not.toContain("@services/companies");
@@ -93,7 +94,7 @@ describe('remove generator', () => {
         const stacksBefore = tree.read('application/lib/service-stacks.ts', 'utf-8');
         expect(stacksBefore).toContain('new CompaniesStack(');
 
-        await removeGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         const stacksAfter = tree.read('application/lib/service-stacks.ts', 'utf-8');
         expect(stacksAfter).not.toContain('new CompaniesStack(');
@@ -103,7 +104,7 @@ describe('remove generator', () => {
         await serviceGenerator(tree, { name: 'companies' });
         await serviceGenerator(tree, { name: 'orders' });
 
-        await removeGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         // Companies should be removed
         expect(tree.exists('services/companies')).toBe(false);
@@ -131,7 +132,9 @@ describe('remove generator', () => {
             })
         );
 
-        await expect(removeGenerator(tree, { name: 'companies' })).resolves.not.toThrow();
+        await expect(
+            removeGenerator(tree, { name: 'companies', forceRemove: true })
+        ).resolves.not.toThrow();
         expect(tree.exists('services/companies')).toBe(false);
     });
 
@@ -145,9 +148,46 @@ describe('remove generator', () => {
         );
 
         await serviceGenerator(tree, { name: 'companies' });
-        await removeGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         const pkg = JSON.parse(tree.read('package.json', 'utf-8') ?? '{}');
         expect(pkg.workspaces).not.toContain('services/companies');
+    });
+
+    it('should throw when service has dependents and forceRemove is false', async () => {
+        vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
+            nodes: {},
+            dependencies: {
+                application: [
+                    {
+                        source: 'application',
+                        target: '@services/companies',
+                        type: 'static',
+                    },
+                ],
+            },
+        });
+
+        await serviceGenerator(tree, { name: 'companies' });
+
+        await expect(removeGenerator(tree, { name: 'companies' })).rejects.toThrow(
+            /Cannot remove "companies": it is depended on by application/
+        );
+
+        expect(tree.exists('services/companies')).toBe(true);
+    });
+
+    it('should proceed when service has no dependents and forceRemove is false', async () => {
+        vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
+            nodes: {},
+            dependencies: {
+                '@services/companies': [],
+            },
+        });
+
+        await serviceGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies' });
+
+        expect(tree.exists('services/companies')).toBe(false);
     });
 });

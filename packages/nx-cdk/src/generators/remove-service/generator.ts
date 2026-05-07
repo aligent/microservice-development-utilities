@@ -1,12 +1,30 @@
-import { formatFiles, Tree, updateJson } from '@nx/devkit';
-import { MAIN_APPLICATION_NAME, SERVICES_FOLDER } from '../constants';
+import { createProjectGraphAsync, formatFiles, Tree, updateJson } from '@nx/devkit';
+import { MAIN_APPLICATION_NAME, SERVICES_FOLDER, SERVICES_SCOPE } from '../constants';
 import { removeServiceFromMainApplication, removeTsConfigReference } from '../helpers/utilities';
 import { RemoveGeneratorSchema } from './schema';
 
 export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema) {
-    const projectRoot = `${SERVICES_FOLDER}/${options.name}`;
+    const { name, forceRemove } = options;
 
-    removeServiceFromMainApplication(tree, options.name, MAIN_APPLICATION_NAME);
+    const projectRoot = `${SERVICES_FOLDER}/${name}`;
+    const projectName = `${SERVICES_SCOPE}/${name}`;
+
+    if (!forceRemove) {
+        const graph = await createProjectGraphAsync();
+        const dependents = Object.entries(graph.dependencies)
+            .filter(([source]) => source !== projectName)
+            .filter(([, deps]) => deps.some(d => d.target === projectName))
+            .map(([source]) => source);
+
+        if (dependents.length > 0) {
+            throw new Error(
+                `Cannot remove "${name}": it is depended on by ${dependents.join(', ')}. ` +
+                    'Use --forceRemove to skip this check.'
+            );
+        }
+    }
+
+    removeServiceFromMainApplication(tree, name, MAIN_APPLICATION_NAME);
     removeTsConfigReference(tree, `./${projectRoot}`);
 
     tree.delete(projectRoot);
