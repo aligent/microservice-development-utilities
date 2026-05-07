@@ -9,6 +9,10 @@ export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema
     const projectRoot = `${SERVICES_FOLDER}/${name}`;
     const projectName = `${SERVICES_SCOPE}/${name}`;
 
+    if (!tree.exists(projectRoot)) {
+        throw new Error(`Service "${name}" does not exist at "${projectRoot}".`);
+    }
+
     if (!forceRemove) {
         const graph = await createProjectGraphAsync();
         const dependents = Object.entries(graph.dependencies)

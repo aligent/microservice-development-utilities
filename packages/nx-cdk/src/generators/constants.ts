@@ -1,3 +1,5 @@
+export type ProjectType = 'application' | 'service';
+
 export const MAIN_APPLICATION_FOLDER = 'application';
 export const MAIN_APPLICATION_NAME = 'application';
 

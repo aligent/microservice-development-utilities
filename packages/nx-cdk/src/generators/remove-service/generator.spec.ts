@@ -177,6 +177,12 @@ describe('remove generator', () => {
         expect(tree.exists('services/companies')).toBe(true);
     });
 
+    it('should throw when the service does not exist', async () => {
+        await expect(
+            removeGenerator(tree, { name: 'non-existent', forceRemove: true })
+        ).rejects.toThrow(/Service "non-existent" does not exist/);
+    });
+
     it('should proceed when service has no dependents and forceRemove is false', async () => {
         vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
             nodes: {},
