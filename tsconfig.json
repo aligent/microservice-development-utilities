@@ -23,6 +23,9 @@
         },
         {
             "path": "./packages/nx-appbuilder"
+        },
+        {
+            "path": "./packages/aws-wrappers"
         }
     ]
 }
