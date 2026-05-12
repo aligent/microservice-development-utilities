@@ -86,7 +86,7 @@ describe('S3Service', () => {
     });
 
     describe('emptyBucket', () => {
-        it('lists all keys across pages then deletes them via deleteObjects', async () => {
+        it('streams the listing and deletes each page via deleteObjects', async () => {
             s3Mock
                 .on(ListObjectsV2Command)
                 .resolvesOnce({
@@ -104,12 +104,10 @@ describe('S3Service', () => {
             const deletedKeys = await service.emptyBucket(Bucket);
 
             expect(deletedKeys).toEqual(['a', 'b', 'c']);
-            const deleteCall = s3Mock.commandCalls(DeleteObjectsCommand)[0];
-            expect(deleteCall?.args[0].input.Delete?.Objects?.map(o => o.Key)).toEqual([
-                'a',
-                'b',
-                'c',
-            ]);
+            const deletedBatches = s3Mock
+                .commandCalls(DeleteObjectsCommand)
+                .map(c => c.args[0].input.Delete?.Objects?.map(o => o.Key));
+            expect(deletedBatches).toEqual([['a', 'b'], ['c']]);
         });
 
         it('issues no DeleteObjects call when the bucket is already empty', async () => {

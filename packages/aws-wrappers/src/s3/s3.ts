@@ -225,15 +225,21 @@ export class S3Service {
     }
 
     /**
-     * Delete every object in a bucket, paginating through the listing and
-     * issuing one DeleteObjects request per page (respecting the 1000-key
-     * batch limit).
+     * Delete every object in a bucket. Streams the listing page-by-page and
+     * delegates each page's deletion to `deleteObjects`, so peak memory stays
+     * bounded by one page (~1000 keys) regardless of bucket size.
      * @returns The keys of every deleted object.
      */
     async emptyBucket(bucket: string): Promise<string[]> {
         this.logger.info('Emptying S3 bucket', { input: { bucket } });
-        const keys = await this.listObjects(bucket);
-        if (keys.length > 0) await this.deleteObjects(bucket, keys);
-        return keys;
+        const paginator = paginateListObjectsV2({ client: this.client }, { Bucket: bucket });
+        const deletedKeys: string[] = [];
+        for await (const page of paginator) {
+            const keys: string[] = (page.Contents ?? []).flatMap(o => (o.Key ? [o.Key] : []));
+            if (keys.length === 0) continue;
+            await this.deleteObjects(bucket, keys);
+            deletedKeys.push(...keys);
+        }
+        return deletedKeys;
     }
 }

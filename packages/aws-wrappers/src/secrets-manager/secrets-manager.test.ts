@@ -19,18 +19,14 @@ describe('SecretsManagerService', () => {
             secretsMock
                 .on(GetSecretValueCommand, { SecretId: 'plain' })
                 .resolves({ SecretString: 'hello' });
-            const service = new SecretsManagerService({
-                client: secretsMock as unknown as SecretsManagerClient,
-            });
+            const service = new SecretsManagerService({ client: new SecretsManagerClient({}) });
 
             await expect(service.getSecret('plain')).resolves.toBe('hello');
         });
 
         it('throws when the secret has no SecretString', async () => {
             secretsMock.on(GetSecretValueCommand, { SecretId: 'no-string' }).resolves({});
-            const service = new SecretsManagerService({
-                client: secretsMock as unknown as SecretsManagerClient,
-            });
+            const service = new SecretsManagerService({ client: new SecretsManagerClient({}) });
 
             await expect(service.getSecret('no-string')).rejects.toThrow(
                 "Secret 'no-string' does not contain a string value"
@@ -44,9 +40,7 @@ describe('SecretsManagerService', () => {
             secretsMock
                 .on(GetSecretValueCommand, { SecretId: 'json-secret' })
                 .resolves({ SecretString: JSON.stringify(payload) });
-            const service = new SecretsManagerService({
-                client: secretsMock as unknown as SecretsManagerClient,
-            });
+            const service = new SecretsManagerService({ client: new SecretsManagerClient({}) });
 
             const result = await service.getJsonSecret<typeof payload>('json-secret');
 
@@ -55,9 +49,7 @@ describe('SecretsManagerService', () => {
 
         it('propagates the underlying missing-SecretString error', async () => {
             secretsMock.on(GetSecretValueCommand, { SecretId: 'missing' }).resolves({});
-            const service = new SecretsManagerService({
-                client: secretsMock as unknown as SecretsManagerClient,
-            });
+            const service = new SecretsManagerService({ client: new SecretsManagerClient({}) });
 
             await expect(service.getJsonSecret('missing')).rejects.toThrow(
                 "Secret 'missing' does not contain a string value"
