@@ -49,6 +49,11 @@ export class S3Service {
 
     /**
      * Put an object into S3.
+     *
+     * Note: the structured log line only includes `Bucket` and `Key` —
+     * `Body` is omitted to avoid spilling large payloads or sensitive
+     * content into CloudWatch.
+     *
      * @param input - Bucket, Key, and Body of the object to store.
      */
     async putObject(
@@ -60,6 +65,11 @@ export class S3Service {
 
     /**
      * Serialise a value to JSON and store it as an S3 object.
+     *
+     * Note: the structured log line only includes `Bucket` and `Key` —
+     * the JSON-encoded body is omitted to avoid spilling potentially
+     * large or sensitive content into CloudWatch.
+     *
      * @template T - Type of the value being stored.
      */
     async putJsonObject<T>(input: {
@@ -99,7 +109,8 @@ export class S3Service {
     async getObjectBody(
         input: Required<Pick<GetObjectCommandInput, 'Bucket' | 'Key'>>
     ): Promise<string | undefined> {
-        const response = await this.getObject(input);
+        this.logger.info('Getting S3 object body', { input });
+        const response = await this.client.send(new GetObjectCommand(input));
         return response.Body?.transformToString();
     }
 
@@ -111,7 +122,9 @@ export class S3Service {
     async getJsonObject<T>(
         input: Required<Pick<GetObjectCommandInput, 'Bucket' | 'Key'>>
     ): Promise<T | undefined> {
-        const body = await this.getObjectBody(input);
+        this.logger.info('Getting S3 JSON object', { input });
+        const response = await this.client.send(new GetObjectCommand(input));
+        const body = await response.Body?.transformToString();
         return body ? (JSON.parse(body) as T) : undefined;
     }
 
@@ -121,7 +134,7 @@ export class S3Service {
     async headObject(
         input: Required<Pick<HeadObjectCommandInput, 'Bucket' | 'Key'>>
     ): Promise<HeadObjectCommandOutput> {
-        this.logger.info('Heading S3 object', { input });
+        this.logger.info('Fetching S3 object metadata', { input });
         return this.client.send(new HeadObjectCommand(input));
     }
 
@@ -219,22 +232,8 @@ export class S3Service {
      */
     async emptyBucket(bucket: string): Promise<string[]> {
         this.logger.info('Emptying S3 bucket', { input: { bucket } });
-        const paginator = paginateListObjectsV2({ client: this.client }, { Bucket: bucket });
-        const deletedKeys: string[] = [];
-        for await (const page of paginator) {
-            const keys: string[] = [];
-            for (const object of page.Contents ?? []) {
-                if (object.Key) keys.push(object.Key);
-            }
-            if (keys.length === 0) continue;
-            deletedKeys.push(...keys);
-            await this.client.send(
-                new DeleteObjectsCommand({
-                    Bucket: bucket,
-                    Delete: { Objects: keys.map(Key => ({ Key })) },
-                })
-            );
-        }
-        return deletedKeys;
+        const keys = await this.listObjects(bucket);
+        if (keys.length > 0) await this.deleteObjects(bucket, keys);
+        return keys;
     }
 }

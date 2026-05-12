@@ -38,7 +38,7 @@ describe('SSMService', () => {
     });
 
     describe('getParameters', () => {
-        it('returns a record keyed by parameter name', async () => {
+        it('returns a record keyed by parameter name and decrypts by default', async () => {
             ssmMock.on(GetParametersCommand).resolves({
                 Parameters: [
                     { Name: '/app/a', Value: 'aaa' },
@@ -54,6 +54,8 @@ describe('SSMService', () => {
                 '/app/b': 'bbb',
                 '/app/missing': undefined,
             });
+            const call = ssmMock.commandCalls(GetParametersCommand)[0];
+            expect(call?.args[0].input.WithDecryption).toBe(true);
         });
     });
 

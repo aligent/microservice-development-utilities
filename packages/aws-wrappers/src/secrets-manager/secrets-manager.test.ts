@@ -15,6 +15,17 @@ describe('SecretsManagerService', () => {
     });
 
     describe('getSecret', () => {
+        it('returns the SecretString value', async () => {
+            secretsMock
+                .on(GetSecretValueCommand, { SecretId: 'plain' })
+                .resolves({ SecretString: 'hello' });
+            const service = new SecretsManagerService({
+                client: secretsMock as unknown as SecretsManagerClient,
+            });
+
+            await expect(service.getSecret('plain')).resolves.toBe('hello');
+        });
+
         it('throws when the secret has no SecretString', async () => {
             secretsMock.on(GetSecretValueCommand, { SecretId: 'no-string' }).resolves({});
             const service = new SecretsManagerService({

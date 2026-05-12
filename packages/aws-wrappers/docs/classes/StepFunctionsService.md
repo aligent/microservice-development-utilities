@@ -6,7 +6,7 @@
 
 # Class: StepFunctionsService
 
-Defined in: [sfn/sfn.ts:23](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/sfn/sfn.ts#L23)
+Defined in: [sfn/sfn.ts:23](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/sfn/sfn.ts#L23)
 
 Wrapper around the AWS Step Functions client providing structured
 Powertools logging and X-Ray tracing by default.
@@ -19,7 +19,7 @@ Powertools logging and X-Ray tracing by default.
 
 > **new StepFunctionsService**(`opts?`): `StepFunctionsService`
 
-Defined in: [sfn/sfn.ts:33](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/sfn/sfn.ts#L33)
+Defined in: [sfn/sfn.ts:33](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/sfn/sfn.ts#L33)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **describeExecution**(`input`): `Promise`\<`DescribeExecutionCommandOutput`\>
 
-Defined in: [sfn/sfn.ts:64](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/sfn/sfn.ts#L64)
+Defined in: [sfn/sfn.ts:64](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/sfn/sfn.ts#L64)
 
 Describe an existing Step Functions execution.
 
@@ -73,7 +73,7 @@ Describe an existing Step Functions execution.
 
 > **listExecutions**(`input`): `Promise`\<`ExecutionListItem`[]\>
 
-Defined in: [sfn/sfn.ts:43](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/sfn/sfn.ts#L43)
+Defined in: [sfn/sfn.ts:43](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/sfn/sfn.ts#L43)
 
 List all executions for a state machine, auto-paginating across all
 pages. Typically bounded by `statusFilter` and state-machine retention,
@@ -97,7 +97,7 @@ so the flat-array shape is safe in practice.
 
 > **startExecution**(`input`): `Promise`\<`StartExecutionCommandOutput`\>
 
-Defined in: [sfn/sfn.ts:56](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/sfn/sfn.ts#L56)
+Defined in: [sfn/sfn.ts:56](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/sfn/sfn.ts#L56)
 
 Start a new Step Functions execution.
 
@@ -119,7 +119,7 @@ Start a new Step Functions execution.
 
 > **stopExecution**(`input`): `Promise`\<`StopExecutionCommandOutput`\>
 
-Defined in: [sfn/sfn.ts:74](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/sfn/sfn.ts#L74)
+Defined in: [sfn/sfn.ts:74](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/sfn/sfn.ts#L74)
 
 Stop an in-progress Step Functions execution.
 

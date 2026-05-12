@@ -49,8 +49,10 @@ export class SNSService {
      * @param input - PublishBatchCommandInput including TopicArn and entries.
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
-        this.logger.info('Publishing SNS message batch', { input });
         const entries: PublishBatchRequestEntry[] = input.PublishBatchRequestEntries ?? [];
+        this.logger.info('Publishing SNS message batch', {
+            input: { TopicArn: input.TopicArn, entryCount: entries.length },
+        });
         const results: PublishBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += PUBLISH_BATCH_LIMIT) {
             const chunk = entries.slice(i, i + PUBLISH_BATCH_LIMIT);

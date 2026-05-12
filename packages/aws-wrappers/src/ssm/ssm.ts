@@ -56,9 +56,10 @@ export class SSMService {
         const response = await this.client.send(
             new GetParametersCommand({ Names: names, WithDecryption: true })
         );
-        const byName = new Map<string, string | undefined>(
-            response.Parameters?.map(p => [p.Name as string, p.Value]) ?? []
-        );
+        const byName = new Map<string, string | undefined>();
+        for (const parameter of response.Parameters ?? []) {
+            if (parameter.Name !== undefined) byName.set(parameter.Name, parameter.Value);
+        }
         return Object.fromEntries(names.map(name => [name, byName.get(name)]));
     }
 

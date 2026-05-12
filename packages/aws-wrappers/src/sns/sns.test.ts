@@ -28,7 +28,7 @@ describe('SNSService', () => {
                 Message: `body-${i}`,
             }));
 
-            const service = new SNSService({ client: snsMock as unknown as SNSClient });
+            const service = new SNSService({ client: new SNSClient({}) });
             const results = await service.publishBatch({
                 TopicArn: 'arn:aws:sns:us-east-1:0:topic',
                 PublishBatchRequestEntries: entries,
@@ -45,7 +45,7 @@ describe('SNSService', () => {
 
         it('sends a single request when entries fit within the batch limit', async () => {
             snsMock.on(PublishBatchCommand).resolves({ Successful: [], Failed: [] });
-            const service = new SNSService({ client: snsMock as unknown as SNSClient });
+            const service = new SNSService({ client: new SNSClient({}) });
 
             await service.publishBatch({
                 TopicArn: 'arn:aws:sns:us-east-1:0:topic',
@@ -56,7 +56,7 @@ describe('SNSService', () => {
         });
 
         it('returns an empty array when entries are empty or undefined', async () => {
-            const service = new SNSService({ client: snsMock as unknown as SNSClient });
+            const service = new SNSService({ client: new SNSClient({}) });
 
             const emptyResult = await service.publishBatch({
                 TopicArn: 'arn:aws:sns:us-east-1:0:topic',
@@ -75,7 +75,7 @@ describe('SNSService', () => {
     describe('publish', () => {
         it('sends a PublishCommand', async () => {
             snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
-            const service = new SNSService({ client: snsMock as unknown as SNSClient });
+            const service = new SNSService({ client: new SNSClient({}) });
 
             await service.publish({
                 TopicArn: 'arn:aws:sns:us-east-1:0:topic',

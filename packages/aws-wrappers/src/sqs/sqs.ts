@@ -78,8 +78,10 @@ export class SQSService {
     async sendMessageBatch(
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
-        this.logger.info('Sending SQS message batch', { input });
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
+        this.logger.info('Sending SQS message batch', {
+            input: { QueueUrl: input.QueueUrl, entryCount: entries.length },
+        });
         const results: SendMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
             const chunk = entries.slice(i, i + SQS_BATCH_LIMIT);
@@ -98,8 +100,10 @@ export class SQSService {
     async deleteMessageBatch(
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
-        this.logger.info('Deleting SQS message batch', { input });
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
+        this.logger.info('Deleting SQS message batch', {
+            input: { QueueUrl: input.QueueUrl, entryCount: entries.length },
+        });
         const results: DeleteMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
             const chunk = entries.slice(i, i + SQS_BATCH_LIMIT);

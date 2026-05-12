@@ -31,13 +31,7 @@ export class SecretsManagerService {
      */
     async getSecret(secretId: string): Promise<string> {
         this.logger.info('Fetching secret', { input: { secretId } });
-        const response = await this.client.send(new GetSecretValueCommand({ SecretId: secretId }));
-
-        if (response.SecretString === undefined) {
-            throw new Error(`Secret '${secretId}' does not contain a string value`);
-        }
-
-        return response.SecretString;
+        return this.fetchSecretString(secretId);
     }
 
     /**
@@ -48,7 +42,18 @@ export class SecretsManagerService {
      * @throws If the secret has no `SecretString` or the value is not valid JSON.
      */
     async getJsonSecret<T>(secretId: string): Promise<T> {
-        const secret = await this.getSecret(secretId);
-        return JSON.parse(secret) as T;
+        this.logger.info('Fetching JSON secret', { input: { secretId } });
+        const secretString = await this.fetchSecretString(secretId);
+        return JSON.parse(secretString) as T;
+    }
+
+    private async fetchSecretString(secretId: string): Promise<string> {
+        const response = await this.client.send(new GetSecretValueCommand({ SecretId: secretId }));
+
+        if (response.SecretString === undefined) {
+            throw new Error(`Secret '${secretId}' does not contain a string value`);
+        }
+
+        return response.SecretString;
     }
 }

@@ -29,7 +29,7 @@ describe('SQSService', () => {
             sqsMock
                 .on(ReceiveMessageCommand)
                 .resolves({ Messages: [{ MessageId: '1', Body: 'a' }] });
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             const messages = await service.receiveMessages({ QueueUrl });
 
@@ -38,7 +38,7 @@ describe('SQSService', () => {
 
         it('returns an empty array when no Messages are present', async () => {
             sqsMock.on(ReceiveMessageCommand).resolves({});
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             const messages = await service.receiveMessages({ QueueUrl });
 
@@ -48,7 +48,7 @@ describe('SQSService', () => {
 
     describe('sendMessageBatch', () => {
         it('returns an empty array when Entries is undefined', async () => {
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             const result = await service.sendMessageBatch({
                 QueueUrl,
@@ -64,7 +64,7 @@ describe('SQSService', () => {
                 Id: `${i}`,
                 MessageBody: `body-${i}`,
             }));
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             await service.sendMessageBatch({ QueueUrl, Entries: entries });
 
@@ -76,7 +76,7 @@ describe('SQSService', () => {
     describe('pass-through commands', () => {
         it('sendMessage sends a SendMessageCommand', async () => {
             sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             await service.sendMessage({ QueueUrl, MessageBody: 'hi' });
 
@@ -85,7 +85,7 @@ describe('SQSService', () => {
 
         it('deleteMessage sends a DeleteMessageCommand', async () => {
             sqsMock.on(DeleteMessageCommand).resolves({});
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             await service.deleteMessage({ QueueUrl, ReceiptHandle: 'h' });
 
@@ -95,7 +95,7 @@ describe('SQSService', () => {
 
     describe('deleteMessageBatch', () => {
         it('returns an empty array when Entries is undefined', async () => {
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             const result = await service.deleteMessageBatch({
                 QueueUrl,
@@ -111,7 +111,7 @@ describe('SQSService', () => {
                 { length: 15 },
                 (_, i) => ({ Id: `${i}`, ReceiptHandle: `handle-${i}` })
             );
-            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+            const service = new SQSService({ client: new SQSClient({}) });
 
             await service.deleteMessageBatch({ QueueUrl, Entries: entries });
 

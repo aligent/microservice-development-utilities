@@ -6,7 +6,7 @@
 
 # Class: SecretsManagerService
 
-Defined in: [secrets-manager/secrets-manager.ts:9](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L9)
+Defined in: [secrets-manager/secrets-manager.ts:9](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L9)
 
 Wrapper around the AWS Secrets Manager client providing structured
 Powertools logging and X-Ray tracing by default.
@@ -19,7 +19,7 @@ Powertools logging and X-Ray tracing by default.
 
 > **new SecretsManagerService**(`opts?`): `SecretsManagerService`
 
-Defined in: [secrets-manager/secrets-manager.ts:20](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L20)
+Defined in: [secrets-manager/secrets-manager.ts:20](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L20)
 
 #### Parameters
 
@@ -52,7 +52,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **getJsonSecret**\<`T`\>(`secretId`): `Promise`\<`T`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:50](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L50)
+Defined in: [secrets-manager/secrets-manager.ts:44](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L44)
 
 Fetch a secret and parse it as JSON.
 
@@ -90,7 +90,7 @@ If the secret has no `SecretString` or the value is not valid JSON.
 
 > **getSecret**(`secretId`): `Promise`\<`string`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:32](https://github.com/aligent/microservice-development-utilities/blob/6924d054bf3a8807f88cfdec9873c27cdf46d64a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L32)
+Defined in: [secrets-manager/secrets-manager.ts:32](https://github.com/aligent/microservice-development-utilities/blob/e58a12bb918948eafece9e076fa6bb937e23b418/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L32)
 
 Fetch a secret's string value from Secrets Manager.
 
