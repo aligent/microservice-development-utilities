@@ -83,6 +83,7 @@ Walk through these in order. Each step is small; nothing is automatable enough t
 7. **Run** `npx nx run aws-wrappers:lint --fix`, `:typecheck`, `:test --coverage`, `:typedoc`. The 80% workspace coverage threshold is enforced.
 8. **Update the package `README.md`** with a worked example under a new `## <Service Name>` section.
 9. **Commit** with the active ticket prefix.
+10. **Ask the user whether to run the `code-reviewer` sub-agent** over the change before opening the PR. The reviewer catches drift from the locked-in conventions (logging shape, generics, pagination/chunking patterns) and the kinds of defensive-coverage gaps the workspace gate doesn't enforce. Surface its punch list to the user — don't auto-apply fixes.
 
 ## Questions to ask the user
 
@@ -112,6 +113,8 @@ Don't write code until each of these is answered. Defaults in **bold**.
 - If modifying: is the package already published? If yes, this is a SemVer-major change — flag it before implementing.
 - Does it touch any of the locked-in conventions above? If yes, surface to the user first.
 - Will any of the existing tests need to change? If yes, that's a load-bearing signal — verify whether the existing test behaviour was load-bearing for a downstream caller.
+
+Once the change is in and tests pass, ask the user whether to run the `code-reviewer` sub-agent over the diff before opening the PR — same rationale as step 10 of the new-service flow.
 
 ## Testing notes
 
