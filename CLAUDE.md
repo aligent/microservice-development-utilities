@@ -9,6 +9,7 @@ Aligent's TypeScript monorepo for microservice development utilities.
 | Package                          | Purpose                                                       |
 | -------------------------------- | ------------------------------------------------------------- |
 | `packages/appbuilder-util-lib`   | Adobe App Builder utilities (logging, DB, files, state, auth) |
+| `packages/aws-wrappers`          | Opinionated AWS SDK wrappers with Powertools logging + X-Ray  |
 | `packages/create-workspace`      | CLI scaffolding tool for new Nx workspaces                    |
 | `packages/microservice-util-lib` | Core utilities (AWS SDK, OAuth, OpenAPI clients)              |
 | `packages/nx-cdk`                | Nx plugin with generators for AWS CDK projects                |
