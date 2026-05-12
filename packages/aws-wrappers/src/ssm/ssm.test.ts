@@ -38,7 +38,7 @@ describe('SSMService', () => {
     });
 
     describe('getParameters', () => {
-        it('returns a record keyed by parameter name and decrypts by default', async () => {
+        it('returns a record keyed by caller-supplied aliases and decrypts by default', async () => {
             ssmMock.on(GetParametersCommand).resolves({
                 Parameters: [
                     { Name: '/app/a', Value: 'aaa' },
@@ -47,15 +47,34 @@ describe('SSMService', () => {
             });
             const service = new SSMService({ client: new SSMClient({}) });
 
-            const result = await service.getParameters(['/app/a', '/app/b', '/app/missing']);
+            const result = await service.getParameters({
+                first: '/app/a',
+                second: '/app/b',
+                missing: '/app/missing',
+            });
 
             expect(result).toEqual({
-                '/app/a': 'aaa',
-                '/app/b': 'bbb',
-                '/app/missing': undefined,
+                first: 'aaa',
+                second: 'bbb',
+                missing: undefined,
             });
             const call = ssmMock.commandCalls(GetParametersCommand)[0];
+            expect(call?.args[0].input.Names).toEqual(['/app/a', '/app/b', '/app/missing']);
             expect(call?.args[0].input.WithDecryption).toBe(true);
+        });
+
+        it('handles two aliases pointing at the same path', async () => {
+            ssmMock.on(GetParametersCommand).resolves({
+                Parameters: [{ Name: '/app/shared', Value: 'val' }],
+            });
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters({
+                alpha: '/app/shared',
+                beta: '/app/shared',
+            });
+
+            expect(result).toEqual({ alpha: 'val', beta: 'val' });
         });
     });
 

@@ -6,7 +6,7 @@
 
 # Class: SSMService
 
-Defined in: [ssm/ssm.ts:17](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L17)
+Defined in: [ssm/ssm.ts:17](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/ssm/ssm.ts#L17)
 
 Wrapper around the AWS SSM Parameter Store client providing structured
 Powertools logging and X-Ray tracing by default. All operations enable
@@ -21,7 +21,7 @@ directly.
 
 > **new SSMService**(`opts?`): `SSMService`
 
-Defined in: [ssm/ssm.ts:27](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L27)
+Defined in: [ssm/ssm.ts:27](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/ssm/ssm.ts#L27)
 
 #### Parameters
 
@@ -53,7 +53,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **getParameter**(`name`): `Promise`\<`string` \| `undefined`\>
 
-Defined in: [ssm/ssm.ts:38](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L38)
+Defined in: [ssm/ssm.ts:38](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/ssm/ssm.ts#L38)
 
 Fetch a single SSM parameter's value.
 
@@ -78,28 +78,44 @@ value set.
 
 ### getParameters()
 
-> **getParameters**(`names`): `Promise`\<`Record`\<`string`, `string` \| `undefined`\>\>
+> **getParameters**\<`K`\>(`aliases`): `Promise`\<`Record`\<`K`, `string` \| `undefined`\>\>
 
-Defined in: [ssm/ssm.ts:57](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L57)
+Defined in: [ssm/ssm.ts:65](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/ssm/ssm.ts#L65)
 
-Fetch multiple SSM parameters in a single request. The returned record
-is keyed by parameter name so callers can destructure:
-`const { foo, bar } = await ssm.getParameters(['foo', 'bar']);`.
+Fetch multiple SSM parameters in a single request. Callers supply an
+alias-to-path record, and the returned record is keyed by the same
+aliases — so the SSM path is only mentioned at the call site and the
+destructured names are whatever the caller wants to use locally:
+
+```ts
+const { username, password } = await ssm.getParameters({
+    username: '/myapp/db/username',
+    password: '/myapp/db/password',
+});
+```
+
+#### Type Parameters
+
+##### K
+
+`K` *extends* `string`
 
 #### Parameters
 
-##### names
+##### aliases
 
-`string`[]
+`Record`\<`K`, `string`\>
 
-The parameter names (or ARNs) to fetch.
+Record mapping each desired local alias to its SSM
+parameter name (or ARN).
 
 #### Returns
 
-`Promise`\<`Record`\<`string`, `string` \| `undefined`\>\>
+`Promise`\<`Record`\<`K`, `string` \| `undefined`\>\>
 
-A record mapping each requested name to its value, or
-`undefined` when the parameter is missing or has no value.
+A record keyed by the same aliases, mapping each to the
+parameter's value, or `undefined` when the parameter is missing or has
+no value.
 
 ***
 
@@ -109,7 +125,7 @@ A record mapping each requested name to its value, or
 
 > **getParametersByPath**(`path`, `opts?`): `Promise`\<`Parameter`[]\>
 
-Defined in: [ssm/ssm.ts:80](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L80)
+Defined in: [ssm/ssm.ts:97](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/ssm/ssm.ts#L97)
 
 Fetch all parameters under an SSM hierarchy path, auto-paginating across
 all pages. `Recursive` defaults to `true` (overriding the AWS SDK

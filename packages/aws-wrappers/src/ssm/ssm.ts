@@ -44,23 +44,43 @@ export class SSMService {
     }
 
     /**
-     * Fetch multiple SSM parameters in a single request. The returned record
-     * is keyed by parameter name so callers can destructure:
-     * `const { foo, bar } = await ssm.getParameters(['foo', 'bar']);`.
-     * @param names - The parameter names (or ARNs) to fetch.
-     * @returns A record mapping each requested name to its value, or
-     * `undefined` when the parameter is missing or has no value.
+     * Fetch multiple SSM parameters in a single request. Callers supply an
+     * alias-to-path record, and the returned record is keyed by the same
+     * aliases — so the SSM path is only mentioned at the call site and the
+     * destructured names are whatever the caller wants to use locally:
+     *
+     * ```ts
+     * const { username, password } = await ssm.getParameters({
+     *     username: '/myapp/db/username',
+     *     password: '/myapp/db/password',
+     * });
+     * ```
+     *
+     * @param aliases - Record mapping each desired local alias to its SSM
+     * parameter name (or ARN).
+     * @returns A record keyed by the same aliases, mapping each to the
+     * parameter's value, or `undefined` when the parameter is missing or has
+     * no value.
      */
-    async getParameters(names: string[]): Promise<Record<string, string | undefined>> {
-        this.logger.info('Fetching SSM parameters', { input: { names } });
+    async getParameters<K extends string>(
+        aliases: Record<K, string>
+    ): Promise<Record<K, string | undefined>> {
+        this.logger.info('Fetching SSM parameters', { input: { aliases } });
         const response = await this.client.send(
-            new GetParametersCommand({ Names: names, WithDecryption: true })
+            new GetParametersCommand({
+                Names: Object.values(aliases),
+                WithDecryption: true,
+            })
         );
-        const byName = new Map<string, string | undefined>();
+        const byPath = new Map<string, string | undefined>();
         for (const parameter of response.Parameters ?? []) {
-            if (parameter.Name !== undefined) byName.set(parameter.Name, parameter.Value);
+            if (parameter.Name !== undefined) byPath.set(parameter.Name, parameter.Value);
         }
-        return Object.fromEntries(names.map(name => [name, byName.get(name)]));
+        const result = {} as Record<K, string | undefined>;
+        for (const alias of Object.keys(aliases) as K[]) {
+            result[alias] = byPath.get(aliases[alias]);
+        }
+        return result;
     }
 
     /**

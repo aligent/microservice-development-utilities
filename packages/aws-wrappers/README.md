@@ -164,11 +164,12 @@ const ssm = new SSMService();
 
 const apiKey = await ssm.getParameter('/myapp/api-key');
 
-// Returns a record keyed by parameter name — destructure directly.
-const { '/myapp/host': host, '/myapp/port': port } = await ssm.getParameters([
-    '/myapp/host',
-    '/myapp/port',
-]);
+// Supply an alias-to-path map — the result is keyed by the aliases so the
+// SSM path is only mentioned at the call site.
+const { host, port } = await ssm.getParameters({
+    host: '/myapp/host',
+    port: '/myapp/port',
+});
 
 // Auto-paginated, returns full Parameter[] (includes Version, LastModifiedDate).
 // Recursive defaults to true.
