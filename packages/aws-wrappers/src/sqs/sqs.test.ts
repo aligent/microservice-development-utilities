@@ -1,9 +1,11 @@
 import {
     DeleteMessageBatchCommand,
     DeleteMessageBatchRequestEntry,
+    DeleteMessageCommand,
     ReceiveMessageCommand,
     SendMessageBatchCommand,
     SendMessageBatchRequestEntry,
+    SendMessageCommand,
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -16,6 +18,10 @@ const QueueUrl = 'https://sqs.us-east-1.amazonaws.com/0/queue';
 describe('SQSService', () => {
     afterEach(() => {
         sqsMock.reset();
+    });
+
+    it('constructs with default logger and client when no options supplied', () => {
+        expect(() => new SQSService()).not.toThrow();
     });
 
     describe('receiveMessages', () => {
@@ -41,6 +47,17 @@ describe('SQSService', () => {
     });
 
     describe('sendMessageBatch', () => {
+        it('returns an empty array when Entries is undefined', async () => {
+            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+
+            const result = await service.sendMessageBatch({
+                QueueUrl,
+            } as Parameters<SQSService['sendMessageBatch']>[0]);
+
+            expect(result).toEqual([]);
+            expect(sqsMock.commandCalls(SendMessageBatchCommand)).toHaveLength(0);
+        });
+
         it('chunks Entries into 10-entry requests', async () => {
             sqsMock.on(SendMessageBatchCommand).resolves({ Successful: [], Failed: [] });
             const entries: SendMessageBatchRequestEntry[] = Array.from({ length: 23 }, (_, i) => ({
@@ -56,7 +73,38 @@ describe('SQSService', () => {
         });
     });
 
+    describe('pass-through commands', () => {
+        it('sendMessage sends a SendMessageCommand', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+
+            await service.sendMessage({ QueueUrl, MessageBody: 'hi' });
+
+            expect(sqsMock.commandCalls(SendMessageCommand)).toHaveLength(1);
+        });
+
+        it('deleteMessage sends a DeleteMessageCommand', async () => {
+            sqsMock.on(DeleteMessageCommand).resolves({});
+            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+
+            await service.deleteMessage({ QueueUrl, ReceiptHandle: 'h' });
+
+            expect(sqsMock.commandCalls(DeleteMessageCommand)).toHaveLength(1);
+        });
+    });
+
     describe('deleteMessageBatch', () => {
+        it('returns an empty array when Entries is undefined', async () => {
+            const service = new SQSService({ client: sqsMock as unknown as SQSClient });
+
+            const result = await service.deleteMessageBatch({
+                QueueUrl,
+            } as Parameters<SQSService['deleteMessageBatch']>[0]);
+
+            expect(result).toEqual([]);
+            expect(sqsMock.commandCalls(DeleteMessageBatchCommand)).toHaveLength(0);
+        });
+
         it('chunks Entries into 10-entry requests', async () => {
             sqsMock.on(DeleteMessageBatchCommand).resolves({ Successful: [], Failed: [] });
             const entries: DeleteMessageBatchRequestEntry[] = Array.from(

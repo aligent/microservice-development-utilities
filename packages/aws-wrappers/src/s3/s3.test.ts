@@ -1,6 +1,9 @@
 import {
+    CopyObjectCommand,
+    DeleteObjectCommand,
     DeleteObjectsCommand,
     GetObjectCommand,
+    HeadObjectCommand,
     ListObjectsV2Command,
     PutObjectCommand,
     S3Client,
@@ -24,6 +27,10 @@ const stringStream = (value: string) => {
 describe('S3Service', () => {
     afterEach(() => {
         s3Mock.reset();
+    });
+
+    it('constructs with default logger and client when no options supplied', () => {
+        expect(() => new S3Service()).not.toThrow();
     });
 
     describe('putJsonObject / getJsonObject', () => {
@@ -102,6 +109,64 @@ describe('S3Service', () => {
                 .commandCalls(DeleteObjectsCommand)
                 .map(c => c.args[0].input.Delete?.Objects?.map(o => o.Key));
             expect(deletedBatches).toEqual([['a', 'b'], ['c']]);
+        });
+    });
+
+    describe('pass-through commands', () => {
+        it('getObjectBody returns the body string', async () => {
+            s3Mock.on(GetObjectCommand).resolves({ Body: stringStream('hello') });
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await expect(service.getObjectBody({ Bucket, Key: 'k' })).resolves.toBe('hello');
+        });
+
+        it('headObject sends a HeadObjectCommand', async () => {
+            s3Mock.on(HeadObjectCommand).resolves({ ContentLength: 1 });
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await service.headObject({ Bucket, Key: 'k' });
+            expect(s3Mock.commandCalls(HeadObjectCommand)).toHaveLength(1);
+        });
+
+        it('copyObject sends a CopyObjectCommand', async () => {
+            s3Mock.on(CopyObjectCommand).resolves({});
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await service.copyObject({ Bucket, Key: 'dest', CopySource: 'src/k' });
+            expect(s3Mock.commandCalls(CopyObjectCommand)).toHaveLength(1);
+        });
+
+        it('deleteObject sends a DeleteObjectCommand', async () => {
+            s3Mock.on(DeleteObjectCommand).resolves({});
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await service.deleteObject({ Bucket, Key: 'k' });
+            expect(s3Mock.commandCalls(DeleteObjectCommand)).toHaveLength(1);
+        });
+
+        it('getAllObjects parses each body as JSON across pages', async () => {
+            s3Mock
+                .on(ListObjectsV2Command)
+                .resolvesOnce({
+                    Contents: [{ Key: 'a' }, { Key: 'b' }],
+                    IsTruncated: true,
+                    NextContinuationToken: 'tok',
+                })
+                .resolves({ Contents: [{ Key: 'c' }] });
+            s3Mock
+                .on(GetObjectCommand, { Bucket, Key: 'a' })
+                .resolves({ Body: stringStream(JSON.stringify({ id: 1 })) });
+            s3Mock
+                .on(GetObjectCommand, { Bucket, Key: 'b' })
+                .resolves({ Body: stringStream(JSON.stringify({ id: 2 })) });
+            s3Mock
+                .on(GetObjectCommand, { Bucket, Key: 'c' })
+                .resolves({ Body: stringStream(JSON.stringify({ id: 3 })) });
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const items = await service.getAllObjects<{ id: number }>(Bucket);
+
+            expect(items.map(i => i.id)).toEqual([1, 2, 3]);
         });
     });
 

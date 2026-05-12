@@ -68,12 +68,17 @@ export class S3Service {
         Body: T;
         Metadata?: Record<string, string>;
     }): Promise<PutObjectCommandOutput> {
-        return this.putObject({
-            Bucket: input.Bucket,
-            Key: input.Key,
-            Body: JSON.stringify(input.Body),
-            ...(input.Metadata ? { Metadata: input.Metadata } : {}),
+        this.logger.info('Putting S3 JSON object', {
+            input: { Bucket: input.Bucket, Key: input.Key },
         });
+        return this.client.send(
+            new PutObjectCommand({
+                Bucket: input.Bucket,
+                Key: input.Key,
+                Body: JSON.stringify(input.Body),
+                Metadata: input.Metadata,
+            })
+        );
     }
 
     /**
@@ -142,8 +147,7 @@ export class S3Service {
         );
         const keys: string[] = [];
         for await (const page of paginator) {
-            if (!page.Contents) continue;
-            for (const object of page.Contents) {
+            for (const object of page.Contents ?? []) {
                 if (object.Key) keys.push(object.Key);
             }
         }
@@ -163,8 +167,7 @@ export class S3Service {
         );
         const bodies: T[] = [];
         for await (const page of paginator) {
-            if (!page.Contents) continue;
-            for (const object of page.Contents) {
+            for (const object of page.Contents ?? []) {
                 if (!object.Key) continue;
                 const response = await this.client.send(
                     new GetObjectCommand({ Bucket: bucket, Key: object.Key })
@@ -219,9 +222,8 @@ export class S3Service {
         const paginator = paginateListObjectsV2({ client: this.client }, { Bucket: bucket });
         const deletedKeys: string[] = [];
         for await (const page of paginator) {
-            if (!page.Contents?.length) continue;
             const keys: string[] = [];
-            for (const object of page.Contents) {
+            for (const object of page.Contents ?? []) {
                 if (object.Key) keys.push(object.Key);
             }
             if (keys.length === 0) continue;

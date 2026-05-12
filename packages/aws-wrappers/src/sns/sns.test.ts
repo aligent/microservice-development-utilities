@@ -1,4 +1,9 @@
-import { PublishBatchCommand, PublishBatchRequestEntry, SNSClient } from '@aws-sdk/client-sns';
+import {
+    PublishBatchCommand,
+    PublishBatchRequestEntry,
+    PublishCommand,
+    SNSClient,
+} from '@aws-sdk/client-sns';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SNSService } from './sns';
@@ -8,6 +13,10 @@ const snsMock = mockClient(SNSClient);
 describe('SNSService', () => {
     afterEach(() => {
         snsMock.reset();
+    });
+
+    it('constructs with default logger and client when no options supplied', () => {
+        expect(() => new SNSService()).not.toThrow();
     });
 
     describe('publishBatch', () => {
@@ -46,15 +55,34 @@ describe('SNSService', () => {
             expect(snsMock.commandCalls(PublishBatchCommand)).toHaveLength(1);
         });
 
-        it('returns an empty array when no entries are supplied', async () => {
+        it('returns an empty array when entries are empty or undefined', async () => {
             const service = new SNSService({ client: snsMock as unknown as SNSClient });
-            const results = await service.publishBatch({
+
+            const emptyResult = await service.publishBatch({
                 TopicArn: 'arn:aws:sns:us-east-1:0:topic',
                 PublishBatchRequestEntries: [],
             });
+            const undefinedResult = await service.publishBatch({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+            } as Parameters<SNSService['publishBatch']>[0]);
 
-            expect(results).toEqual([]);
+            expect(emptyResult).toEqual([]);
+            expect(undefinedResult).toEqual([]);
             expect(snsMock.commandCalls(PublishBatchCommand)).toHaveLength(0);
+        });
+    });
+
+    describe('publish', () => {
+        it('sends a PublishCommand', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: snsMock as unknown as SNSClient });
+
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: 'hi',
+            });
+
+            expect(snsMock.commandCalls(PublishCommand)).toHaveLength(1);
         });
     });
 });

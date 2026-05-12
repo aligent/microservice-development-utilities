@@ -57,7 +57,7 @@ export class SSMService {
             new GetParametersCommand({ Names: names, WithDecryption: true })
         );
         const byName = new Map<string, string | undefined>(
-            (response.Parameters ?? []).map(p => [p.Name as string, p.Value])
+            response.Parameters?.map(p => [p.Name as string, p.Value]) ?? []
         );
         return Object.fromEntries(names.map(name => [name, byName.get(name)]));
     }
@@ -84,7 +84,7 @@ export class SSMService {
         );
         const parameters: Parameter[] = [];
         for await (const page of paginator) {
-            if (page.Parameters) parameters.push(...page.Parameters);
+            parameters.push(...(page.Parameters ?? []));
         }
         return parameters;
     }

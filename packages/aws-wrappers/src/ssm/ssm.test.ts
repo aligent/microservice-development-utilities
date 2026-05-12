@@ -15,6 +15,10 @@ describe('SSMService', () => {
         ssmMock.reset();
     });
 
+    it('constructs with default logger and client when no options supplied', () => {
+        expect(() => new SSMService()).not.toThrow();
+    });
+
     describe('getParameter', () => {
         it('decrypts and returns the parameter value', async () => {
             ssmMock

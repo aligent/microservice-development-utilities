@@ -1,9 +1,14 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
+    BatchGetCommand,
     BatchWriteCommand,
+    DeleteCommand,
     DynamoDBDocumentClient,
+    GetCommand,
+    PutCommand,
     QueryCommand,
     ScanCommand,
+    UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +23,10 @@ const buildService = () =>
 describe('DynamoDBService', () => {
     afterEach(() => {
         ddbMock.reset();
+    });
+
+    it('constructs with default logger and client when no options supplied', () => {
+        expect(() => new DynamoDBService()).not.toThrow();
     });
 
     describe('batchWrite', () => {
@@ -84,6 +93,74 @@ describe('DynamoDBService', () => {
             await expectation;
 
             expect(ddbMock.commandCalls(BatchWriteCommand)).toHaveLength(5);
+        });
+    });
+
+    describe('pass-through commands', () => {
+        it('getItem returns the unmarshalled Item', async () => {
+            ddbMock.on(GetCommand).resolves({ Item: { pk: 'a', value: 1 } });
+
+            await expect(
+                buildService().getItem<{ pk: string; value: number }>({
+                    TableName,
+                    Key: { pk: 'a' },
+                })
+            ).resolves.toEqual({ pk: 'a', value: 1 });
+        });
+
+        it('getItem returns undefined when Item is absent', async () => {
+            ddbMock.on(GetCommand).resolves({});
+            await expect(
+                buildService().getItem({ TableName, Key: { pk: 'x' } })
+            ).resolves.toBeUndefined();
+        });
+
+        it('putItem sends a PutCommand', async () => {
+            ddbMock.on(PutCommand).resolves({});
+            await buildService().putItem({ TableName, Item: { pk: 'a' } });
+            expect(ddbMock.commandCalls(PutCommand)).toHaveLength(1);
+        });
+
+        it('updateItem returns the typed Attributes', async () => {
+            ddbMock.on(UpdateCommand).resolves({ Attributes: { value: 99 } });
+            const result = await buildService().updateItem<{ value: number }>({
+                TableName,
+                Key: { pk: 'a' },
+            });
+            expect(result.Attributes).toEqual({ value: 99 });
+        });
+
+        it('deleteItem returns the typed Attributes', async () => {
+            ddbMock.on(DeleteCommand).resolves({ Attributes: { pk: 'a' } });
+            const result = await buildService().deleteItem<{ pk: string }>({
+                TableName,
+                Key: { pk: 'a' },
+            });
+            expect(result.Attributes).toEqual({ pk: 'a' });
+        });
+
+        it('query returns Items typed as T[]', async () => {
+            ddbMock.on(QueryCommand).resolves({ Items: [{ pk: 'a' }] });
+            const result = await buildService().query<{ pk: string }>({
+                TableName,
+                KeyConditionExpression: 'pk = :p',
+                ExpressionAttributeValues: { ':p': 'a' },
+            });
+            expect(result.Items).toEqual([{ pk: 'a' }]);
+        });
+
+        it('scan returns Items typed as T[]', async () => {
+            ddbMock.on(ScanCommand).resolves({ Items: [{ pk: 'a' }] });
+            const result = await buildService().scan<{ pk: string }>({ TableName });
+            expect(result.Items).toEqual([{ pk: 'a' }]);
+        });
+
+        it('batchGet sends a BatchGetCommand', async () => {
+            ddbMock.on(BatchGetCommand).resolves({});
+            await buildService().batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'a' }] } },
+            });
+            expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(1);
         });
     });
 

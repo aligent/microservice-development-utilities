@@ -10,6 +10,10 @@ describe('SecretsManagerService', () => {
         secretsMock.reset();
     });
 
+    it('constructs with default logger and client when no options supplied', () => {
+        expect(() => new SecretsManagerService()).not.toThrow();
+    });
+
     describe('getSecret', () => {
         it('throws when the secret has no SecretString', async () => {
             secretsMock.on(GetSecretValueCommand, { SecretId: 'no-string' }).resolves({});
