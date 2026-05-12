@@ -6,7 +6,7 @@
 
 # Class: SNSService
 
-Defined in: [sns/sns.ts:20](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/sns/sns.ts#L20)
+Defined in: [sns/sns.ts:20](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/sns/sns.ts#L20)
 
 Wrapper around the AWS SNS client providing structured Powertools logging
 and X-Ray tracing by default.
@@ -19,7 +19,7 @@ and X-Ray tracing by default.
 
 > **new SNSService**(`opts?`): `SNSService`
 
-Defined in: [sns/sns.ts:30](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/sns/sns.ts#L30)
+Defined in: [sns/sns.ts:30](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/sns/sns.ts#L30)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **publish**(`input`): `Promise`\<`PublishCommandOutput`\>
 
-Defined in: [sns/sns.ts:39](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/sns/sns.ts#L39)
+Defined in: [sns/sns.ts:39](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/sns/sns.ts#L39)
 
 Publish a single message to an SNS topic.
 
@@ -75,7 +75,7 @@ PublishCommandInput including TopicArn and Message.
 
 > **publishBatch**(`input`): `Promise`\<`PublishBatchCommandOutput`[]\>
 
-Defined in: [sns/sns.ts:51](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/sns/sns.ts#L51)
+Defined in: [sns/sns.ts:51](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/sns/sns.ts#L51)
 
 Publish a batch of messages to an SNS topic. The SNS API caps
 PublishBatch at 10 entries per request, so this method auto-chunks

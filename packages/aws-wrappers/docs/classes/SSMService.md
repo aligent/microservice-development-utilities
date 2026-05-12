@@ -6,7 +6,7 @@
 
 # Class: SSMService
 
-Defined in: [ssm/ssm.ts:17](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/ssm/ssm.ts#L17)
+Defined in: [ssm/ssm.ts:17](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L17)
 
 Wrapper around the AWS SSM Parameter Store client providing structured
 Powertools logging and X-Ray tracing by default. All operations enable
@@ -21,7 +21,7 @@ directly.
 
 > **new SSMService**(`opts?`): `SSMService`
 
-Defined in: [ssm/ssm.ts:27](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/ssm/ssm.ts#L27)
+Defined in: [ssm/ssm.ts:27](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L27)
 
 #### Parameters
 
@@ -53,7 +53,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **getParameter**(`name`): `Promise`\<`string` \| `undefined`\>
 
-Defined in: [ssm/ssm.ts:38](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/ssm/ssm.ts#L38)
+Defined in: [ssm/ssm.ts:38](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L38)
 
 Fetch a single SSM parameter's value.
 
@@ -80,7 +80,7 @@ value set.
 
 > **getParameters**(`names`): `Promise`\<`Record`\<`string`, `string` \| `undefined`\>\>
 
-Defined in: [ssm/ssm.ts:54](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/ssm/ssm.ts#L54)
+Defined in: [ssm/ssm.ts:57](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L57)
 
 Fetch multiple SSM parameters in a single request. The returned record
 is keyed by parameter name so callers can destructure:
@@ -109,7 +109,7 @@ A record mapping each requested name to its value, or
 
 > **getParametersByPath**(`path`, `opts?`): `Promise`\<`Parameter`[]\>
 
-Defined in: [ssm/ssm.ts:77](https://github.com/aligent/microservice-development-utilities/blob/79028d636d9b991b57e28c161ef604e6d0b09ac9/packages/aws-wrappers/src/ssm/ssm.ts#L77)
+Defined in: [ssm/ssm.ts:80](https://github.com/aligent/microservice-development-utilities/blob/095270c3292da70d58f540c405577edc0c2ab315/packages/aws-wrappers/src/ssm/ssm.ts#L80)
 
 Fetch all parameters under an SSM hierarchy path, auto-paginating across
 all pages. `Recursive` defaults to `true` (overriding the AWS SDK

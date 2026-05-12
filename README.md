@@ -8,6 +8,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 - [AWS Wrappers](/packages/aws-wrappers/README.md)
 - [Create Workspace](/packages/create-workspace/README.md)
 - [Microservice Util Lib](/packages/microservice-util-lib/README.md)
+- [Nx App Builder](/packages/nx-appbuilder/README.md)
 - [Nx CDK](/packages/nx-cdk/README.md)
 - [Nx Openapi](/packages/nx-openapi/README.md)
 
@@ -44,6 +45,7 @@ microservice-development-utilities/
 │   ├── aws-wrappers/           # Opinionated AWS SDK wrappers with logging + X-Ray
 │   ├── create-workspace/       # Workspace scaffolding tool
 │   ├── microservice-util-lib/  # Utility library for microservices
+│   ├── nx-appbuilder/          # Nx plugin with generators for Adobe App Builder apps
 │   ├── nx-cdk/                 # Nx plugin for CDK project generation
 │   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
 └── package.json                # Root package configuration

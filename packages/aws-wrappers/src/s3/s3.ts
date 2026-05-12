@@ -118,6 +118,7 @@ export class S3Service {
      * Get an object from S3 and parse it as JSON.
      * @template T - Expected type of the parsed value.
      * @returns The parsed value, or `undefined` if the response has no body.
+     * @throws If the body is non-empty and not valid JSON.
      */
     async getJsonObject<T>(
         input: Required<Pick<GetObjectCommandInput, 'Bucket' | 'Key'>>
