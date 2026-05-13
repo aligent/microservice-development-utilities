@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "$id": "RemoveServiceGenerator",
+    "title": "Remove a service and clean up its references",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the service to remove",
+            "$default": {
+                "$source": "argv",
+                "index": 0
+            },
+            "x-prompt": "What is the name of the service to remove?"
+        },
+        "forceRemove": {
+            "type": "boolean",
+            "description": "Skip dependency check when removing the project",
+            "default": false
+        }
+    },
+    "required": ["name"]
+}

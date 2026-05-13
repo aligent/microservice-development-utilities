@@ -10,6 +10,11 @@
             "factory": "./src/generators/service/generator",
             "schema": "./src/generators/service/schema.json",
             "description": "Generate a new service"
+        },
+        "remove-service": {
+            "factory": "./src/generators/remove-service/generator",
+            "schema": "./src/generators/remove-service/schema.json",
+            "description": "Remove a service and clean up its references"
         }
     }
 }

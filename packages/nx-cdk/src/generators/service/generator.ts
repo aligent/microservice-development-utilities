@@ -1,13 +1,12 @@
 import { formatFiles, generateFiles, Tree, updateJson, writeJson } from '@nx/devkit';
 import { join } from 'path';
+import { MAIN_APPLICATION_NAME, SERVICES_FOLDER } from '../constants';
 import {
     addServiceStackToMainApplication,
     constructProjectTsConfigFiles,
     splitInputName,
 } from '../helpers/utilities';
 import { ServiceGeneratorSchema } from './schema';
-
-const SERVICES_FOLDER = 'services';
 
 function addTsConfigReference(tree: Tree, referencePath: string) {
     updateJson(tree, 'tsconfig.json', json => {
@@ -58,7 +57,11 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
 
     // Integrate the new service with the root application
     addTsConfigReference(tree, `./${projectRoot}`);
-    addServiceStackToMainApplication(tree, { name: options.name, constant, stack }, 'application');
+    addServiceStackToMainApplication(
+        tree,
+        { name: options.name, constant, stack },
+        MAIN_APPLICATION_NAME
+    );
 
     await formatFiles(tree);
 }

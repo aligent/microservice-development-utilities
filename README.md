@@ -151,7 +151,19 @@ For more details, see [tools/generators/README.md](/tools/generators/README.md).
 
 Each of the packages in the monorepo have separate versioning and independent npm releases. To perform a release of one or more packages we use [Version Plans](https://nx.dev/recipes/nx-release/file-based-versioning-version-plans) to define the type of updates and provide change log. Nx will then detect the version plans and automatically update version numbers appropriately, as well as perform builds and deployments separately in the pipeline if a version plan is detected.
 
-## Step-by-Step Guide
+## Important - First publish must be done manually
+
+The first time a new package is published to `npm`, it must be published manually by a `maintainer`. Subsequent releases are then handled automatically by the release workflow. Contact with `DevOps` guild if you are not a maintainer of `@aligent/` on npm.
+
+Our release workflow uses [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers). OIDC can only publish new versions of packages that already exist on npm — it cannot create a brand new package. The package name has to be registered on the npm registry before automated releases can take over.
+
+To bootstrap a new package:
+
+- Build the package locally: `npx nx build <package-name>`
+- From the package directory, log in to npm (npm login) with maintainer credentials and publish: `npm publish --access public`
+- Once the package exists on npm, future versions will be released automatically by the workflow.
+
+## Step-by-Step Guide for subsequence releases
 
 1. Start by creating a new `releases/*` branch from the latest `main` branch.
 
