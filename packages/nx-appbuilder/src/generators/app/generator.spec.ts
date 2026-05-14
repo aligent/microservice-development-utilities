@@ -80,6 +80,12 @@ describe('app generator', () => {
             expect(tree.exists('my-app/tests/tsconfig.json')).toBe(true);
         });
 
+        it('uses the base eslint preset (not react) when hasAdminUI is false', () => {
+            const config = readText(tree, 'my-app/eslint.config.mjs');
+            expect(config).toContain('eslintConfigs.base');
+            expect(config).not.toContain('eslintConfigs.react');
+        });
+
         it('writes the pre-build action type-check hook', () => {
             expect(tree.exists('my-app/hooks/check-action-types.sh')).toBe(true);
         });
@@ -273,6 +279,11 @@ describe('app generator', () => {
                 'my-app/src/commerce-backend-ui-1/actions/registration/index.ts'
             );
             expect(reg).toContain('Sales Apps');
+        });
+
+        it('uses the react eslint preset when hasAdminUI is true', () => {
+            const config = readText(tree, 'my-app/eslint.config.mjs');
+            expect(config).toContain('eslintConfigs.react');
         });
 
         it('adds the check-types:web pre-build hook', () => {
