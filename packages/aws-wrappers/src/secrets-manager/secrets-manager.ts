@@ -1,10 +1,32 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import {
+    CreateSecretCommand,
+    CreateSecretCommandInput,
+    CreateSecretCommandOutput,
+    DeleteSecretCommand,
+    DeleteSecretCommandInput,
+    DeleteSecretCommandOutput,
+    GetSecretValueCommand,
+    PutSecretValueCommand,
+    PutSecretValueCommandInput,
+    PutSecretValueCommandOutput,
+    SecretsManagerClient,
+    UpdateSecretCommand,
+    UpdateSecretCommandInput,
+    UpdateSecretCommandOutput,
+} from '@aws-sdk/client-secrets-manager';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
 
 /**
  * Wrapper around the AWS Secrets Manager client providing structured
  * Powertools logging and X-Ray tracing by default.
+ *
+ * Write operations (`createSecret`, `updateSecret`, `putSecretValue`,
+ * `deleteSecret`) are exposed for convenience but should be used with care:
+ * secret lifecycle is usually managed by IaC (CDK / Terraform). Prefer IaC
+ * for anything that exists at deploy time; reserve runtime writes for
+ * dynamically-issued credentials, rotation flows, or other genuinely
+ * mutable values.
  */
 export class SecretsManagerService {
     private readonly client: SecretsManagerClient;
@@ -45,6 +67,70 @@ export class SecretsManagerService {
         this.logger.info('Fetching JSON secret', { input: { secretId } });
         const secretString = await this.fetchSecretString(secretId);
         return JSON.parse(secretString) as T;
+    }
+
+    /**
+     * Create a new secret. The log line omits `SecretString` / `SecretBinary`
+     * to avoid leaking secret material.
+     *
+     * Prefer IaC (CDK / Terraform) for secret lifecycle — use this for
+     * dynamically-issued credentials only.
+     */
+    async createSecret(input: CreateSecretCommandInput): Promise<CreateSecretCommandOutput> {
+        this.logger.info('Creating secret', {
+            input: {
+                Name: input.Name,
+                Description: input.Description,
+                KmsKeyId: input.KmsKeyId,
+                Tags: input.Tags,
+            },
+        });
+        return this.client.send(new CreateSecretCommand(input));
+    }
+
+    /**
+     * Update an existing secret's metadata or value. The log line omits
+     * `SecretString` / `SecretBinary` to avoid leaking secret material.
+     *
+     * Prefer IaC (CDK / Terraform) for secret lifecycle — use this for
+     * runtime metadata updates only.
+     */
+    async updateSecret(input: UpdateSecretCommandInput): Promise<UpdateSecretCommandOutput> {
+        this.logger.info('Updating secret', {
+            input: {
+                SecretId: input.SecretId,
+                Description: input.Description,
+                KmsKeyId: input.KmsKeyId,
+            },
+        });
+        return this.client.send(new UpdateSecretCommand(input));
+    }
+
+    /**
+     * Store a new version of a secret's value. The log line omits
+     * `SecretString` / `SecretBinary` to avoid leaking secret material.
+     *
+     * Typically used by rotation flows.
+     */
+    async putSecretValue(input: PutSecretValueCommandInput): Promise<PutSecretValueCommandOutput> {
+        this.logger.info('Putting secret value', {
+            input: {
+                SecretId: input.SecretId,
+                VersionStages: input.VersionStages,
+            },
+        });
+        return this.client.send(new PutSecretValueCommand(input));
+    }
+
+    /**
+     * Delete a secret. Pass `ForceDeleteWithoutRecovery: true` to bypass the
+     * default 7-30 day recovery window (irreversible).
+     *
+     * Prefer IaC (CDK / Terraform) for secret lifecycle.
+     */
+    async deleteSecret(input: DeleteSecretCommandInput): Promise<DeleteSecretCommandOutput> {
+        this.logger.info('Deleting secret', { input });
+        return this.client.send(new DeleteSecretCommand(input));
     }
 
     private async fetchSecretString(secretId: string): Promise<string> {

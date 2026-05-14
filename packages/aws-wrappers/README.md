@@ -146,6 +146,15 @@ const config = await secrets.getJsonSecret<MySecretShape>('my-secret-name');
 
 `getSecret` throws when the response has no `SecretString` (e.g. a binary-only secret). `getJsonSecret` additionally throws if the secret value is not valid JSON. `VersionId` / `VersionStage` aren't exposed — use `SecretsManagerClient` directly if you need version pinning.
 
+```ts
+// Write operations. Prefer IaC (CDK / Terraform) for secret lifecycle;
+// reserve these for rotation flows or dynamically-issued credentials.
+await secrets.createSecret({ Name: 'my-secret', SecretString: 'shh' });
+await secrets.updateSecret({ SecretId: 'my-secret', Description: 'updated' });
+await secrets.putSecretValue({ SecretId: 'my-secret', SecretString: 'new-shh' });
+await secrets.deleteSecret({ SecretId: 'my-secret', RecoveryWindowInDays: 7 });
+```
+
 ## Step Functions
 
 ```ts
