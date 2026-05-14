@@ -1,18 +1,28 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import {
+    DeleteParameterCommand,
     GetParameterCommand,
     GetParametersCommand,
     paginateGetParametersByPath,
     Parameter,
+    PutParameterCommand,
+    PutParameterCommandInput,
+    PutParameterCommandOutput,
     SSMClient,
 } from '@aws-sdk/client-ssm';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
 
 /**
  * Wrapper around the AWS SSM Parameter Store client providing structured
- * Powertools logging and X-Ray tracing by default. All operations enable
+ * Powertools logging and X-Ray tracing by default. All read operations enable
  * `WithDecryption` — callers needing plaintext should use `SSMClient`
  * directly.
+ *
+ * Write operations (`putParameter`, `deleteParameter`) are exposed for
+ * convenience but should be used with care: parameter lifecycle is usually
+ * managed by IaC (CDK / Terraform). Prefer IaC for anything that exists at
+ * deploy time; reserve runtime writes for values that genuinely need to
+ * mutate within the application.
  */
 export class SSMService {
     private readonly client: SSMClient;
@@ -81,6 +91,36 @@ export class SSMService {
             result[alias] = byPath.get(aliases[alias]);
         }
         return result;
+    }
+
+    /**
+     * Create or update an SSM parameter. The log line omits `Value` to avoid
+     * leaking secret material.
+     *
+     * Prefer IaC (CDK / Terraform) for parameter lifecycle — use this for
+     * runtime values only.
+     */
+    async putParameter(input: PutParameterCommandInput): Promise<PutParameterCommandOutput> {
+        this.logger.info('Putting SSM parameter', {
+            input: {
+                Name: input.Name,
+                Type: input.Type,
+                Overwrite: input.Overwrite,
+                Tier: input.Tier,
+            },
+        });
+        return this.client.send(new PutParameterCommand(input));
+    }
+
+    /**
+     * Delete an SSM parameter by name.
+     *
+     * Prefer IaC (CDK / Terraform) for parameter lifecycle — use this for
+     * runtime cleanup only.
+     */
+    async deleteParameter(name: string): Promise<void> {
+        this.logger.info('Deleting SSM parameter', { input: { name } });
+        await this.client.send(new DeleteParameterCommand({ Name: name }));
     }
 
     /**

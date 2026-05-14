@@ -1,7 +1,9 @@
 import {
+    DeleteParameterCommand,
     GetParameterCommand,
     GetParametersByPathCommand,
     GetParametersCommand,
+    PutParameterCommand,
     SSMClient,
 } from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -75,6 +77,41 @@ describe('SSMService', () => {
             });
 
             expect(result).toEqual({ alpha: 'val', beta: 'val' });
+        });
+    });
+
+    describe('putParameter', () => {
+        it('sends a PutParameterCommand pass-through and returns the response', async () => {
+            ssmMock.on(PutParameterCommand).resolves({ Version: 7 });
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.putParameter({
+                Name: '/app/setting',
+                Value: 'shh',
+                Type: 'SecureString',
+                Overwrite: true,
+            });
+
+            expect(result.Version).toBe(7);
+            const call = ssmMock.commandCalls(PutParameterCommand)[0];
+            expect(call?.args[0].input).toEqual({
+                Name: '/app/setting',
+                Value: 'shh',
+                Type: 'SecureString',
+                Overwrite: true,
+            });
+        });
+    });
+
+    describe('deleteParameter', () => {
+        it('sends a DeleteParameterCommand with the supplied name', async () => {
+            ssmMock.on(DeleteParameterCommand).resolves({});
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            await service.deleteParameter('/app/setting');
+
+            const call = ssmMock.commandCalls(DeleteParameterCommand)[0];
+            expect(call?.args[0].input).toEqual({ Name: '/app/setting' });
         });
     });
 

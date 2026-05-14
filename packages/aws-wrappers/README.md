@@ -191,7 +191,20 @@ const params = await ssm.getParametersByPath('/myapp/');
 const shallow = await ssm.getParametersByPath('/myapp/', { recursive: false });
 ```
 
-All three operations enable `WithDecryption` automatically — there's no opt-out. Callers needing plaintext should use `SSMClient` directly.
+All read operations enable `WithDecryption` automatically — there's no opt-out. Callers needing plaintext should use `SSMClient` directly.
+
+```ts
+// Write operations. Prefer IaC (CDK / Terraform) for parameter lifecycle;
+// reserve these for values that genuinely mutate at runtime.
+await ssm.putParameter({
+    Name: '/myapp/feature-flag',
+    Value: 'enabled',
+    Type: 'String',
+    Overwrite: true,
+});
+
+await ssm.deleteParameter('/myapp/feature-flag');
+```
 
 ## SQS
 
