@@ -126,10 +126,21 @@ export class SecretsManagerService {
      * Delete a secret. Pass `ForceDeleteWithoutRecovery: true` to bypass the
      * default 7-30 day recovery window (irreversible).
      *
+     * The log line follows the package allowlist convention — `SecretId`,
+     * `RecoveryWindowInDays`, `ForceDeleteWithoutRecovery` only. The input
+     * carries no secret material today, but the explicit allowlist keeps the
+     * log shape consistent with the other write methods.
+     *
      * Prefer IaC (CDK / Terraform) for secret lifecycle.
      */
     async deleteSecret(input: DeleteSecretCommandInput): Promise<DeleteSecretCommandOutput> {
-        this.logger.info('Deleting secret', { input });
+        this.logger.info('Deleting secret', {
+            input: {
+                SecretId: input.SecretId,
+                RecoveryWindowInDays: input.RecoveryWindowInDays,
+                ForceDeleteWithoutRecovery: input.ForceDeleteWithoutRecovery,
+            },
+        });
         return this.client.send(new DeleteSecretCommand(input));
     }
 

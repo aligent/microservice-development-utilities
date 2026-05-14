@@ -204,6 +204,11 @@ export class S3Service {
      * GET URLs are signed with `ResponseContentDisposition: 'attachment'` so
      * browsers download the object rather than rendering it in-place.
      *
+     * The input shape is an inline object (rather than the `Required<Pick<...>>`
+     * pattern used by other S3 methods) because this method wraps two SDK
+     * commands rather than one, and `action` / `expiresIn` are wrapper-level
+     * concerns with no SDK-input equivalent.
+     *
      * @param input.Bucket - The S3 bucket name.
      * @param input.Key - The S3 object key.
      * @param input.action - `'get'` to download, `'put'` to upload.
@@ -215,8 +220,9 @@ export class S3Service {
         action: 'get' | 'put';
         expiresIn?: number;
     }): Promise<string> {
+        const expiresIn = input.expiresIn ?? DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS;
         this.logger.info('Generating S3 presigned URL', {
-            input: { Bucket: input.Bucket, Key: input.Key, action: input.action },
+            input: { Bucket: input.Bucket, Key: input.Key, action: input.action, expiresIn },
         });
         const command =
             input.action === 'get'
@@ -226,9 +232,7 @@ export class S3Service {
                       ResponseContentDisposition: 'attachment',
                   })
                 : new PutObjectCommand({ Bucket: input.Bucket, Key: input.Key });
-        return getSignedUrl(this.client, command, {
-            expiresIn: input.expiresIn ?? DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS,
-        });
+        return getSignedUrl(this.client, command, { expiresIn });
     }
 
     /**
