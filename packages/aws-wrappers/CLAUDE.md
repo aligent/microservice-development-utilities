@@ -34,7 +34,7 @@ These are non-negotiable across every service in the package — change them onl
 constructor(opts?: { logger?: Logger; client?: <ServiceClient> })
 ```
 
-- `logger` defaults to `new Logger({ serviceName: '<ClassName>' })`.
+- `logger` defaults to `new Logger()`, which picks up `POWERTOOLS_SERVICE_NAME` from the environment. Do **not** pass `serviceName` in the default — env-driven service naming is the Powertools convention.
 - `client` defaults to `captureAWSv3Client(new <ServiceClient>())`. When the caller supplies a client, the wrapper does **not** apply X-Ray instrumentation — that's the caller's call.
 - No `clientConfig` / `region` / `endpoint` options. Callers needing those construct their own client and pass it via `client`.
 

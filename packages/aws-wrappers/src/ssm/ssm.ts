@@ -19,14 +19,14 @@ export class SSMService {
     private readonly logger: Logger;
 
     /**
-     * @param opts.logger - Optional Powertools logger. Defaults to a logger with
-     * `serviceName: 'SSMService'`.
+     * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
+     * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SSMClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: Logger; client?: SSMClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SSMClient());
-        this.logger = opts?.logger ?? new Logger({ serviceName: 'SSMService' });
+        this.logger = opts?.logger ?? new Logger();
     }
 
     /**

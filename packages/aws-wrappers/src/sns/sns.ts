@@ -22,14 +22,14 @@ export class SNSService {
     private readonly logger: Logger;
 
     /**
-     * @param opts.logger - Optional Powertools logger. Defaults to a logger with
-     * `serviceName: 'SNSService'`.
+     * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
+     * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SNSClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: Logger; client?: SNSClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SNSClient());
-        this.logger = opts?.logger ?? new Logger({ serviceName: 'SNSService' });
+        this.logger = opts?.logger ?? new Logger();
     }
 
     /**

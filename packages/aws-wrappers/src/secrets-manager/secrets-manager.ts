@@ -11,15 +11,15 @@ export class SecretsManagerService {
     private readonly logger: Logger;
 
     /**
-     * @param opts.logger - Optional Powertools logger. Defaults to a logger with
-     * `serviceName: 'SecretsManagerService'`.
+     * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
+     * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SecretsManagerClient`. When
      * supplied, the wrapper does not apply X-Ray instrumentation — the caller
      * owns that decision.
      */
     constructor(opts?: { logger?: Logger; client?: SecretsManagerClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SecretsManagerClient());
-        this.logger = opts?.logger ?? new Logger({ serviceName: 'SecretsManagerService' });
+        this.logger = opts?.logger ?? new Logger();
     }
 
     /**

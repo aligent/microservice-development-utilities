@@ -37,14 +37,14 @@ export class S3Service {
     private readonly logger: Logger;
 
     /**
-     * @param opts.logger - Optional Powertools logger. Defaults to a logger with
-     * `serviceName: 'S3Service'`.
+     * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
+     * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `S3Client`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: Logger; client?: S3Client }) {
         this.client = opts?.client ?? captureAWSv3Client(new S3Client());
-        this.logger = opts?.logger ?? new Logger({ serviceName: 'S3Service' });
+        this.logger = opts?.logger ?? new Logger();
     }
 
     /**

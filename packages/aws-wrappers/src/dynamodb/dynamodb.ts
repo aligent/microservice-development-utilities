@@ -51,8 +51,8 @@ export class DynamoDBService {
     private readonly logger: Logger;
 
     /**
-     * @param opts.logger - Optional Powertools logger. Defaults to a logger with
-     * `serviceName: 'DynamoDBService'`.
+     * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
+     * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `DynamoDBDocumentClient`.
      * When supplied, the wrapper does not apply X-Ray instrumentation. When
      * omitted, a default `DynamoDBClient` is wrapped with `captureAWSv3Client`
@@ -65,7 +65,7 @@ export class DynamoDBService {
             DynamoDBDocumentClient.from(captureAWSv3Client(new DynamoDBClient({})), {
                 marshallOptions: { removeUndefinedValues: true },
             });
-        this.logger = opts?.logger ?? new Logger({ serviceName: 'DynamoDBService' });
+        this.logger = opts?.logger ?? new Logger();
     }
 
     /**

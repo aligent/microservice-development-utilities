@@ -32,14 +32,14 @@ export class SQSService {
     private readonly logger: Logger;
 
     /**
-     * @param opts.logger - Optional Powertools logger. Defaults to a logger with
-     * `serviceName: 'SQSService'`.
+     * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
+     * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SQSClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: Logger; client?: SQSClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SQSClient());
-        this.logger = opts?.logger ?? new Logger({ serviceName: 'SQSService' });
+        this.logger = opts?.logger ?? new Logger();
     }
 
     /**

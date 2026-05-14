@@ -16,7 +16,7 @@ Every wrapper takes the same optional constructor options:
 new XService({ logger?, client? })
 ```
 
-- `logger` — a Powertools `Logger`. Defaults to `new Logger({ serviceName: '<ClassName>' })`.
+- `logger` — a Powertools `Logger`. Defaults to `new Logger()`, which picks up `POWERTOOLS_SERVICE_NAME` from the environment (recommended) and otherwise falls back to Powertools' own default.
 - `client` — a pre-configured SDK client. When omitted, the wrapper instantiates the SDK client itself and wraps it with `captureAWSv3Client` for X-Ray tracing. When supplied, the wrapper passes it through unchanged — the caller is responsible for X-Ray instrumentation.
 
 ### X-Ray outside Lambda
