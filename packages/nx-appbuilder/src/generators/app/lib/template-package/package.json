@@ -23,6 +23,8 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.2",
     "babel-loader": "^10.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.8.1",
     "ts-loader": "^9.5.2",
     "type-fest": "^4.39.1",
     "typescript": "^5.8.3",

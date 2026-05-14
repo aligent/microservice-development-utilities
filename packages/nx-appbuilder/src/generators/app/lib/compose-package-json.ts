@@ -1,5 +1,5 @@
-import { readJsonFile, type Tree } from '@nx/devkit';
-import * as path from 'path';
+import { type Tree } from '@nx/devkit';
+import { loadTemplatePackage, pickVersions } from '../../helpers/template-package';
 import type { NormalizedSchema } from '../schema';
 
 /**
@@ -11,29 +11,7 @@ import type { NormalizedSchema } from '../schema';
  * directory because Dependabot's npm ecosystem only discovers files named
  * exactly `package.json`.
  */
-interface PackageJson {
-    dependencies?: Record<string, string>;
-    devDependencies?: Record<string, string>;
-}
-
-const TEMPLATE = readJsonFile<PackageJson>(
-    path.join(__dirname, 'template-package', 'package.json')
-);
-
-function pickVersions(
-    source: Record<string, string> | undefined,
-    names: readonly string[]
-): Record<string, string> {
-    const result: Record<string, string> = {};
-    for (const name of names) {
-        const version = source?.[name];
-        if (version === undefined) {
-            throw new Error(`Missing "${name}" in template-package.json`);
-        }
-        result[name] = version;
-    }
-    return result;
-}
+const TEMPLATE = loadTemplatePackage(__dirname);
 
 const BASE_DEPS = pickVersions(TEMPLATE.dependencies, [
     '@adobe/aio-sdk',
@@ -60,6 +38,13 @@ const BASE_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
     '@babel/preset-typescript',
     '@types/node',
     'babel-loader',
+    // `eslint` is also pinned at the workspace root; declaring it here keeps
+    // the app's `lint` script resolvable independent of npm workspace hoisting.
+    'eslint',
+    // `prettier` is required as a peer dep of `eslint-plugin-prettier`, which
+    // is wired in via `@aligent/ts-code-standards`. Without an explicit
+    // declaration the lint run can hang in the dynamic-import fallback path.
+    'prettier',
     'ts-loader',
     'type-fest',
     'typescript',

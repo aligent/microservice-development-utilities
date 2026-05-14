@@ -35,7 +35,22 @@ updates:
       interval: 'monthly'
     open-pull-requests-limit: 5
     commit-message:
-      prefix: 'NX-APPBUILDER-TEMPLATE'
+      prefix: 'NX-APPBUILDER-APP-TEMPLATE'
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+  - package-ecosystem: 'npm'
+    directory: '/packages/nx-appbuilder/src/generators/preset/template-package'
+    schedule:
+      interval: 'monthly'
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'NX-APPBUILDER-PRESET-TEMPLATE'
     groups:
       minor-and-patch:
         applies-to: version-updates

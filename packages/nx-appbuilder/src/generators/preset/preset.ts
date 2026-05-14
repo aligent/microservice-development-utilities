@@ -7,10 +7,25 @@ import {
     type Tree,
 } from '@nx/devkit';
 import * as path from 'path';
+import { loadTemplatePackage, pickVersions } from '../helpers/template-package';
 import { NX_JSON } from './nx-json';
 import type { PresetGeneratorSchema } from './schema';
 
 const DEFAULT_NODE_VERSION = '24.0.1';
+
+const TEMPLATE = loadTemplatePackage(__dirname);
+
+const WORKSPACE_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
+    '@aligent/ts-code-standards',
+    '@nx/eslint',
+    '@nx/js',
+    '@nx/vitest',
+    'eslint',
+    'nx',
+    'prettier',
+    'typescript',
+    'vitest',
+]);
 
 /**
  * Preset generator invoked by `create-nx-workspace --preset=@aligent/nx-appbuilder`.
@@ -44,6 +59,20 @@ export default async function presetGenerator(tree: Tree, options: PresetGenerat
  * devDependencies so the lockfile written by create-nx-workspace stays in sync
  * with what the preset declares — otherwise npm fails the post-preset install
  * with an arborist "must provide string spec" error.
+ *
+ * Most devDependency versions are sourced from `template-package/package.json`
+ * (a real package.json that Dependabot watches). The self-version of
+ * `@aligent/nx-appbuilder` is read from the generator's own package.json since
+ * Dependabot can't track that.
+ *
+ * Notes on why each dep is pinned at the workspace root:
+ * - `@aligent/ts-code-standards` is resolved by the workspace tsconfig's
+ *   `extends` line and by every generated app's tsconfig chain.
+ * - The `@nx/*` plugin packages need to be installed at the workspace root so
+ *   the plugins declared in nx.json can load.
+ * - `eslint` and `prettier` are also declared at the app level (so each app is
+ *   self-sufficient), but pinning here ensures npm workspaces hoists a single
+ *   shared version.
  */
 function buildWorkspacePackageJson(name: string, nodeVersion: string) {
     const major = nodeVersion.split('.')[0];
@@ -64,23 +93,15 @@ function buildWorkspacePackageJson(name: string, nodeVersion: string) {
             'build:all': 'nx run-many -t build',
         },
         workspaces: [],
-        devDependencies: {
+        devDependencies: sortObject({
             '@aligent/nx-appbuilder': getGeneratorVersion(),
-            // Resolved by the workspace's tsconfig.json's `extends` line and
-            // by every generated app's tsconfig chain. Pinned at the workspace
-            // root so all apps share one resolution.
-            '@aligent/ts-code-standards': '^4.2.0',
-            // The @nx plugin packages need to be installed at the workspace
-            // root so the plugins declared in nx.json can actually load.
-            '@nx/eslint': '^22.4.5',
-            '@nx/js': '^22.4.5',
-            '@nx/vitest': '^22.4.5',
-            eslint: '^9.0.0',
-            nx: '^22.4.5',
-            typescript: '^5.8.3',
-            vitest: '^2.1.8',
-        },
+            ...WORKSPACE_DEV_DEPS,
+        }),
     };
+}
+
+function sortObject(obj: Record<string, string>): Record<string, string> {
+    return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 function getGeneratorVersion(): string {

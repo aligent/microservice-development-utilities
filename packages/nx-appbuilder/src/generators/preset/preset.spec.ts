@@ -46,6 +46,22 @@ describe('preset generator', () => {
             expect(pkg.devDependencies['@nx/vitest']).toBeDefined();
         });
 
+        it('declares eslint and prettier so workspace-level lint scripts resolve', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const pkg = readJson(tree, 'package.json');
+
+            expect(pkg.devDependencies.eslint).toBeDefined();
+            expect(pkg.devDependencies.prettier).toBeDefined();
+        });
+
+        it('sorts devDependencies alphabetically', async () => {
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const pkg = readJson(tree, 'package.json');
+            const keys = Object.keys(pkg.devDependencies);
+
+            expect(keys).toEqual([...keys].sort((a, b) => a.localeCompare(b)));
+        });
+
         it('emits the canonical workspace scripts', async () => {
             await presetGenerator(tree, { name: 'acme-apps' });
             const pkg = readJson(tree, 'package.json');

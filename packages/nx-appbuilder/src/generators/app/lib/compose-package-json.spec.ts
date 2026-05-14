@@ -80,6 +80,14 @@ describe('writePackageJson', () => {
                 vitest: expect.any(String),
             });
         });
+
+        it('declares eslint and prettier so the app-level lint script resolves them', () => {
+            writePackageJson(tree, makeOptions());
+            const pkg = readPackageJson(tree);
+
+            expect(pkg.devDependencies.eslint).toBeDefined();
+            expect(pkg.devDependencies.prettier).toBeDefined();
+        });
     });
 
     describe('script ordering', () => {
