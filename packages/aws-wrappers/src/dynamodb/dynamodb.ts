@@ -73,7 +73,9 @@ export class DynamoDBService {
      * @template T - Expected unmarshalled item shape.
      * @returns The item, or `undefined` if not found.
      */
-    async getItem<T = Record<string, unknown>>(input: GetCommandInput): Promise<T | undefined> {
+    async getItem<T extends Record<string, unknown> = Record<string, unknown>>(
+        input: GetCommandInput
+    ): Promise<T | undefined> {
         this.logger.info('Getting DynamoDB item', { input });
         const response = await this.client.send(new GetCommand(input));
         return response.Item as T | undefined;
@@ -100,7 +102,7 @@ export class DynamoDBService {
      * - `UPDATED_OLD` / `UPDATED_NEW`: only updated attributes (partial).
      * @template T - Expected shape of the returned `Attributes`.
      */
-    async updateItem<T = Record<string, unknown>>(
+    async updateItem<T extends Record<string, unknown> = Record<string, unknown>>(
         input: UpdateCommandInput
     ): Promise<Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: T }> {
         this.logger.info('Updating DynamoDB item', { input });
@@ -113,7 +115,7 @@ export class DynamoDBService {
      * typed as `T` — relevant when `ReturnValues: 'ALL_OLD'` is set.
      * @template T - Expected shape of the returned `Attributes`.
      */
-    async deleteItem<T = Record<string, unknown>>(
+    async deleteItem<T extends Record<string, unknown> = Record<string, unknown>>(
         input: DeleteCommandInput
     ): Promise<Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: T }> {
         this.logger.info('Deleting DynamoDB item', { input });
@@ -127,7 +129,7 @@ export class DynamoDBService {
      * (`LastEvaluatedKey`, `Count`, etc.).
      * @template T - Expected shape of each unmarshalled item.
      */
-    async query<T = Record<string, unknown>>(
+    async query<T extends Record<string, unknown> = Record<string, unknown>>(
         input: QueryCommandInput
     ): Promise<Omit<QueryCommandOutput, 'Items'> & { Items?: T[] }> {
         this.logger.info('Querying DynamoDB', { input });
@@ -154,7 +156,7 @@ export class DynamoDBService {
      *
      * @template T - Expected shape of each unmarshalled item.
      */
-    async scan<T = Record<string, unknown>>(
+    async scan<T extends Record<string, unknown> = Record<string, unknown>>(
         input: ScanCommandInput
     ): Promise<Omit<ScanCommandOutput, 'Items'> & { Items?: T[] }> {
         this.logger.info('Scanning DynamoDB', { input });
@@ -201,7 +203,9 @@ export class DynamoDBService {
      * Paginate over Query results, yielding one unmarshalled item at a time.
      * @template T - Expected shape of each yielded item.
      */
-    async *paginateItems<T = Record<string, unknown>>(input: QueryCommandInput): AsyncGenerator<T> {
+    async *paginateItems<T extends Record<string, unknown> = Record<string, unknown>>(
+        input: QueryCommandInput
+    ): AsyncGenerator<T> {
         this.logger.info('Paginating DynamoDB query', { input });
         const paginator = paginateQuery({ client: this.client }, input);
         for await (const page of paginator) {
@@ -214,7 +218,9 @@ export class DynamoDBService {
      * Paginate over Scan results, yielding one unmarshalled item at a time.
      * @template T - Expected shape of each yielded item.
      */
-    async *paginateScan<T = Record<string, unknown>>(input: ScanCommandInput): AsyncGenerator<T> {
+    async *paginateScan<T extends Record<string, unknown> = Record<string, unknown>>(
+        input: ScanCommandInput
+    ): AsyncGenerator<T> {
         this.logger.info('Paginating DynamoDB scan', { input });
         const paginator = paginateScan({ client: this.client }, input);
         for await (const page of paginator) {

@@ -64,7 +64,7 @@ If you find yourself wanting a third exception, raise it with the user first —
   - Methods that return a single item or yield items (`getItem`, `paginateItems`, `paginateScan`): `Promise<T | undefined>` / `AsyncGenerator<T>`.
   - Methods that return the full command output (`query`, `scan`, `updateItem`, `deleteItem`): preserve the output and generically type only the data-bearing field (`Items?: T[]`, `Attributes?: T`).
   - `batchGet` is intentionally **not** generic — multi-table `Responses` can't be soundly described by a single `T`. Document this in TSDoc whenever the method is touched.
-  - All generics default to `T = Record<string, unknown>` so callers can omit them.
+  - All generics default to `T extends Record<string, unknown> = Record<string, unknown>` so callers can omit them.
 
 ## Adding a new service
 
@@ -101,7 +101,7 @@ Don't write code until each of these is answered. Defaults in **bold**.
   - For methods that return a single data-bearing item — return generic `T | undefined` (**default**).
   - For methods that return command output with metadata — preserve the output, generic on the data-bearing field (`Items?: T[]`, `Attributes?: T`).
   - For multi-shape responses (cf. DynamoDB `batchGet`) — **not generic**, document why in TSDoc.
-  - Default the generic to `T = Record<string, unknown>` so callers can omit it.
+  - Default the generic to `T extends Record<string, unknown> = Record<string, unknown>` so callers can omit it.
 - **Logging shape**: does the input contain anything sensitive (credentials, large payloads, message bodies)? If yes, follow the documented exception pattern (`{ Bucket, Key }`, `{ entryCount, ... }`). Default to `{ input }`.
 - **Error semantics**: any operations where the wrapper should retry, swallow, or surface differently than the SDK? Capture the rationale in TSDoc. Examples already in this package: `batchWrite` (retry `UnprocessedItems`), `getSecret` (throw on missing `SecretString`).
 - **Input shape**: pass-through SDK input (**default**) or a tight `Required<Pick<...>>` projection (the S3 pattern)? Tight shape is appropriate when the SDK has many rarely-used optional fields and exposing them noises up TS errors.
