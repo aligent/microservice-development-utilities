@@ -8,11 +8,16 @@ import {
     PutObjectCommand,
     S3Client,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { sdkStreamMixin } from '@smithy/util-stream';
 import { mockClient } from 'aws-sdk-client-mock';
 import { Readable } from 'stream';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { S3Service } from './s3';
+
+vi.mock('@aws-sdk/s3-request-presigner', () => ({
+    getSignedUrl: vi.fn(),
+}));
 
 const s3Mock = mockClient(S3Client);
 const Bucket = 'my-bucket';
@@ -174,6 +179,51 @@ describe('S3Service', () => {
             const items = await service.getAllObjects<{ id: number }>(Bucket);
 
             expect(items.map(i => i.id)).toEqual([1, 2, 3]);
+        });
+    });
+
+    describe('getPresignedUrl', () => {
+        afterEach(() => {
+            vi.mocked(getSignedUrl).mockReset();
+        });
+
+        it('returns a GET signed URL with attachment Content-Disposition', async () => {
+            vi.mocked(getSignedUrl).mockResolvedValueOnce('https://signed/get');
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const url = await service.getPresignedUrl({ Bucket, Key: 'k', action: 'get' });
+
+            expect(url).toBe('https://signed/get');
+            const [, command, opts] = vi.mocked(getSignedUrl).mock.calls[0] ?? [];
+            expect(command).toBeInstanceOf(GetObjectCommand);
+            expect((command as GetObjectCommand).input).toEqual({
+                Bucket,
+                Key: 'k',
+                ResponseContentDisposition: 'attachment',
+            });
+            expect(opts?.expiresIn).toBe(3600);
+        });
+
+        it('returns a PUT signed URL without ResponseContentDisposition', async () => {
+            vi.mocked(getSignedUrl).mockResolvedValueOnce('https://signed/put');
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const url = await service.getPresignedUrl({ Bucket, Key: 'k', action: 'put' });
+
+            expect(url).toBe('https://signed/put');
+            const [, command] = vi.mocked(getSignedUrl).mock.calls[0] ?? [];
+            expect(command).toBeInstanceOf(PutObjectCommand);
+            expect((command as PutObjectCommand).input).toEqual({ Bucket, Key: 'k' });
+        });
+
+        it('forwards a custom expiresIn', async () => {
+            vi.mocked(getSignedUrl).mockResolvedValueOnce('https://signed/custom');
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await service.getPresignedUrl({ Bucket, Key: 'k', action: 'get', expiresIn: 120 });
+
+            const [, , opts] = vi.mocked(getSignedUrl).mock.calls[0] ?? [];
+            expect(opts?.expiresIn).toBe(120);
         });
     });
 

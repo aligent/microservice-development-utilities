@@ -20,7 +20,10 @@ import {
     PutObjectCommandOutput,
     S3Client,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+
+const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
 const DELETE_OBJECTS_BATCH_LIMIT = 1000;
 
@@ -191,6 +194,41 @@ export class S3Service {
             }
         }
         return bodies;
+    }
+
+    /**
+     * Generate a presigned URL that callers can use to GET or PUT an S3 object
+     * directly, without going through the wrapper. The signing happens against
+     * the wrapper's `S3Client`, so callers do not need their own client.
+     *
+     * GET URLs are signed with `ResponseContentDisposition: 'attachment'` so
+     * browsers download the object rather than rendering it in-place.
+     *
+     * @param input.Bucket - The S3 bucket name.
+     * @param input.Key - The S3 object key.
+     * @param input.action - `'get'` to download, `'put'` to upload.
+     * @param input.expiresIn - URL lifetime in seconds. Defaults to 3600 (1 hour).
+     */
+    async getPresignedUrl(input: {
+        Bucket: string;
+        Key: string;
+        action: 'get' | 'put';
+        expiresIn?: number;
+    }): Promise<string> {
+        this.logger.info('Generating S3 presigned URL', {
+            input: { Bucket: input.Bucket, Key: input.Key, action: input.action },
+        });
+        const command =
+            input.action === 'get'
+                ? new GetObjectCommand({
+                      Bucket: input.Bucket,
+                      Key: input.Key,
+                      ResponseContentDisposition: 'attachment',
+                  })
+                : new PutObjectCommand({ Bucket: input.Bucket, Key: input.Key });
+        return getSignedUrl(this.client, command, {
+            expiresIn: input.expiresIn ?? DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS,
+        });
     }
 
     /**

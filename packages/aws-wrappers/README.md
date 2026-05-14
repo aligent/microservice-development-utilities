@@ -51,6 +51,20 @@ const items = await s3.getAllObjects<MyType>('my-bucket', 'prefix/');
 
 await s3.copyObject({ Bucket: 'dest', Key: 'dest-key', CopySource: 'src/src-key' });
 
+// Presigned URLs for direct browser-side download / upload.
+// expiresIn defaults to 3600 seconds.
+const downloadUrl = await s3.getPresignedUrl({
+    Bucket: 'my-bucket',
+    Key: 'file.txt',
+    action: 'get',
+});
+const uploadUrl = await s3.getPresignedUrl({
+    Bucket: 'my-bucket',
+    Key: 'file.txt',
+    action: 'put',
+    expiresIn: 600,
+});
+
 await s3.deleteObject({ Bucket: 'my-bucket', Key: 'file.txt' });
 await s3.deleteObjects('my-bucket', ['key1', 'key2']); // auto-chunked to 1000 keys per request
 await s3.emptyBucket('my-bucket');                     // streams the listing + delegates each page to deleteObjects
