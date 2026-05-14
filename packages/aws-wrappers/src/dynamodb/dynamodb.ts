@@ -138,6 +138,20 @@ export class DynamoDBService {
     /**
      * Scan a DynamoDB table. The full `ScanCommandOutput` is returned with
      * `Items` typed as `T[]` so callers retain pagination metadata.
+     *
+     * Scan reads every item in the table, so cost and latency grow linearly
+     * with table size; it is rarely the right tool in a runtime service.
+     * Prefer, in order:
+     *
+     *   1. `query` with the table's partition key.
+     *   2. `query` against a GSI or LSI whose key matches your access pattern.
+     *   3. A sparse GSI populated only for the items you need to enumerate.
+     *   4. A denormalised lookup item or table maintained on write.
+     *
+     * Legitimate scan use cases are mostly one-off admin work (export,
+     * migration, audit). For those, prefer the AWS CLI or Console rather than
+     * embedding a scan in a Lambda.
+     *
      * @template T - Expected shape of each unmarshalled item.
      */
     async scan<T = Record<string, unknown>>(
