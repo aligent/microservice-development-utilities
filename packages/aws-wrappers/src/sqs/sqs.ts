@@ -44,9 +44,19 @@ export class SQSService {
 
     /**
      * Send a single message to an SQS queue.
+     *
+     * The log line omits `MessageBody` and `MessageAttributes` to avoid
+     * leaking payload content — only queue routing / FIFO metadata is logged.
      */
     async sendMessage(input: SendMessageCommandInput): Promise<SendMessageCommandOutput> {
-        this.logger.info('Sending SQS message', { input });
+        this.logger.info('Sending SQS message', {
+            input: {
+                QueueUrl: input.QueueUrl,
+                DelaySeconds: input.DelaySeconds,
+                MessageGroupId: input.MessageGroupId,
+                MessageDeduplicationId: input.MessageDeduplicationId,
+            },
+        });
         return this.client.send(new SendMessageCommand(input));
     }
 

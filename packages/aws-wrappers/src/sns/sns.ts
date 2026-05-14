@@ -34,10 +34,24 @@ export class SNSService {
 
     /**
      * Publish a single message to an SNS topic.
+     *
+     * The log line omits `Message`, `Subject`, `MessageAttributes`, and
+     * `PhoneNumber` to avoid leaking payload, user-visible content (subjects
+     * often carry order numbers, customer names, etc.), or PII recipient
+     * identifiers — only routing / dedup metadata is logged.
+     *
      * @param input - PublishCommandInput including TopicArn and Message.
      */
     async publish(input: PublishCommandInput): Promise<PublishCommandOutput> {
-        this.logger.info('Publishing SNS message', { input });
+        this.logger.info('Publishing SNS message', {
+            input: {
+                TopicArn: input.TopicArn,
+                TargetArn: input.TargetArn,
+                MessageStructure: input.MessageStructure,
+                MessageGroupId: input.MessageGroupId,
+                MessageDeduplicationId: input.MessageDeduplicationId,
+            },
+        });
         return this.client.send(new PublishCommand(input));
     }
 

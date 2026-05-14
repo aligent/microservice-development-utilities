@@ -43,9 +43,13 @@ constructor(opts?: { logger?: Logger; client?: <ServiceClient> })
 Every public method emits exactly one `logger.info('<verb> <noun>', { input })` line at the start.
 
 - Uniform `{ input }` shape so log lines are predictable to grep and to scrub.
-- Two documented exceptions, both for the same reason (avoid logging sensitive/large payloads):
+- Documented exceptions, all for the same reason (avoid logging sensitive/large payloads):
   - `S3.putObject` / `S3.putJsonObject` log `{ input: { Bucket, Key } }`, omitting `Body`.
   - Batch methods that chunk (`S3.deleteObjects`, `SQS.sendMessageBatch` / `deleteMessageBatch`, `SNS.publishBatch`) log `{ input: { Bucket/QueueUrl/TopicArn, keyCount/entryCount } }`, omitting the full array.
+  - `SNS.publish` logs routing / dedup metadata only (`TopicArn`, `TargetArn`, `MessageStructure`, `MessageGroupId`, `MessageDeduplicationId`), omitting `Message`, `Subject`, `MessageAttributes`, and `PhoneNumber`.
+  - `SQS.sendMessage` logs routing / FIFO metadata only (`QueueUrl`, `DelaySeconds`, `MessageGroupId`, `MessageDeduplicationId`), omitting `MessageBody` and `MessageAttributes`.
+  - `SecretsManager` write methods log identity + non-secret metadata only, omitting `SecretString` / `SecretBinary`.
+  - `SSM.putParameter` logs identity + tiering metadata only, omitting `Value`.
 
 If you find yourself wanting a third exception, raise it with the user first — the goal is predictability.
 
