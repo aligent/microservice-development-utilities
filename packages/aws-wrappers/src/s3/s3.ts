@@ -28,18 +28,29 @@ const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
 const DELETE_OBJECTS_BATCH_LIMIT = 1000;
 
+/** Tight wrapper input type for `putObject`. */
+type PutObjectInput = Required<Pick<PutObjectCommandInput, 'Bucket' | 'Key' | 'Body'>>;
+
+/** Tight wrapper input type for `putJsonObject`. */
+type PutJsonObjectInput<T> = {
+    Bucket: string;
+    Key: string;
+    Body: T;
+    Metadata?: Record<string, string>;
+};
+
 /**
  * Fields safe to log at INFO for `putObject`. Omits `Body` (object payload).
  * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
-const PUT_OBJECT_SAFE_FIELDS: ReadonlyArray<'Bucket' | 'Key'> = ['Bucket', 'Key'];
+const PUT_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutObjectInput> = ['Bucket', 'Key'];
 
 /**
  * Fields safe to log at INFO for `putJsonObject`. Omits `Body` (the
  * unserialised JSON payload). `Metadata` is included (operational labels).
  * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
-const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<'Bucket' | 'Key' | 'Metadata'> = [
+const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknown>> = [
     'Bucket',
     'Key',
     'Metadata',
@@ -77,9 +88,7 @@ export class S3Service {
      *
      * @param input - Bucket, Key, and Body of the object to store.
      */
-    async putObject(
-        input: Required<Pick<PutObjectCommandInput, 'Bucket' | 'Key' | 'Body'>>
-    ): Promise<PutObjectCommandOutput> {
+    async putObject(input: PutObjectInput): Promise<PutObjectCommandOutput> {
         this.logger.info('Putting S3 object', {
             input: filterFieldsForLogLevel(this.logger, input, PUT_OBJECT_SAFE_FIELDS),
         });
@@ -95,12 +104,7 @@ export class S3Service {
      *
      * @template T - Type of the value being stored.
      */
-    async putJsonObject<T>(input: {
-        Bucket: string;
-        Key: string;
-        Body: T;
-        Metadata?: Record<string, string>;
-    }): Promise<PutObjectCommandOutput> {
+    async putJsonObject<T>(input: PutJsonObjectInput<T>): Promise<PutObjectCommandOutput> {
         this.logger.info('Putting S3 JSON object', {
             input: filterFieldsForLogLevel(this.logger, input, PUT_JSON_OBJECT_SAFE_FIELDS),
         });
