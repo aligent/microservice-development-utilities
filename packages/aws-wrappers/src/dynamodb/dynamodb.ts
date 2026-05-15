@@ -77,7 +77,8 @@ const UPDATE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof UpdateCommandInput> = [
 ];
 
 /**
- * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`.
+ * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`
+ * (the latter binds to ConditionExpression and may carry PII).
  * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [

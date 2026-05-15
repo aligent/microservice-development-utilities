@@ -191,13 +191,20 @@ describe('DynamoDBService', () => {
             expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Key');
         });
 
-        it('putItem omits Item from the INFO log', async () => {
+        it('putItem omits Item and ExpressionAttributeValues from the INFO log', async () => {
             ddbMock.on(PutCommand).resolves({});
             const { service, infoSpy } = buildLoggedService();
 
-            await service.putItem({ TableName, Item: { pk: 'a', email: 'pii@example.com' } });
+            await service.putItem({
+                TableName,
+                Item: { pk: 'a', email: 'pii@example.com' },
+                ConditionExpression: 'attribute_not_exists(pk) AND email <> :forbidden',
+                ExpressionAttributeValues: { ':forbidden': 'banned@example.com' },
+            });
 
-            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Item');
+            const logged = loggedInputFrom(infoSpy);
+            expect(logged).not.toHaveProperty('Item');
+            expect(logged).not.toHaveProperty('ExpressionAttributeValues');
         });
 
         it('updateItem omits Key and ExpressionAttributeValues from the INFO log', async () => {
@@ -216,13 +223,20 @@ describe('DynamoDBService', () => {
             expect(logged).not.toHaveProperty('ExpressionAttributeValues');
         });
 
-        it('deleteItem omits Key from the INFO log', async () => {
+        it('deleteItem omits Key and ExpressionAttributeValues from the INFO log', async () => {
             ddbMock.on(DeleteCommand).resolves({});
             const { service, infoSpy } = buildLoggedService();
 
-            await service.deleteItem({ TableName, Key: { pk: 'a' } });
+            await service.deleteItem({
+                TableName,
+                Key: { pk: 'a' },
+                ConditionExpression: 'email = :e',
+                ExpressionAttributeValues: { ':e': 'pii@example.com' },
+            });
 
-            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Key');
+            const logged = loggedInputFrom(infoSpy);
+            expect(logged).not.toHaveProperty('Key');
+            expect(logged).not.toHaveProperty('ExpressionAttributeValues');
         });
 
         it('query omits ExpressionAttributeValues from the INFO log', async () => {
