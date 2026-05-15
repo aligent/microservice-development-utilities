@@ -40,18 +40,31 @@ constructor(opts?: { logger?: Logger; client?: <ServiceClient> })
 
 ### Logging
 
-Every public method emits exactly one `logger.info('<verb> <noun>', { input })` line at the start.
+Every public method emits exactly one `logger.info('<verb> <noun>', { input })` line at the start. The shape of `input` is **level-driven**:
 
-- Uniform `{ input }` shape so log lines are predictable to grep and to scrub.
-- Documented exceptions, all for the same reason (avoid logging sensitive/large payloads):
-  - `S3.putObject` / `S3.putJsonObject` log `{ input: { Bucket, Key } }`, omitting `Body`.
-  - Batch methods that chunk (`S3.deleteObjects`, `SQS.sendMessageBatch` / `deleteMessageBatch`, `SNS.publishBatch`) log `{ input: { Bucket/QueueUrl/TopicArn, keyCount/entryCount } }`, omitting the full array.
-  - `SNS.publish` logs routing / dedup metadata only (`TopicArn`, `TargetArn`, `MessageStructure`, `MessageGroupId`, `MessageDeduplicationId`), omitting `Message`, `Subject`, `MessageAttributes`, and `PhoneNumber`.
-  - `SQS.sendMessage` logs routing / FIFO metadata only (`QueueUrl`, `DelaySeconds`, `MessageGroupId`, `MessageDeduplicationId`), omitting `MessageBody` and `MessageAttributes`.
-  - `SecretsManager` write methods log identity + non-secret metadata only, omitting `SecretString` / `SecretBinary`.
-  - `SSM.putParameter` logs identity + tiering metadata only, omitting `Value`.
+- At `DEBUG` (e.g. `POWERTOOLS_LOG_LEVEL=DEBUG`), the full SDK input is logged. Operators have explicitly opted into seeing payloads, secret material, and PII.
+- At any other level, only a per-method **safe-fields allowlist** is logged.
 
-If you find yourself wanting a third exception, raise it with the user first — the goal is predictability.
+The mechanism is `filterFieldsForLogLevel(logger, input, SAFE_FIELDS)` in `src/util/redact.ts`. Internal-only helper, not exported from `src/index.ts`.
+
+#### Conventions for the allowlist
+
+- **Module-level constant per method**, typed as `ReadonlyArray<keyof CommandInput>`, named `<METHOD>_SAFE_FIELDS`. TSDoc explains what's omitted and why.
+- **Targeted application** — only methods where there's an actual omission use the helper. Methods whose input is already a tight `Required<Pick<...>>` or contains no sensitive fields (e.g. `S3.getObject`, `SFN.listExecutions`) keep their current `{ input }` shape.
+- **Maximal safe set** — include every field *except* known payload, secret, or PII carriers. The level-based design provides the safety valve; the INFO log should still be operationally useful.
+- **Batch methods stay bespoke** — methods that already compute a derived field (e.g. `entryCount`, `keyCount`, `tables`) inline the DEBUG check directly rather than using `filterFieldsForLogLevel`, since the helper only picks input keys and can't synthesise computed fields. A comment explains why.
+
+#### Currently redacted
+
+- **S3** — `putObject` / `putJsonObject` omit `Body`. Batch methods (`deleteObjects`, `emptyBucket`) log `{ bucket, keyCount }`.
+- **SNS** — `publish` omits `Message`, `Subject`, `MessageAttributes`, `PhoneNumber`. `publishBatch` logs `{ TopicArn, entryCount }`.
+- **SQS** — `sendMessage` omits `MessageBody`, `MessageAttributes`. Batch methods log `{ QueueUrl, entryCount }`.
+- **DynamoDB** — `getItem` / `deleteItem` omit `Key`. `putItem` omits `Item`. `updateItem` omits `Key` and `ExpressionAttributeValues`. `query` / `scan` / `paginateItems` / `paginateScan` omit `ExpressionAttributeValues`. `batchGet` / `batchWrite` log `{ tables: Object.keys(RequestItems) }` only.
+- **SecretsManager** — write methods omit `SecretString` / `SecretBinary`.
+- **SSM** — `putParameter` omits `Value`.
+- **SFN** — `startExecution` omits the execution `input` (often carries PII).
+
+Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc, wire `filterFieldsForLogLevel(this.logger, input, FIELDS)` into the `logger.info` call, and add a single `expect(loggedInput).not.toHaveProperty('<sensitive>')` test against an INFO-level logger to lock in the security property.
 
 ### Patterns
 
