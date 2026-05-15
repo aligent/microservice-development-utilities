@@ -1,3 +1,4 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
     BatchGetCommand,
@@ -161,6 +162,67 @@ describe('DynamoDBService', () => {
                 RequestItems: { [TableName]: { Keys: [{ pk: 'a' }] } },
             });
             expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(1);
+        });
+    });
+
+    describe('single-item log shape', () => {
+        const buildLoggedService = () => {
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+            return { service, infoSpy };
+        };
+
+        const loggedInputFrom = (spy: ReturnType<typeof vi.spyOn>) => {
+            const [, payload] = spy.mock.calls[0] ?? [];
+            return (payload as { input: object }).input;
+        };
+
+        it('getItem omits Key from the INFO log', async () => {
+            ddbMock.on(GetCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.getItem({ TableName, Key: { pk: 'customer-123' } });
+
+            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Key');
+        });
+
+        it('putItem omits Item from the INFO log', async () => {
+            ddbMock.on(PutCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.putItem({ TableName, Item: { pk: 'a', email: 'pii@example.com' } });
+
+            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Item');
+        });
+
+        it('updateItem omits Key and ExpressionAttributeValues from the INFO log', async () => {
+            ddbMock.on(UpdateCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.updateItem({
+                TableName,
+                Key: { pk: 'a' },
+                UpdateExpression: 'SET email = :e',
+                ExpressionAttributeValues: { ':e': 'pii@example.com' },
+            });
+
+            const logged = loggedInputFrom(infoSpy);
+            expect(logged).not.toHaveProperty('Key');
+            expect(logged).not.toHaveProperty('ExpressionAttributeValues');
+        });
+
+        it('deleteItem omits Key from the INFO log', async () => {
+            ddbMock.on(DeleteCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.deleteItem({ TableName, Key: { pk: 'a' } });
+
+            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Key');
         });
     });
 

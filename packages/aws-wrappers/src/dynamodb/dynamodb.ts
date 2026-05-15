@@ -29,9 +29,66 @@ import {
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
+
+/**
+ * Fields safe to log at INFO. Omits `Key` (may carry customer IDs / tenant IDs).
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const GET_ITEM_SAFE_FIELDS: ReadonlyArray<keyof GetCommandInput> = [
+    'TableName',
+    'ConsistentRead',
+    'ProjectionExpression',
+    'ReturnConsumedCapacity',
+    'ExpressionAttributeNames',
+];
+
+/**
+ * Fields safe to log at INFO. Omits `Item` (the payload itself) and
+ * `ExpressionAttributeValues` (values bound to ConditionExpression, often PII).
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const PUT_ITEM_SAFE_FIELDS: ReadonlyArray<keyof PutCommandInput> = [
+    'TableName',
+    'ConditionExpression',
+    'ExpressionAttributeNames',
+    'ReturnValues',
+    'ReturnConsumedCapacity',
+    'ReturnItemCollectionMetrics',
+    'ReturnValuesOnConditionCheckFailure',
+];
+
+/**
+ * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`.
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const UPDATE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof UpdateCommandInput> = [
+    'TableName',
+    'UpdateExpression',
+    'ConditionExpression',
+    'ExpressionAttributeNames',
+    'ReturnValues',
+    'ReturnConsumedCapacity',
+    'ReturnItemCollectionMetrics',
+    'ReturnValuesOnConditionCheckFailure',
+];
+
+/**
+ * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`.
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [
+    'TableName',
+    'ConditionExpression',
+    'ExpressionAttributeNames',
+    'ReturnValues',
+    'ReturnConsumedCapacity',
+    'ReturnItemCollectionMetrics',
+    'ReturnValuesOnConditionCheckFailure',
+];
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const backoffDelay = (attempt: number) => {
@@ -76,7 +133,9 @@ export class DynamoDBService {
     async getItem<T extends Record<string, unknown> = Record<string, unknown>>(
         input: GetCommandInput
     ): Promise<T | undefined> {
-        this.logger.info('Getting DynamoDB item', { input });
+        this.logger.info('Getting DynamoDB item', {
+            input: filterFieldsForLogLevel(this.logger, input, GET_ITEM_SAFE_FIELDS),
+        });
         const response = await this.client.send(new GetCommand(input));
         return response.Item as T | undefined;
     }
@@ -89,7 +148,13 @@ export class DynamoDBService {
     async putItem<T>(
         input: Omit<PutCommandInput, 'Item'> & { Item: T }
     ): Promise<PutCommandOutput> {
-        this.logger.info('Putting DynamoDB item', { input });
+        this.logger.info('Putting DynamoDB item', {
+            input: filterFieldsForLogLevel(
+                this.logger,
+                input as PutCommandInput,
+                PUT_ITEM_SAFE_FIELDS
+            ),
+        });
         return this.client.send(new PutCommand(input as PutCommandInput));
     }
 
@@ -105,7 +170,9 @@ export class DynamoDBService {
     async updateItem<T extends Record<string, unknown> = Record<string, unknown>>(
         input: UpdateCommandInput
     ): Promise<Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: T }> {
-        this.logger.info('Updating DynamoDB item', { input });
+        this.logger.info('Updating DynamoDB item', {
+            input: filterFieldsForLogLevel(this.logger, input, UPDATE_ITEM_SAFE_FIELDS),
+        });
         const response = await this.client.send(new UpdateCommand(input));
         return response as Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: T };
     }
@@ -118,7 +185,9 @@ export class DynamoDBService {
     async deleteItem<T extends Record<string, unknown> = Record<string, unknown>>(
         input: DeleteCommandInput
     ): Promise<Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: T }> {
-        this.logger.info('Deleting DynamoDB item', { input });
+        this.logger.info('Deleting DynamoDB item', {
+            input: filterFieldsForLogLevel(this.logger, input, DELETE_ITEM_SAFE_FIELDS),
+        });
         const response = await this.client.send(new DeleteCommand(input));
         return response as Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: T };
     }
