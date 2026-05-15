@@ -131,13 +131,19 @@ describe('SecretsManagerService', () => {
             return (payload as { input: object }).input;
         };
 
-        it('createSecret omits SecretString from the INFO log', async () => {
+        it('createSecret omits SecretString and SecretBinary from the INFO log', async () => {
             secretsMock.on(CreateSecretCommand).resolves({});
             const { service, infoSpy } = buildLoggedService();
 
-            await service.createSecret({ Name: 'n', SecretString: 'shh' });
+            await service.createSecret({
+                Name: 'n',
+                SecretString: 'shh',
+                SecretBinary: new TextEncoder().encode('binary-shh'),
+            });
 
-            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('SecretString');
+            const logged = loggedInputFrom(infoSpy);
+            expect(logged).not.toHaveProperty('SecretString');
+            expect(logged).not.toHaveProperty('SecretBinary');
         });
 
         it('updateSecret omits SecretString from the INFO log', async () => {

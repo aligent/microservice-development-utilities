@@ -25,6 +25,14 @@ describe('filterFieldsForLogLevel', () => {
         expect(result).toEqual(input);
     });
 
+    it('returns the safe subset at WARN level too (only DEBUG unlocks)', () => {
+        const input = { TopicArn: 'arn', Message: 'shh' };
+
+        const result = filterFieldsForLogLevel(buildLogger('WARN'), input, ['TopicArn']);
+
+        expect(result).toEqual({ TopicArn: 'arn' });
+    });
+
     it('skips safe fields that are absent from the input', () => {
         const input: { TopicArn: string; Subject?: string } = { TopicArn: 'arn' };
 
