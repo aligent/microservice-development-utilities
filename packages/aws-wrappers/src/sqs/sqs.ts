@@ -20,8 +20,21 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact';
 
 const SQS_BATCH_LIMIT = 10;
+
+/**
+ * Fields safe to log at INFO level for `sendMessage`. Omits `MessageBody` and
+ * `MessageAttributes` — both carry payload content.
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
+    'QueueUrl',
+    'DelaySeconds',
+    'MessageGroupId',
+    'MessageDeduplicationId',
+];
 
 /**
  * Wrapper around the AWS SQS client providing structured Powertools logging
@@ -45,17 +58,13 @@ export class SQSService {
     /**
      * Send a single message to an SQS queue.
      *
-     * The log line omits `MessageBody` and `MessageAttributes` to avoid
-     * leaking payload content — only queue routing / FIFO metadata is logged.
+     * At INFO level the log line includes only queue routing / FIFO metadata;
+     * see `SEND_MESSAGE_SAFE_FIELDS`. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
+     * full input.
      */
     async sendMessage(input: SendMessageCommandInput): Promise<SendMessageCommandOutput> {
         this.logger.info('Sending SQS message', {
-            input: {
-                QueueUrl: input.QueueUrl,
-                DelaySeconds: input.DelaySeconds,
-                MessageGroupId: input.MessageGroupId,
-                MessageDeduplicationId: input.MessageDeduplicationId,
-            },
+            input: filterFieldsForLogLevel(this.logger, input, SEND_MESSAGE_SAFE_FIELDS),
         });
         return this.client.send(new SendMessageCommand(input));
     }

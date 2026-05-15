@@ -10,8 +10,23 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact';
 
 const PUBLISH_BATCH_LIMIT = 10;
+
+/**
+ * Fields safe to log at INFO level for `publish`. Omits `Message`, `Subject`,
+ * `MessageAttributes`, and `PhoneNumber` — payloads, user-visible content
+ * (subjects often carry order numbers / customer names), and PII recipient
+ * identifiers. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
+    'TopicArn',
+    'TargetArn',
+    'MessageStructure',
+    'MessageGroupId',
+    'MessageDeduplicationId',
+];
 
 /**
  * Wrapper around the AWS SNS client providing structured Powertools logging
@@ -35,22 +50,15 @@ export class SNSService {
     /**
      * Publish a single message to an SNS topic.
      *
-     * The log line omits `Message`, `Subject`, `MessageAttributes`, and
-     * `PhoneNumber` to avoid leaking payload, user-visible content (subjects
-     * often carry order numbers, customer names, etc.), or PII recipient
-     * identifiers — only routing / dedup metadata is logged.
+     * At INFO level the log line includes only routing / dedup metadata; see
+     * `PUBLISH_SAFE_FIELDS` for the list. Setting `POWERTOOLS_LOG_LEVEL=DEBUG`
+     * unlocks the full input.
      *
      * @param input - PublishCommandInput including TopicArn and Message.
      */
     async publish(input: PublishCommandInput): Promise<PublishCommandOutput> {
         this.logger.info('Publishing SNS message', {
-            input: {
-                TopicArn: input.TopicArn,
-                TargetArn: input.TargetArn,
-                MessageStructure: input.MessageStructure,
-                MessageGroupId: input.MessageGroupId,
-                MessageDeduplicationId: input.MessageDeduplicationId,
-            },
+            input: filterFieldsForLogLevel(this.logger, input, PUBLISH_SAFE_FIELDS),
         });
         return this.client.send(new PublishCommand(input));
     }

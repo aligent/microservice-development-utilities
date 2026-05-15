@@ -1,3 +1,4 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import {
     PublishBatchCommand,
     PublishBatchRequestEntry,
@@ -5,7 +6,7 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import { mockClient } from 'aws-sdk-client-mock';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SNSService } from './sns';
 
 const snsMock = mockClient(SNSClient);
@@ -83,6 +84,29 @@ describe('SNSService', () => {
             });
 
             expect(snsMock.commandCalls(PublishCommand)).toHaveLength(1);
+        });
+
+        it('omits Message, Subject, MessageAttributes, and PhoneNumber from the INFO log', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SNSService({ client: new SNSClient({}), logger });
+
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: 'shh',
+                Subject: 'private',
+                MessageAttributes: { user: { DataType: 'String', StringValue: 'alice' } },
+                PhoneNumber: '+15555555555',
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('Message');
+            expect(loggedInput).not.toHaveProperty('Subject');
+            expect(loggedInput).not.toHaveProperty('MessageAttributes');
+            expect(loggedInput).not.toHaveProperty('PhoneNumber');
         });
     });
 });

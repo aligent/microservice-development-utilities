@@ -1,3 +1,4 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import {
     DeleteMessageBatchCommand,
     DeleteMessageBatchRequestEntry,
@@ -9,7 +10,7 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import { mockClient } from 'aws-sdk-client-mock';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SQSService } from './sqs';
 
 const sqsMock = mockClient(SQSClient);
@@ -81,6 +82,27 @@ describe('SQSService', () => {
             await service.sendMessage({ QueueUrl, MessageBody: 'hi' });
 
             expect(sqsMock.commandCalls(SendMessageCommand)).toHaveLength(1);
+        });
+
+        it('sendMessage omits MessageBody and MessageAttributes from the INFO log', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SQSService({ client: new SQSClient({}), logger });
+
+            await service.sendMessage({
+                QueueUrl,
+                MessageBody: 'shh',
+                MessageAttributes: {
+                    user: { DataType: 'String', StringValue: 'alice' },
+                },
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('MessageBody');
+            expect(loggedInput).not.toHaveProperty('MessageAttributes');
         });
 
         it('deleteMessage sends a DeleteMessageCommand', async () => {
