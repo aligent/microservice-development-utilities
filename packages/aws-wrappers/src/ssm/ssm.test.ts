@@ -1,3 +1,4 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import {
     DeleteParameterCommand,
     GetParameterCommand,
@@ -7,7 +8,7 @@ import {
     SSMClient,
 } from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SSMService } from './ssm';
 
 const ssmMock = mockClient(SSMClient);
@@ -81,6 +82,24 @@ describe('SSMService', () => {
     });
 
     describe('putParameter', () => {
+        it('omits Value from the INFO log', async () => {
+            ssmMock.on(PutParameterCommand).resolves({});
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SSMService({ client: new SSMClient({}), logger });
+
+            await service.putParameter({
+                Name: '/app/setting',
+                Value: 'shh',
+                Type: 'SecureString',
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('Value');
+        });
+
         it('sends a PutParameterCommand pass-through and returns the response', async () => {
             ssmMock.on(PutParameterCommand).resolves({ Version: 7 });
             const service = new SSMService({ client: new SSMClient({}) });

@@ -11,6 +11,25 @@ import {
     SSMClient,
 } from '@aws-sdk/client-ssm';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact';
+
+/**
+ * Fields safe to log at INFO level for `putParameter`. Omits `Value` (the
+ * parameter content itself). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full
+ * input.
+ */
+const PUT_PARAMETER_SAFE_FIELDS: ReadonlyArray<keyof PutParameterCommandInput> = [
+    'Name',
+    'Type',
+    'Description',
+    'KeyId',
+    'Overwrite',
+    'AllowedPattern',
+    'Tags',
+    'Tier',
+    'Policies',
+    'DataType',
+];
 
 /**
  * Wrapper around the AWS SSM Parameter Store client providing structured
@@ -102,12 +121,7 @@ export class SSMService {
      */
     async putParameter(input: PutParameterCommandInput): Promise<PutParameterCommandOutput> {
         this.logger.info('Putting SSM parameter', {
-            input: {
-                Name: input.Name,
-                Type: input.Type,
-                Overwrite: input.Overwrite,
-                Tier: input.Tier,
-            },
+            input: filterFieldsForLogLevel(this.logger, input, PUT_PARAMETER_SAFE_FIELDS),
         });
         return this.client.send(new PutParameterCommand(input));
     }
