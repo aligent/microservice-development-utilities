@@ -11,8 +11,11 @@ import {
 } from '@aws-sdk/client-sns';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
 import { filterFieldsForLogLevel } from '../util/redact';
+import { truncateCodepoints, truncateUtf8 } from '../util/truncate';
 
 const PUBLISH_BATCH_LIMIT = 10;
+const SNS_MESSAGE_MAX_BYTES = 256 * 1024;
+const SNS_SUBJECT_MAX_CHARS = 100;
 
 /**
  * Fields safe to log at INFO level for `publish`. Omits `Message`, `Subject`,
@@ -35,16 +38,23 @@ const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
 export class SNSService {
     private readonly client: SNSClient;
     private readonly logger: Logger;
+    private readonly truncate: boolean;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
      * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SNSClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
+     * @param opts.truncate - When `true`, oversized `Message` / `Subject` are
+     * truncated (byte-safe / codepoint-safe) before sending instead of failing
+     * at the SDK. Defaults to `false` — the SDK throws on oversize, which is
+     * usually the right failure mode. Each `publish` call can override via
+     * its own `truncate` option.
      */
-    constructor(opts?: { logger?: Logger; client?: SNSClient }) {
+    constructor(opts?: { logger?: Logger; client?: SNSClient; truncate?: boolean }) {
         this.client = opts?.client ?? captureAWSv3Client(new SNSClient());
         this.logger = opts?.logger ?? new Logger();
+        this.truncate = opts?.truncate ?? false;
     }
 
     /**
@@ -56,11 +66,34 @@ export class SNSService {
      *
      * @param input - PublishCommandInput including TopicArn and Message.
      */
-    async publish(input: PublishCommandInput): Promise<PublishCommandOutput> {
+    async publish(
+        input: PublishCommandInput,
+        opts?: { truncate?: boolean }
+    ): Promise<PublishCommandOutput> {
+        const shouldTruncate = opts?.truncate ?? this.truncate;
+        const effective = shouldTruncate ? this.applyTruncation(input) : input;
         this.logger.info('Publishing SNS message', {
-            input: filterFieldsForLogLevel(this.logger, input, PUBLISH_SAFE_FIELDS),
+            input: filterFieldsForLogLevel(this.logger, effective, PUBLISH_SAFE_FIELDS),
         });
-        return this.client.send(new PublishCommand(input));
+        return this.client.send(new PublishCommand(effective));
+    }
+
+    private applyTruncation(input: PublishCommandInput): PublishCommandInput {
+        const truncated: string[] = [];
+        let Message = input.Message;
+        if (Message !== undefined && Buffer.byteLength(Message, 'utf8') > SNS_MESSAGE_MAX_BYTES) {
+            Message = truncateUtf8(Message, SNS_MESSAGE_MAX_BYTES);
+            truncated.push('Message');
+        }
+        let Subject = input.Subject;
+        if (Subject !== undefined && Array.from(Subject).length > SNS_SUBJECT_MAX_CHARS) {
+            Subject = truncateCodepoints(Subject, SNS_SUBJECT_MAX_CHARS);
+            truncated.push('Subject');
+        }
+        if (truncated.length > 0) {
+            this.logger.warn('Truncated SNS publish input', { fields: truncated });
+        }
+        return { ...input, Message, Subject };
     }
 
     /**

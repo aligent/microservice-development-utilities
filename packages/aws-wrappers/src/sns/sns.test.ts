@@ -104,6 +104,88 @@ describe('SNSService', () => {
             expect(snsMock.commandCalls(PublishCommand)).toHaveLength(1);
         });
 
+        it('truncates oversized Message when the instance opts in to truncation', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}), truncate: true });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: oversized,
+            });
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input.Message ?? '';
+            expect(Buffer.byteLength(sent, 'utf8')).toBeLessThanOrEqual(262_144);
+            expect(sent.length).toBeLessThan(oversized.length);
+        });
+
+        it('passes oversized Message through unchanged when truncation is off', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}) });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: oversized,
+            });
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input.Message ?? '';
+            expect(sent.length).toBe(oversized.length);
+        });
+
+        it('per-call truncate: true overrides an instance default of false', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}) });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.publish(
+                { TopicArn: 'arn:aws:sns:us-east-1:0:topic', Message: oversized },
+                { truncate: true }
+            );
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input.Message ?? '';
+            expect(sent.length).toBeLessThan(oversized.length);
+        });
+
+        it('per-call truncate: false overrides an instance default of true', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}), truncate: true });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.publish(
+                { TopicArn: 'arn:aws:sns:us-east-1:0:topic', Message: oversized },
+                { truncate: false }
+            );
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input.Message ?? '';
+            expect(sent.length).toBe(oversized.length);
+        });
+
+        it('codepoint-truncates oversized Subject and warn-logs the modified fields', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const logger = new Logger();
+            logger.setLogLevel('WARN');
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new SNSService({
+                client: new SNSClient({}),
+                logger,
+                truncate: true,
+            });
+
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: 'ok',
+                Subject: 'a'.repeat(150),
+            });
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input;
+            expect(sent?.Subject?.length).toBe(100);
+            expect(warnSpy).toHaveBeenCalledWith(
+                'Truncated SNS publish input',
+                expect.objectContaining({ fields: expect.arrayContaining(['Subject']) })
+            );
+        });
+
         it('omits Message, Subject, MessageAttributes, and PhoneNumber from the INFO log', async () => {
             snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
             const logger = new Logger();
