@@ -163,6 +163,48 @@ describe('DynamoDBService', () => {
             });
             expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(1);
         });
+
+        it('batchGet logs only the table names at INFO level', async () => {
+            ddbMock.on(BatchGetCommand).resolves({});
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            await service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'customer-123' }] } },
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('RequestItems');
+            expect(loggedInput).toEqual({ tables: [TableName] });
+        });
+
+        it('batchWrite logs only the table names at INFO level', async () => {
+            ddbMock.on(BatchWriteCommand).resolves({});
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            await service.batchWrite({
+                RequestItems: {
+                    [TableName]: [{ PutRequest: { Item: { pk: 'a', email: 'pii@example.com' } } }],
+                },
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('RequestItems');
+            expect(loggedInput).toEqual({ tables: [TableName] });
+        });
     });
 
     describe('single-item log shape', () => {

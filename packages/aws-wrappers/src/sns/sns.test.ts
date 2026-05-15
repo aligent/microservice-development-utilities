@@ -56,6 +56,24 @@ describe('SNSService', () => {
             expect(snsMock.commandCalls(PublishBatchCommand)).toHaveLength(1);
         });
 
+        it('logs only TopicArn and entryCount at INFO level', async () => {
+            snsMock.on(PublishBatchCommand).resolves({ Successful: [], Failed: [] });
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SNSService({ client: new SNSClient({}), logger });
+
+            await service.publishBatch({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                PublishBatchRequestEntries: [{ Id: '1', Message: 'shh' }],
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('PublishBatchRequestEntries');
+            expect(loggedInput).toMatchObject({ entryCount: 1 });
+        });
+
         it('returns an empty array when entries are empty or undefined', async () => {
             const service = new SNSService({ client: new SNSClient({}) });
 
