@@ -72,16 +72,28 @@ Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the 
 - **Generator pagination, yield items**: `DynamoDB.paginateItems` / `paginateScan`. Used when the result set is potentially unbounded — peak memory stays bounded by one page.
 - **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
 
+### Opt-in payload truncation
+
+`SNS.publish` and `SQS.sendMessage` expose an opt-in truncation knob for callers who prefer data loss over SDK-level failure on oversize (e.g. notification flows where dropped detail beats a thrown error). The default is **off** — fail-fast at the SDK is the right behaviour for most code paths.
+
+- Constructor option `truncate?: boolean` sets the per-instance default.
+- Per-call option `{ truncate?: boolean }` overrides the instance default.
+- When enabled, the wrapper uses `truncateUtf8` for byte-bounded fields (256 KB for `Message` / `MessageBody`) and `truncateCodepoints` for char-bounded fields (100 chars for SNS `Subject`). Both helpers live in `src/util/truncate.ts` and respect codepoint boundaries (no half-emoji, no malformed UTF-8).
+- Each truncating call emits a single `logger.warn('Truncated <service> <op> input', { fields: [...] })` line listing what was modified.
+
+If you find yourself adding truncation to a third method, raise it with the user first — opt-out flags are the more conservative default.
+
 ### DynamoDB specifics
 
 - Backed by `DynamoDBDocumentClient`. Always wrap the base `DynamoDBClient` with `captureAWSv3Client` **before** passing it to `DynamoDBDocumentClient.from(...)`, so X-Ray captures every command.
 - `marshallOptions: { removeUndefinedValues: true }`.
 - All commands and paginators come from `@aws-sdk/lib-dynamodb`. Never import marshaling helpers from `@aws-sdk/util-dynamodb` — that's what the doc client is for.
 - Generic typing convention:
-  - Methods that return a single item or yield items (`getItem`, `paginateItems`, `paginateScan`): `Promise<T | undefined>` / `AsyncGenerator<T>`.
-  - Methods that return the full command output (`query`, `scan`, `updateItem`, `deleteItem`): preserve the output and generically type only the data-bearing field (`Items?: T[]`, `Attributes?: T`).
+  - Methods that return a single item or yield items (`paginateItems`, `paginateScan`): `AsyncGenerator<T>`.
+  - Methods that return the full command output (`query`, `scan`): preserve the output and generically type only the data-bearing field (`Items?: T[]`).
+  - Key-bearing methods (`getItem`, `updateItem`, `deleteItem`) take two generics — `K extends Record<string, unknown>` for the partition / sort key shape, `R extends Record<string, unknown>` for the return type. The input is threaded through `WithTypedKey<TInput, K>` so the SDK input is preserved with the typed `Key` substituted.
   - `batchGet` is intentionally **not** generic — multi-table `Responses` can't be soundly described by a single `T`. Document this in TSDoc whenever the method is touched.
-  - All generics default to `T extends Record<string, unknown> = Record<string, unknown>` so callers can omit them.
+  - All generics default to `Record<string, unknown>` so callers can omit them.
 
 ## Adding a new service
 

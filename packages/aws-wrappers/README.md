@@ -86,12 +86,18 @@ const ddb = new DynamoDBService();
 // Backed by DynamoDBDocumentClient — items are plain TS objects in both directions.
 await ddb.putItem({ TableName: 'my-table', Item: { pk: 'abc', value: 42 } });
 
-const item = await ddb.getItem<{ pk: string; value: number }>({
+// Key-bearing methods take two generics: <K, R> for the key shape and the
+// return / Attributes shape. Both default to Record<string, unknown> so callers
+// can omit one or both when they don't care.
+type MyKey = { pk: string };
+type MyItem = { pk: string; value: number };
+
+const item = await ddb.getItem<MyKey, MyItem>({
     TableName: 'my-table',
     Key: { pk: 'abc' },
 });
 
-const { Items } = await ddb.query<{ pk: string; value: number }>({
+const { Items } = await ddb.query<MyItem>({
     TableName: 'my-table',
     KeyConditionExpression: 'pk = :pk',
     ExpressionAttributeValues: { ':pk': 'abc' },
@@ -100,9 +106,8 @@ const { Items } = await ddb.query<{ pk: string; value: number }>({
 // scan returns the same shape as query — full output with Items typed as T[].
 const { Items: all } = await ddb.scan<{ pk: string }>({ TableName: 'my-table' });
 
-// updateItem / deleteItem preserve the full output and type Attributes generically —
-// pick T to match your ReturnValues choice.
-const { Attributes } = await ddb.updateItem<{ value: number }>({
+// updateItem / deleteItem mirror getItem's <K, R> generics.
+const { Attributes } = await ddb.updateItem<MyKey, { value: number }>({
     TableName: 'my-table',
     Key: { pk: 'abc' },
     UpdateExpression: 'SET #v = :v',
@@ -244,6 +249,15 @@ await sqs.deleteMessageBatch({ QueueUrl, Entries: receiptEntries });
 
 `receiveMessages` does **not** auto-delete — visibility-timeout semantics are the caller's responsibility.
 
+```ts
+// Opt-in truncation for oversized payloads. Defaults to off (SDK throws on
+// oversize). Useful for fire-and-forget flows where dropped detail beats a
+// thrown error.
+const sqs = new SQSService({ truncate: true });            // per-instance default
+await sqs.sendMessage({ QueueUrl, MessageBody: huge });
+await sqs.sendMessage({ QueueUrl, MessageBody: huge }, { truncate: false }); // per-call override
+```
+
 ## SNS
 
 ```ts
@@ -255,6 +269,12 @@ await sns.publish({ TopicArn, Message: 'hello' });
 
 // publishBatch auto-chunks PublishBatchRequestEntries to the SNS-enforced 10-entry limit.
 await sns.publishBatch({ TopicArn, PublishBatchRequestEntries: bigEntryList });
+
+// Opt-in truncation — same shape as SQS. Truncates Message (256 KB byte-safe)
+// and Subject (100 chars codepoint-safe) when enabled.
+const truncSns = new SNSService({ truncate: true });
+await truncSns.publish({ TopicArn, Message: huge, Subject: long });
+await truncSns.publish({ TopicArn, Message: huge }, { truncate: false });
 ```
 
 ## Build / test
