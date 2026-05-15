@@ -224,6 +224,32 @@ describe('DynamoDBService', () => {
 
             expect(loggedInputFrom(infoSpy)).not.toHaveProperty('Key');
         });
+
+        it('query omits ExpressionAttributeValues from the INFO log', async () => {
+            ddbMock.on(QueryCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.query({
+                TableName,
+                KeyConditionExpression: 'pk = :p',
+                ExpressionAttributeValues: { ':p': 'customer-123' },
+            });
+
+            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('ExpressionAttributeValues');
+        });
+
+        it('scan omits ExpressionAttributeValues from the INFO log', async () => {
+            ddbMock.on(ScanCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.scan({
+                TableName,
+                FilterExpression: 'email = :e',
+                ExpressionAttributeValues: { ':e': 'pii@example.com' },
+            });
+
+            expect(loggedInputFrom(infoSpy)).not.toHaveProperty('ExpressionAttributeValues');
+        });
     });
 
     describe('paginateItems', () => {

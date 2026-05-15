@@ -90,6 +90,45 @@ const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [
     'ReturnValuesOnConditionCheckFailure',
 ];
 
+/**
+ * Fields safe to log at INFO for `query` and `paginateItems`. Omits
+ * `ExpressionAttributeValues` (values often carry PII) and `ExclusiveStartKey`
+ * (pagination cursor includes Key shape). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks
+ * the full input.
+ */
+const QUERY_SAFE_FIELDS: ReadonlyArray<keyof QueryCommandInput> = [
+    'TableName',
+    'IndexName',
+    'KeyConditionExpression',
+    'FilterExpression',
+    'ProjectionExpression',
+    'ExpressionAttributeNames',
+    'ConsistentRead',
+    'ScanIndexForward',
+    'Select',
+    'Limit',
+    'ReturnConsumedCapacity',
+];
+
+/**
+ * Fields safe to log at INFO for `scan` and `paginateScan`. Omits
+ * `ExpressionAttributeValues` and `ExclusiveStartKey`.
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const SCAN_SAFE_FIELDS: ReadonlyArray<keyof ScanCommandInput> = [
+    'TableName',
+    'IndexName',
+    'FilterExpression',
+    'ProjectionExpression',
+    'ExpressionAttributeNames',
+    'ConsistentRead',
+    'Select',
+    'Limit',
+    'Segment',
+    'TotalSegments',
+    'ReturnConsumedCapacity',
+];
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const backoffDelay = (attempt: number) => {
     const exp = BATCH_WRITE_BASE_DELAY_MS * 2 ** attempt;
@@ -201,7 +240,9 @@ export class DynamoDBService {
     async query<T extends Record<string, unknown> = Record<string, unknown>>(
         input: QueryCommandInput
     ): Promise<Omit<QueryCommandOutput, 'Items'> & { Items?: T[] }> {
-        this.logger.info('Querying DynamoDB', { input });
+        this.logger.info('Querying DynamoDB', {
+            input: filterFieldsForLogLevel(this.logger, input, QUERY_SAFE_FIELDS),
+        });
         const response = await this.client.send(new QueryCommand(input));
         return response as Omit<QueryCommandOutput, 'Items'> & { Items?: T[] };
     }
@@ -228,7 +269,9 @@ export class DynamoDBService {
     async scan<T extends Record<string, unknown> = Record<string, unknown>>(
         input: ScanCommandInput
     ): Promise<Omit<ScanCommandOutput, 'Items'> & { Items?: T[] }> {
-        this.logger.info('Scanning DynamoDB', { input });
+        this.logger.info('Scanning DynamoDB', {
+            input: filterFieldsForLogLevel(this.logger, input, SCAN_SAFE_FIELDS),
+        });
         const response = await this.client.send(new ScanCommand(input));
         return response as Omit<ScanCommandOutput, 'Items'> & { Items?: T[] };
     }
@@ -275,7 +318,9 @@ export class DynamoDBService {
     async *paginateItems<T extends Record<string, unknown> = Record<string, unknown>>(
         input: QueryCommandInput
     ): AsyncGenerator<T> {
-        this.logger.info('Paginating DynamoDB query', { input });
+        this.logger.info('Paginating DynamoDB query', {
+            input: filterFieldsForLogLevel(this.logger, input, QUERY_SAFE_FIELDS),
+        });
         const paginator = paginateQuery({ client: this.client }, input);
         for await (const page of paginator) {
             if (!page.Items) continue;
@@ -290,7 +335,9 @@ export class DynamoDBService {
     async *paginateScan<T extends Record<string, unknown> = Record<string, unknown>>(
         input: ScanCommandInput
     ): AsyncGenerator<T> {
-        this.logger.info('Paginating DynamoDB scan', { input });
+        this.logger.info('Paginating DynamoDB scan', {
+            input: filterFieldsForLogLevel(this.logger, input, SCAN_SAFE_FIELDS),
+        });
         const paginator = paginateScan({ client: this.client }, input);
         for await (const page of paginator) {
             if (!page.Items) continue;
