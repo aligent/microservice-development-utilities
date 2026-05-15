@@ -32,7 +32,7 @@ const DELETE_OBJECTS_BATCH_LIMIT = 1000;
  * Fields safe to log at INFO for `putObject`. Omits `Body` (object payload).
  * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
-const PUT_OBJECT_SAFE_FIELDS: readonly ('Bucket' | 'Key')[] = ['Bucket', 'Key'];
+const PUT_OBJECT_SAFE_FIELDS: ReadonlyArray<'Bucket' | 'Key'> = ['Bucket', 'Key'];
 
 /**
  * Fields safe to log at INFO for `putJsonObject`. Omits `Body` (the
@@ -271,7 +271,13 @@ export class S3Service {
      * per chunk.
      */
     async deleteObjects(bucket: string, keys: string[]): Promise<DeleteObjectsCommandOutput[]> {
-        this.logger.info('Deleting S3 objects', { input: { bucket, keyCount: keys.length } });
+        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // safe log shape includes the computed `keyCount`, which isn't a key
+        // on any SDK input type.
+        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        this.logger.info('Deleting S3 objects', {
+            input: isDebug ? { bucket, keys } : { bucket, keyCount: keys.length },
+        });
         const results: DeleteObjectsCommandOutput[] = [];
         for (let i = 0; i < keys.length; i += DELETE_OBJECTS_BATCH_LIMIT) {
             const batch = keys.slice(i, i + DELETE_OBJECTS_BATCH_LIMIT);

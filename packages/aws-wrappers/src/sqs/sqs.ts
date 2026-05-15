@@ -98,8 +98,12 @@ export class SQSService {
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
+        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // safe log shape includes the computed `entryCount`, which isn't a key
+        // on `SendMessageBatchCommandInput`.
+        const isDebug = this.logger.getLevelName() === 'DEBUG';
         this.logger.info('Sending SQS message batch', {
-            input: { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: isDebug ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: SendMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
@@ -120,8 +124,12 @@ export class SQSService {
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
+        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // safe log shape includes the computed `entryCount`, which isn't a key
+        // on `DeleteMessageBatchCommandInput`.
+        const isDebug = this.logger.getLevelName() === 'DEBUG';
         this.logger.info('Deleting SQS message batch', {
-            input: { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: isDebug ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {

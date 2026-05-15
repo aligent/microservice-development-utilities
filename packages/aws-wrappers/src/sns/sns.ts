@@ -72,8 +72,12 @@ export class SNSService {
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
         const entries: PublishBatchRequestEntry[] = input.PublishBatchRequestEntries ?? [];
+        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // safe log shape includes the computed `entryCount`, which isn't a key
+        // on `PublishBatchCommandInput`.
+        const isDebug = this.logger.getLevelName() === 'DEBUG';
         this.logger.info('Publishing SNS message batch', {
-            input: { TopicArn: input.TopicArn, entryCount: entries.length },
+            input: isDebug ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
         });
         const results: PublishBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += PUBLISH_BATCH_LIMIT) {
