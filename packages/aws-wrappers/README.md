@@ -19,6 +19,10 @@ new XService({ logger?, client? })
 - `logger` — a Powertools `Logger`. Defaults to `new Logger()`, which picks up `POWERTOOLS_SERVICE_NAME` from the environment (recommended) and otherwise falls back to Powertools' own default.
 - `client` — a pre-configured SDK client. When omitted, the wrapper instantiates the SDK client itself and wraps it with `captureAWSv3Client` for X-Ray tracing. When supplied, the wrapper passes it through unchanged — the caller is responsible for X-Ray instrumentation.
 
+### Log redaction
+
+Every wrapper emits one `logger.info` line per SDK call with a per-method safe-field allowlist (omitting payloads, secret material, and PII recipient identifiers). Set `POWERTOOLS_LOG_LEVEL=DEBUG` to unlock the full SDK input in those log lines — useful for local development and incident triage. See `packages/aws-wrappers/CLAUDE.md` for the per-method allowlists currently in force.
+
 ### X-Ray outside Lambda
 
 X-Ray's middleware throws by default when no active segment exists, which is the case for CLI scripts and local development. Set the environment variable to silence the noise:
