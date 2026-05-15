@@ -267,6 +267,32 @@ describe('DynamoDBService', () => {
     });
 
     describe('paginateItems', () => {
+        it('omits ExpressionAttributeValues from the INFO log', async () => {
+            ddbMock.on(QueryCommand).resolves({});
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            const iterator = service.paginateItems({
+                TableName,
+                KeyConditionExpression: 'pk = :p',
+                ExpressionAttributeValues: { ':p': 'pii-value' },
+            });
+            // Drain the generator so the log fires.
+            // Drain the generator so the log fires.
+            const items = [];
+            for await (const item of iterator) items.push(item);
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            expect((payload as { input: object }).input).not.toHaveProperty(
+                'ExpressionAttributeValues'
+            );
+        });
+
         it('yields each item across pages', async () => {
             ddbMock
                 .on(QueryCommand)
@@ -291,6 +317,31 @@ describe('DynamoDBService', () => {
     });
 
     describe('paginateScan', () => {
+        it('omits ExpressionAttributeValues from the INFO log', async () => {
+            ddbMock.on(ScanCommand).resolves({});
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            const iterator = service.paginateScan({
+                TableName,
+                FilterExpression: 'email = :e',
+                ExpressionAttributeValues: { ':e': 'pii@example.com' },
+            });
+            // Drain the generator so the log fires.
+            const items = [];
+            for await (const item of iterator) items.push(item);
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            expect((payload as { input: object }).input).not.toHaveProperty(
+                'ExpressionAttributeValues'
+            );
+        });
+
         it('yields each item across pages', async () => {
             ddbMock
                 .on(ScanCommand)
