@@ -137,6 +137,14 @@ const backoffDelay = (attempt: number) => {
 };
 
 /**
+ * DynamoDB command input with a typed `Key`. Used to thread a caller-defined
+ * key shape through the SDK input shape while preserving every other field.
+ */
+type WithTypedKey<TInput, K extends Record<string, unknown>> = Omit<TInput, 'Key'> & {
+    Key: K;
+};
+
+/**
  * Wrapper around the AWS DynamoDB Document client providing structured
  * Powertools logging and X-Ray tracing by default.
  *
@@ -167,17 +175,23 @@ export class DynamoDBService {
 
     /**
      * Get an item from DynamoDB.
-     * @template T - Expected unmarshalled item shape.
+     * @template K - Shape of the partition / sort key.
+     * @template R - Expected unmarshalled item shape.
      * @returns The item, or `undefined` if not found.
      */
-    async getItem<T extends Record<string, unknown> = Record<string, unknown>>(
-        input: GetCommandInput
-    ): Promise<T | undefined> {
+    async getItem<
+        K extends Record<string, unknown> = Record<string, unknown>,
+        R extends Record<string, unknown> = Record<string, unknown>,
+    >(input: WithTypedKey<GetCommandInput, K>): Promise<R | undefined> {
         this.logger.info('Getting DynamoDB item', {
-            input: filterFieldsForLogLevel(this.logger, input, GET_ITEM_SAFE_FIELDS),
+            input: filterFieldsForLogLevel(
+                this.logger,
+                input as GetCommandInput,
+                GET_ITEM_SAFE_FIELDS
+            ),
         });
-        const response = await this.client.send(new GetCommand(input));
-        return response.Item as T | undefined;
+        const response = await this.client.send(new GetCommand(input as GetCommandInput));
+        return response.Item as R | undefined;
     }
 
     /**
@@ -200,36 +214,52 @@ export class DynamoDBService {
 
     /**
      * Update an item in DynamoDB. The `Attributes` field on the response is
-     * typed as `T` — the caller should choose `T` to match their
+     * typed as `R` — the caller should choose `R` to match their
      * `ReturnValues` setting:
      * - `NONE` (default): no `Attributes` returned.
      * - `ALL_OLD` / `ALL_NEW`: full item.
      * - `UPDATED_OLD` / `UPDATED_NEW`: only updated attributes (partial).
-     * @template T - Expected shape of the returned `Attributes`.
+     * @template K - Shape of the partition / sort key.
+     * @template R - Expected shape of the returned `Attributes`.
      */
-    async updateItem<T extends Record<string, unknown> = Record<string, unknown>>(
-        input: UpdateCommandInput
-    ): Promise<Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: T }> {
+    async updateItem<
+        K extends Record<string, unknown> = Record<string, unknown>,
+        R extends Record<string, unknown> = Record<string, unknown>,
+    >(
+        input: WithTypedKey<UpdateCommandInput, K>
+    ): Promise<Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: R }> {
         this.logger.info('Updating DynamoDB item', {
-            input: filterFieldsForLogLevel(this.logger, input, UPDATE_ITEM_SAFE_FIELDS),
+            input: filterFieldsForLogLevel(
+                this.logger,
+                input as UpdateCommandInput,
+                UPDATE_ITEM_SAFE_FIELDS
+            ),
         });
-        const response = await this.client.send(new UpdateCommand(input));
-        return response as Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: T };
+        const response = await this.client.send(new UpdateCommand(input as UpdateCommandInput));
+        return response as Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: R };
     }
 
     /**
      * Delete an item from DynamoDB. The `Attributes` field on the response is
-     * typed as `T` — relevant when `ReturnValues: 'ALL_OLD'` is set.
-     * @template T - Expected shape of the returned `Attributes`.
+     * typed as `R` — relevant when `ReturnValues: 'ALL_OLD'` is set.
+     * @template K - Shape of the partition / sort key.
+     * @template R - Expected shape of the returned `Attributes`.
      */
-    async deleteItem<T extends Record<string, unknown> = Record<string, unknown>>(
-        input: DeleteCommandInput
-    ): Promise<Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: T }> {
+    async deleteItem<
+        K extends Record<string, unknown> = Record<string, unknown>,
+        R extends Record<string, unknown> = Record<string, unknown>,
+    >(
+        input: WithTypedKey<DeleteCommandInput, K>
+    ): Promise<Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: R }> {
         this.logger.info('Deleting DynamoDB item', {
-            input: filterFieldsForLogLevel(this.logger, input, DELETE_ITEM_SAFE_FIELDS),
+            input: filterFieldsForLogLevel(
+                this.logger,
+                input as DeleteCommandInput,
+                DELETE_ITEM_SAFE_FIELDS
+            ),
         });
-        const response = await this.client.send(new DeleteCommand(input));
-        return response as Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: T };
+        const response = await this.client.send(new DeleteCommand(input as DeleteCommandInput));
+        return response as Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: R };
     }
 
     /**

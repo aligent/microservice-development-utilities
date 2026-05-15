@@ -102,7 +102,7 @@ describe('DynamoDBService', () => {
             ddbMock.on(GetCommand).resolves({ Item: { pk: 'a', value: 1 } });
 
             await expect(
-                buildService().getItem<{ pk: string; value: number }>({
+                buildService().getItem<{ pk: string }, { pk: string; value: number }>({
                     TableName,
                     Key: { pk: 'a' },
                 })
@@ -124,7 +124,7 @@ describe('DynamoDBService', () => {
 
         it('updateItem returns the typed Attributes', async () => {
             ddbMock.on(UpdateCommand).resolves({ Attributes: { value: 99 } });
-            const result = await buildService().updateItem<{ value: number }>({
+            const result = await buildService().updateItem<{ pk: string }, { value: number }>({
                 TableName,
                 Key: { pk: 'a' },
             });
@@ -133,7 +133,7 @@ describe('DynamoDBService', () => {
 
         it('deleteItem returns the typed Attributes', async () => {
             ddbMock.on(DeleteCommand).resolves({ Attributes: { pk: 'a' } });
-            const result = await buildService().deleteItem<{ pk: string }>({
+            const result = await buildService().deleteItem<{ pk: string }, { pk: string }>({
                 TableName,
                 Key: { pk: 'a' },
             });
