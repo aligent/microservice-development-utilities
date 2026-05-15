@@ -1,3 +1,4 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import {
     CopyObjectCommand,
     DeleteObjectCommand,
@@ -36,6 +37,38 @@ describe('S3Service', () => {
 
     it('constructs with default logger and client when no options supplied', () => {
         expect(() => new S3Service()).not.toThrow();
+    });
+
+    describe('put-method log shape', () => {
+        const buildLoggedService = () => {
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new S3Service({ client: new S3Client({}), logger });
+            return { service, infoSpy };
+        };
+
+        it('putObject omits Body from the INFO log', async () => {
+            s3Mock.on(PutObjectCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.putObject({ Bucket, Key: 'k', Body: 'shh' });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('Body');
+        });
+
+        it('putJsonObject omits Body from the INFO log', async () => {
+            s3Mock.on(PutObjectCommand).resolves({});
+            const { service, infoSpy } = buildLoggedService();
+
+            await service.putJsonObject({ Bucket, Key: 'k', Body: { secret: 'shh' } });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('Body');
+        });
     });
 
     describe('putJsonObject / getJsonObject', () => {

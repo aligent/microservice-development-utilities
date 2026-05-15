@@ -22,10 +22,28 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
 const DELETE_OBJECTS_BATCH_LIMIT = 1000;
+
+/**
+ * Fields safe to log at INFO for `putObject`. Omits `Body` (object payload).
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const PUT_OBJECT_SAFE_FIELDS: readonly ('Bucket' | 'Key')[] = ['Bucket', 'Key'];
+
+/**
+ * Fields safe to log at INFO for `putJsonObject`. Omits `Body` (the
+ * unserialised JSON payload). `Metadata` is included (operational labels).
+ * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<'Bucket' | 'Key' | 'Metadata'> = [
+    'Bucket',
+    'Key',
+    'Metadata',
+];
 
 /**
  * Wrapper around the AWS S3 client providing structured Powertools logging
@@ -62,7 +80,9 @@ export class S3Service {
     async putObject(
         input: Required<Pick<PutObjectCommandInput, 'Bucket' | 'Key' | 'Body'>>
     ): Promise<PutObjectCommandOutput> {
-        this.logger.info('Putting S3 object', { input: { Bucket: input.Bucket, Key: input.Key } });
+        this.logger.info('Putting S3 object', {
+            input: filterFieldsForLogLevel(this.logger, input, PUT_OBJECT_SAFE_FIELDS),
+        });
         return this.client.send(new PutObjectCommand(input));
     }
 
@@ -82,7 +102,7 @@ export class S3Service {
         Metadata?: Record<string, string>;
     }): Promise<PutObjectCommandOutput> {
         this.logger.info('Putting S3 JSON object', {
-            input: { Bucket: input.Bucket, Key: input.Key },
+            input: filterFieldsForLogLevel(this.logger, input, PUT_JSON_OBJECT_SAFE_FIELDS),
         });
         return this.client.send(
             new PutObjectCommand({
