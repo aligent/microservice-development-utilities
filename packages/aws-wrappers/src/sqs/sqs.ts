@@ -21,8 +21,10 @@ import {
 } from '@aws-sdk/client-sqs';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
 import { filterFieldsForLogLevel } from '../util/redact';
+import { truncateUtf8 } from '../util/truncate';
 
 const SQS_BATCH_LIMIT = 10;
+const SQS_MESSAGE_BODY_MAX_BYTES = 256 * 1024;
 
 /**
  * Fields safe to log at INFO level for `sendMessage`. Omits `MessageBody` and
@@ -43,16 +45,22 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
 export class SQSService {
     private readonly client: SQSClient;
     private readonly logger: Logger;
+    private readonly truncate: boolean;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
      * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SQSClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
+     * @param opts.truncate - When `true`, oversized `MessageBody` is truncated
+     * (byte-safe) before sending instead of failing at the SDK. Defaults to
+     * `false`. Each `sendMessage` call can override via its own `truncate`
+     * option.
      */
-    constructor(opts?: { logger?: Logger; client?: SQSClient }) {
+    constructor(opts?: { logger?: Logger; client?: SQSClient; truncate?: boolean }) {
         this.client = opts?.client ?? captureAWSv3Client(new SQSClient());
         this.logger = opts?.logger ?? new Logger();
+        this.truncate = opts?.truncate ?? false;
     }
 
     /**
@@ -62,11 +70,32 @@ export class SQSService {
      * see `SEND_MESSAGE_SAFE_FIELDS`. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
      * full input.
      */
-    async sendMessage(input: SendMessageCommandInput): Promise<SendMessageCommandOutput> {
+    async sendMessage(
+        input: SendMessageCommandInput,
+        opts?: { truncate?: boolean }
+    ): Promise<SendMessageCommandOutput> {
+        const shouldTruncate = opts?.truncate ?? this.truncate;
+        const effective = shouldTruncate ? this.applyTruncation(input) : input;
         this.logger.info('Sending SQS message', {
-            input: filterFieldsForLogLevel(this.logger, input, SEND_MESSAGE_SAFE_FIELDS),
+            input: filterFieldsForLogLevel(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
         });
-        return this.client.send(new SendMessageCommand(input));
+        return this.client.send(new SendMessageCommand(effective));
+    }
+
+    private applyTruncation(input: SendMessageCommandInput): SendMessageCommandInput {
+        const truncated: string[] = [];
+        let MessageBody = input.MessageBody;
+        if (
+            MessageBody !== undefined &&
+            Buffer.byteLength(MessageBody, 'utf8') > SQS_MESSAGE_BODY_MAX_BYTES
+        ) {
+            MessageBody = truncateUtf8(MessageBody, SQS_MESSAGE_BODY_MAX_BYTES);
+            truncated.push('MessageBody');
+        }
+        if (truncated.length > 0) {
+            this.logger.warn('Truncated SQS sendMessage input', { fields: truncated });
+        }
+        return { ...input, MessageBody };
     }
 
     /**

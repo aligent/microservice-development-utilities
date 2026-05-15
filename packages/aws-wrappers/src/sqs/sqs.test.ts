@@ -102,6 +102,62 @@ describe('SQSService', () => {
             expect(sqsMock.commandCalls(SendMessageCommand)).toHaveLength(1);
         });
 
+        it('truncates oversized MessageBody when the instance opts in to truncation', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const service = new SQSService({ client: new SQSClient({}), truncate: true });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.sendMessage({ QueueUrl, MessageBody: oversized });
+
+            const sent =
+                sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input.MessageBody ?? '';
+            expect(Buffer.byteLength(sent, 'utf8')).toBeLessThanOrEqual(262_144);
+            expect(sent.length).toBeLessThan(oversized.length);
+        });
+
+        it('passes oversized MessageBody through unchanged when truncation is off', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const service = new SQSService({ client: new SQSClient({}) });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.sendMessage({ QueueUrl, MessageBody: oversized });
+
+            const sent =
+                sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input.MessageBody ?? '';
+            expect(sent.length).toBe(oversized.length);
+        });
+
+        it('per-call truncate: true overrides an instance default of false', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const service = new SQSService({ client: new SQSClient({}) });
+
+            const oversized = 'x'.repeat(300_000);
+            await service.sendMessage({ QueueUrl, MessageBody: oversized }, { truncate: true });
+
+            const sent =
+                sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input.MessageBody ?? '';
+            expect(sent.length).toBeLessThan(oversized.length);
+        });
+
+        it('warn-logs the truncated field on oversize', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const logger = new Logger();
+            logger.setLogLevel('WARN');
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new SQSService({
+                client: new SQSClient({}),
+                logger,
+                truncate: true,
+            });
+
+            await service.sendMessage({ QueueUrl, MessageBody: 'x'.repeat(300_000) });
+
+            expect(warnSpy).toHaveBeenCalledWith(
+                'Truncated SQS sendMessage input',
+                expect.objectContaining({ fields: ['MessageBody'] })
+            );
+        });
+
         it('sendMessage omits MessageBody and MessageAttributes from the INFO log', async () => {
             sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
             const logger = new Logger();
