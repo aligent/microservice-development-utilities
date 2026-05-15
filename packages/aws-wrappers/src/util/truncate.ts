@@ -9,7 +9,11 @@ export function truncateUtf8(str: string, maxBytes: number): string {
     const buf = Buffer.from(str, 'utf8');
     if (buf.length <= maxBytes) return str;
     let end = maxBytes;
-    while (end > 0 && (buf[end] & 0xc0) === 0x80) end--;
+    while (end > 0) {
+        const byte = buf[end];
+        if (byte === undefined || (byte & 0xc0) !== 0x80) break;
+        end--;
+    }
     return buf.toString('utf8', 0, end);
 }
 
