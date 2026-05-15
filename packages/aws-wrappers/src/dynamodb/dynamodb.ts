@@ -285,7 +285,14 @@ export class DynamoDBService {
      * Callers should narrow the result type at the call site.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
-        this.logger.info('Batch getting DynamoDB items', { input });
+        // Inline DEBUG check rather than `filterFieldsForLogLevel` because
+        // `RequestItems` is a `Record<tableName, KeysAndAttributes>` — the
+        // payload (`Keys[]`) lives inside the value, not as a top-level key
+        // the helper could pick or drop.
+        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        this.logger.info('Batch getting DynamoDB items', {
+            input: isDebug ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+        });
         return this.client.send(new BatchGetCommand(input));
     }
 
@@ -295,7 +302,14 @@ export class DynamoDBService {
      * items remain unprocessed after the final attempt.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
-        this.logger.info('Batch writing DynamoDB items', { input });
+        // Inline DEBUG check rather than `filterFieldsForLogLevel` because
+        // `RequestItems` is a `Record<tableName, WriteRequest[]>` — the
+        // payload (`PutRequest.Item` / `DeleteRequest.Key`) lives inside the
+        // value, not as a top-level key the helper could pick or drop.
+        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        this.logger.info('Batch writing DynamoDB items', {
+            input: isDebug ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+        });
         let current = input;
         for (let attempt = 0; attempt < BATCH_WRITE_MAX_ATTEMPTS; attempt++) {
             const response = await this.client.send(new BatchWriteCommand(current));
