@@ -1,3 +1,4 @@
+import { Logger } from '@aws-lambda-powertools/logger';
 import {
     DescribeExecutionCommand,
     ListExecutionsCommand,
@@ -6,7 +7,7 @@ import {
     StopExecutionCommand,
 } from '@aws-sdk/client-sfn';
 import { mockClient } from 'aws-sdk-client-mock';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StepFunctionsService } from './sfn';
 
 const sfnMock = mockClient(SFNClient);
@@ -73,6 +74,24 @@ describe('StepFunctionsService', () => {
             await service.startExecution({ stateMachineArn, input: '{}' });
 
             expect(sfnMock.commandCalls(StartExecutionCommand)).toHaveLength(1);
+        });
+
+        it('startExecution omits the execution input from the INFO log', async () => {
+            sfnMock.on(StartExecutionCommand).resolves({ executionArn: 'arn-1' });
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new StepFunctionsService({ client: new SFNClient({}), logger });
+
+            await service.startExecution({
+                stateMachineArn,
+                name: 'exec-1',
+                input: JSON.stringify({ customerEmail: 'pii@example.com' }),
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('input');
         });
 
         it('describeExecution sends a DescribeExecutionCommand', async () => {

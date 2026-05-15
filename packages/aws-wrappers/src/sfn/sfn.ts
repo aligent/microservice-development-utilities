@@ -15,6 +15,18 @@ import {
     StopExecutionCommandOutput,
 } from '@aws-sdk/client-sfn';
 import { captureAWSv3Client } from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact';
+
+/**
+ * Fields safe to log at INFO for `startExecution`. Omits `input` — the SFN
+ * execution payload, which routinely carries PII (customer IDs, addresses,
+ * order contents, etc.). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ */
+const START_EXECUTION_SAFE_FIELDS: ReadonlyArray<keyof StartExecutionCommandInput> = [
+    'stateMachineArn',
+    'name',
+    'traceHeader',
+];
 
 /**
  * Wrapper around the AWS Step Functions client providing structured
@@ -54,7 +66,9 @@ export class StepFunctionsService {
      * Start a new Step Functions execution.
      */
     async startExecution(input: StartExecutionCommandInput): Promise<StartExecutionCommandOutput> {
-        this.logger.info('Starting Step Functions execution', { input });
+        this.logger.info('Starting Step Functions execution', {
+            input: filterFieldsForLogLevel(this.logger, input, START_EXECUTION_SAFE_FIELDS),
+        });
         return this.client.send(new StartExecutionCommand(input));
     }
 
