@@ -12,6 +12,7 @@ jobs:
     with:
       deploy: true
       deploy-command: yarn nx run application:cdk deploy
+      stack-name: prd/*
       environment-target: prd
       github-environment: production
     secrets: inherit
