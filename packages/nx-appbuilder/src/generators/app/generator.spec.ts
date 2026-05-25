@@ -80,6 +80,10 @@ describe('app generator', () => {
             expect(tree.exists('my-app/tests/tsconfig.json')).toBe(true);
         });
 
+        it('writes the webpack config for actions', () => {
+            expect(tree.exists('my-app/src/actions/webpack-config.cjs')).toBe(true);
+        });
+
         it('writes the pre-build action type-check hook', () => {
             expect(tree.exists('my-app/hooks/check-action-types.sh')).toBe(true);
         });

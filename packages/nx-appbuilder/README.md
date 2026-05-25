@@ -103,6 +103,7 @@ The app generator always renders a **base** subtree into `<app-name>/`:
 
 - **Action and test scaffolding**:
   - `src/actions/tsconfig.json` - TypeScript config for the App Builder actions
+  - `src/actions/webpack-config.cjs` - Webpack config used by the `aio` CLI to compile actions via `babel-loader`
   - `tests/tsconfig.json` - TypeScript config for the test suite
   - `hooks/check-action-types.sh` - `pre-app-build` hook that type-checks actions before deploy
   - `global-types/@adobe/aio-sdk/*.d.ts` - Local type augmentations for the Adobe AIO SDK
