@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
     BatchGetCommand,
@@ -153,7 +154,7 @@ type WithTypedKey<TInput, K extends Record<string, unknown>> = Omit<TInput, 'Key
  */
 export class DynamoDBService {
     private readonly client: DynamoDBDocumentClient;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
@@ -164,7 +165,7 @@ export class DynamoDBService {
      * *before* being passed to `DynamoDBDocumentClient.from`, so X-Ray
      * tracing captures every DynamoDB call.
      */
-    constructor(opts?: { logger?: Logger; client?: DynamoDBDocumentClient }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: DynamoDBDocumentClient }) {
         this.client =
             opts?.client ??
             DynamoDBDocumentClient.from(captureAWSv3Client(new DynamoDBClient({})), {

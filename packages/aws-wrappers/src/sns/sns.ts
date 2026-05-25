@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
     PublishBatchCommand,
     PublishBatchCommandInput,
@@ -37,7 +38,7 @@ const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
  */
 export class SNSService {
     private readonly client: SNSClient;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
     private readonly truncate: boolean;
 
     /**
@@ -51,7 +52,7 @@ export class SNSService {
      * usually the right failure mode. Each `publish` call can override via
      * its own `truncate` option.
      */
-    constructor(opts?: { logger?: Logger; client?: SNSClient; truncate?: boolean }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: SNSClient; truncate?: boolean }) {
         this.client = opts?.client ?? captureAWSv3Client(new SNSClient());
         this.logger = opts?.logger ?? new Logger();
         this.truncate = opts?.truncate ?? false;

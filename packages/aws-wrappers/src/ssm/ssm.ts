@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
     DeleteParameterCommand,
     GetParameterCommand,
@@ -45,7 +46,7 @@ const PUT_PARAMETER_SAFE_FIELDS: ReadonlyArray<keyof PutParameterCommandInput> =
  */
 export class SSMService {
     private readonly client: SSMClient;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
@@ -53,7 +54,7 @@ export class SSMService {
      * @param opts.client - Optional pre-configured `SSMClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
-    constructor(opts?: { logger?: Logger; client?: SSMClient }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: SSMClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SSMClient());
         this.logger = opts?.logger ?? new Logger();
     }

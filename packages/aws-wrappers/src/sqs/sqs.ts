@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
     DeleteMessageBatchCommand,
     DeleteMessageBatchCommandInput,
@@ -44,7 +45,7 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
  */
 export class SQSService {
     private readonly client: SQSClient;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
     private readonly truncate: boolean;
 
     /**
@@ -57,7 +58,7 @@ export class SQSService {
      * `false`. Each `sendMessage` call can override via its own `truncate`
      * option.
      */
-    constructor(opts?: { logger?: Logger; client?: SQSClient; truncate?: boolean }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: SQSClient; truncate?: boolean }) {
         this.client = opts?.client ?? captureAWSv3Client(new SQSClient());
         this.logger = opts?.logger ?? new Logger();
         this.truncate = opts?.truncate ?? false;

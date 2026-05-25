@@ -31,9 +31,10 @@ These are non-negotiable across every service in the package — change them onl
 ### Constructor
 
 ```ts
-constructor(opts?: { logger?: Logger; client?: <ServiceClient> })
+constructor(opts?: { logger?: LoggerInterface; client?: <ServiceClient> })
 ```
 
+- `logger` is typed as `LoggerInterface` (from `@aws-lambda-powertools/logger/types`), **not** the concrete `Logger` class. This avoids the dual-package hazard for ESM consumers — TS treats the ESM and CJS builds of the `Logger` class as nominally distinct (each has its own `#private` field), but `LoggerInterface` is a structural type alias so both builds are mutually assignable. The wrapper still defaults to `new Logger()` internally; only the public type widens.
 - `logger` defaults to `new Logger()`, which picks up `POWERTOOLS_SERVICE_NAME` from the environment. Do **not** pass `serviceName` in the default — env-driven service naming is the Powertools convention.
 - `client` defaults to `captureAWSv3Client(new <ServiceClient>())`. When the caller supplies a client, the wrapper does **not** apply X-Ray instrumentation — that's the caller's call.
 - No `clientConfig` / `region` / `endpoint` options. Callers needing those construct their own client and pass it via `client`.

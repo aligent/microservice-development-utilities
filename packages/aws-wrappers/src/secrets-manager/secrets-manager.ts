@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
     CreateSecretCommand,
     CreateSecretCommandInput,
@@ -70,7 +71,7 @@ const DELETE_SECRET_SAFE_FIELDS: ReadonlyArray<keyof DeleteSecretCommandInput> =
  */
 export class SecretsManagerService {
     private readonly client: SecretsManagerClient;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
@@ -79,7 +80,7 @@ export class SecretsManagerService {
      * supplied, the wrapper does not apply X-Ray instrumentation — the caller
      * owns that decision.
      */
-    constructor(opts?: { logger?: Logger; client?: SecretsManagerClient }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: SecretsManagerClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SecretsManagerClient());
         this.logger = opts?.logger ?? new Logger();
     }
