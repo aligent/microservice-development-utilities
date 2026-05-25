@@ -9,7 +9,7 @@ permissions:
 jobs:
   code-quality:
     name: 🕵️‍♀️ Code Quality Check
-    if: ${{ !startsWith(github.head_ref, 'releases/') }}
+    if: ${{ !startsWith(github.head_ref, 'release-pr/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
