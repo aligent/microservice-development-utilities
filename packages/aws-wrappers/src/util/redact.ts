@@ -1,4 +1,4 @@
-import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 
 /**
  * Return a log-safe projection of `input` based on the logger's configured level.
@@ -17,7 +17,7 @@ import { Logger } from '@aws-lambda-powertools/logger';
  * the design rationale and conventions on building the safe-field lists.
  */
 export function filterFieldsForLogLevel<T extends object, K extends keyof T>(
-    logger: Logger,
+    logger: LoggerInterface,
     input: T,
     safeFields: readonly K[]
 ): T | Pick<T, K> {

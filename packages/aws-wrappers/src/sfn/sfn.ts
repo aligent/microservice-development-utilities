@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
     DescribeExecutionCommand,
     DescribeExecutionCommandInput,
@@ -34,7 +35,7 @@ const START_EXECUTION_SAFE_FIELDS: ReadonlyArray<keyof StartExecutionCommandInpu
  */
 export class StepFunctionsService {
     private readonly client: SFNClient;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
@@ -42,7 +43,7 @@ export class StepFunctionsService {
      * @param opts.client - Optional pre-configured `SFNClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
-    constructor(opts?: { logger?: Logger; client?: SFNClient }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: SFNClient }) {
         this.client = opts?.client ?? captureAWSv3Client(new SFNClient());
         this.logger = opts?.logger ?? new Logger();
     }

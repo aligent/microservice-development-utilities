@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
     CopyObjectCommand,
     CopyObjectCommandInput,
@@ -66,7 +67,7 @@ const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknow
  */
 export class S3Service {
     private readonly client: S3Client;
-    private readonly logger: Logger;
+    private readonly logger: LoggerInterface;
 
     /**
      * @param opts.logger - Optional Powertools logger. Defaults to `new Logger()`,
@@ -74,7 +75,7 @@ export class S3Service {
      * @param opts.client - Optional pre-configured `S3Client`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
      */
-    constructor(opts?: { logger?: Logger; client?: S3Client }) {
+    constructor(opts?: { logger?: LoggerInterface; client?: S3Client }) {
         this.client = opts?.client ?? captureAWSv3Client(new S3Client());
         this.logger = opts?.logger ?? new Logger();
     }
