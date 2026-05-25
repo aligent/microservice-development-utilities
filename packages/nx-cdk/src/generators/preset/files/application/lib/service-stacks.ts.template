@@ -14,7 +14,13 @@ import type { Construct } from 'constructs';
  */
 export class ApplicationStage extends Stage {
     constructor(scope: Construct, id: string, props?: StageProps) {
-        super(scope, id, props);
+        super(scope, id, {
+            ...props,
+            env: {
+                account: process.env.CDK_DEFAULT_ACCOUNT,
+                region: process.env.CDK_DEFAULT_REGION || 'ap-southeast-2',
+            },
+        });
 
         const sharedInfra = new SharedInfraStack(this, 'shared-infra', props);
 
