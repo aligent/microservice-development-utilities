@@ -165,7 +165,7 @@ To bootstrap a new package:
 
 ## Step-by-Step Guide for subsequence releases
 
-1. Start by creating a new `releases/*` branch from the latest `main` branch.
+1. Start by creating a new `release-pr/*` branch from the latest `main` branch.
 
 2. Check if a version plan exist.
    - The version plan is a `version-plan-*.md` file in `.nx/version-plans` folder.
@@ -178,12 +178,12 @@ To bootstrap a new package:
 
      Follow the prompts to select the type of change (patch, minor, major, etc.) and provide a description for each affected package. This will create a version plan file in the repository.
 
-3. Double check your release plan then commit and push your changes to the newly created `releases/*` branch.
+3. Double check your release plan then commit and push your changes to the newly created `release-pr/*` branch.
    - Ensure your change contains only one version plan file.
    - This will trigger the `release` workflow. The workflow will:
      - Detect the version plan file.
      - Release a new version without publishing to NPM.
-     - Push the necessary changes to your `releases/*` branch.
+     - Push the necessary changes to your `release-pr/*` branch.
      - Remove the version plan file after a successful releasing.
      - Open a "Publish" pull request targeting the `main` branch.
 

@@ -1,9 +1,9 @@
-name: Release new version
+name: Create new version release PR
 
 on:
   push:
     branches:
-      - releases/**
+      - release-pr/**
 
 permissions:
   contents: write
