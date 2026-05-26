@@ -1,7 +1,7 @@
-export { DynamoDBService } from './dynamodb/dynamodb';
-export { S3Service } from './s3/s3';
-export { SecretsManagerService } from './secrets-manager/secrets-manager';
-export { StepFunctionsService } from './sfn/sfn';
-export { SNSService } from './sns/sns';
-export { SQSService } from './sqs/sqs';
-export { SSMService } from './ssm/ssm';
+export { DynamoDBService } from './dynamodb/dynamodb.js';
+export { S3Service } from './s3/s3.js';
+export { SecretsManagerService } from './secrets-manager/secrets-manager.js';
+export { StepFunctionsService } from './sfn/sfn.js';
+export { SNSService } from './sns/sns.js';
+export { SQSService } from './sqs/sqs.js';
+export { SSMService } from './ssm/ssm.js';

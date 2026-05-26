@@ -7,7 +7,7 @@ Guidance for Claude Code when working in this package. Read alongside the repo-r
 Each `*Service` class wraps a single AWS SDK client. The wrapper bundles:
 
 - a Powertools `Logger` (one `logger.info` line at the start of every public method),
-- X-Ray tracing via `captureAWSv3Client`,
+- X-Ray tracing via `xray.captureAWSv3Client`,
 - ergonomic helpers that smooth over recurring SDK quirks (auto-pagination, auto-chunking, JSON helpers, retry-on-`UnprocessedItems`, etc.).
 
 Callers who need raw SDK access drop down to the SDK client directly — the wrappers do not try to be a full SDK replacement.
@@ -22,7 +22,40 @@ packages/aws-wrappers/src/
 └── index.ts                # named exports of every *Service class
 ```
 
-One folder per service, lowercase. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>`.
+One folder per service, lowercase. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
+
+## Build layout
+
+The package is **dual-published** as both CommonJS and ES modules. The build emits two parallel trees under `dist/`:
+
+```
+dist/
+├── cjs/                # CommonJS build (tsconfig.lib.cjs.json → module: Node16)
+│   ├── package.json    # {"type":"commonjs"} sidecar
+│   └── ...
+├── esm/                # ES modules build (tsconfig.lib.esm.json → module: ESNext, moduleResolution: Bundler)
+│   ├── package.json    # {"type":"module"} sidecar
+│   └── ...
+└── package.json        # `exports` map routes consumers to the right build
+```
+
+`package.json` `exports` routes CJS consumers (`require`) to `dist/cjs/` and ESM consumers (`import`) to `dist/esm/`, each with its own `.d.ts`. This sidesteps the dual-package hazard — ESM and CJS consumers each resolve their own build of any `#private`-bearing dependency type (e.g. Powertools' `Logger` class), so the nominal-distinctness trap doesn't fire.
+
+### Rules that fall out of dual-publishing
+
+- **Relative imports must include the `.js` extension** (e.g. `from './util/redact.js'`, not `'./util/redact'`). Required for ESM resolution under Node16; harmless for CJS. The build will fail in ESM consumers if this is missed.
+- **No named imports from CJS-only dependencies.** Some deps (`aws-xray-sdk-core` is the current example) publish only CJS with no `exports` map. Node ESM uses `cjs-module-lexer` to surface named exports from CJS, and it doesn't reliably pick up every name — `import { foo } from 'cjs-only-pkg'` will throw `SyntaxError: does not provide an export named 'foo'` at runtime in ESM consumers, even though it compiles and runs under CJS. **Use default import + property access instead**:
+  ```ts
+  // Bad — breaks in Node ESM consumers
+  import { captureAWSv3Client } from 'aws-xray-sdk-core';
+  captureAWSv3Client(client);
+
+  // Good — works in both
+  import xray from 'aws-xray-sdk-core';
+  xray.captureAWSv3Client(client);
+  ```
+  When adding a new dependency, check its published format (`main` only, no `exports`, no `"type":"module"` → CJS-only) and prefer default import for those. The local consumer smoke-test in `feature/MI-321_dual-publish-aws-wrappers` history is the reference for verifying ESM resolution before merging.
+- **No `__dirname` / `require` / `module.exports`** in source — those don't survive the ESM build.
 
 ## Locked-in conventions
 
@@ -34,9 +67,9 @@ These are non-negotiable across every service in the package — change them onl
 constructor(opts?: { logger?: LoggerInterface; client?: <ServiceClient> })
 ```
 
-- `logger` is typed as `LoggerInterface` (from `@aws-lambda-powertools/logger/types`), **not** the concrete `Logger` class. This avoids the dual-package hazard for ESM consumers — TS treats the ESM and CJS builds of the `Logger` class as nominally distinct (each has its own `#private` field), but `LoggerInterface` is a structural type alias so both builds are mutually assignable. The wrapper still defaults to `new Logger()` internally; only the public type widens.
+- `logger` is typed as `LoggerInterface` (from `@aws-lambda-powertools/logger/types`), **not** the concrete `Logger` class. `LoggerInterface` is a structural type alias and is the more permissive public type. The dual-publish build (see "Build layout") is the load-bearing fix for the dual-package hazard — `LoggerInterface` widening alone is not sufficient because `LoggerInterface.createChild` transitively references `LogFormatter` (a class with `#private`). The wrapper still defaults to `new Logger()` internally; only the public type widens.
 - `logger` defaults to `new Logger()`, which picks up `POWERTOOLS_SERVICE_NAME` from the environment. Do **not** pass `serviceName` in the default — env-driven service naming is the Powertools convention.
-- `client` defaults to `captureAWSv3Client(new <ServiceClient>())`. When the caller supplies a client, the wrapper does **not** apply X-Ray instrumentation — that's the caller's call.
+- `client` defaults to `xray.captureAWSv3Client(new <ServiceClient>())`. When the caller supplies a client, the wrapper does **not** apply X-Ray instrumentation — that's the caller's call.
 - No `clientConfig` / `region` / `endpoint` options. Callers needing those construct their own client and pass it via `client`.
 
 ### Logging

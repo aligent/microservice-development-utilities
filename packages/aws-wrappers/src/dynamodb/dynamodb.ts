@@ -29,8 +29,8 @@ import {
     UpdateCommandInput,
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
@@ -168,7 +168,7 @@ export class DynamoDBService {
     constructor(opts?: { logger?: LoggerInterface; client?: DynamoDBDocumentClient }) {
         this.client =
             opts?.client ??
-            DynamoDBDocumentClient.from(captureAWSv3Client(new DynamoDBClient({})), {
+            DynamoDBDocumentClient.from(xray.captureAWSv3Client(new DynamoDBClient({})), {
                 marshallOptions: { removeUndefinedValues: true },
             });
         this.logger = opts?.logger ?? new Logger();

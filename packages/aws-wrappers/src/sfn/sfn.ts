@@ -15,8 +15,8 @@ import {
     StopExecutionCommandInput,
     StopExecutionCommandOutput,
 } from '@aws-sdk/client-sfn';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO for `startExecution`. Omits `input` — the SFN
@@ -44,7 +44,7 @@ export class StepFunctionsService {
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SFNClient }) {
-        this.client = opts?.client ?? captureAWSv3Client(new SFNClient());
+        this.client = opts?.client ?? xray.captureAWSv3Client(new SFNClient());
         this.logger = opts?.logger ?? new Logger();
     }
 

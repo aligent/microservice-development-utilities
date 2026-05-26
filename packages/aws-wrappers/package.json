@@ -3,8 +3,29 @@
   "version": "0.1.0",
   "description": "Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing",
   "type": "commonjs",
-  "main": "./src/index.js",
-  "typings": "./src/index.d.ts",
+  "main": "./cjs/index.js",
+  "module": "./esm/index.js",
+  "types": "./cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./esm/index.d.ts",
+        "default": "./esm/index.js"
+      },
+      "require": {
+        "types": "./cjs/index.d.ts",
+        "default": "./cjs/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "cjs",
+    "esm",
+    "README.md",
+    "CLAUDE.md",
+    "docs"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/aligent/microservice-development-utilities.git",

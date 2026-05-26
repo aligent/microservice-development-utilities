@@ -5,21 +5,26 @@
     "sourceRoot": "packages/aws-wrappers/src",
     "targets": {
         "build": {
-            "executor": "@nx/js:tsc",
+            "executor": "nx:run-commands",
+            "outputs": ["{projectRoot}/dist"],
+            "inputs": ["production", "^production"],
+            "cache": true,
+            "dependsOn": ["^typedoc"],
             "options": {
-                "outputPath": "{projectRoot}/dist",
-                "main": "{projectRoot}/src/index.ts",
-                "tsConfig": "{projectRoot}/tsconfig.lib.json",
-                "assets": [
-                    "{projectRoot}/*.md",
-                    {
-                        "input": "./{projectRoot}/docs",
-                        "glob": "**/(*.md)",
-                        "output": "./docs"
-                    }
+                "cwd": "{projectRoot}",
+                "parallel": false,
+                "commands": [
+                    "rm -rf dist",
+                    "tsc -p tsconfig.lib.cjs.json",
+                    "tsc -p tsconfig.lib.esm.json",
+                    "node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}))\"",
+                    "node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({type:'commonjs'}))\"",
+                    "cp package.json dist/package.json",
+                    "cp README.md dist/README.md",
+                    "cp CLAUDE.md dist/CLAUDE.md",
+                    "cp -R docs dist/docs"
                 ]
-            },
-            "dependsOn": ["^typedoc"]
+            }
         },
         "typedoc": {
             "executor": "nx:run-commands",

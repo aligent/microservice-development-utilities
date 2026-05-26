@@ -22,8 +22,8 @@ import {
     S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
@@ -76,7 +76,7 @@ export class S3Service {
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: S3Client }) {
-        this.client = opts?.client ?? captureAWSv3Client(new S3Client());
+        this.client = opts?.client ?? xray.captureAWSv3Client(new S3Client());
         this.logger = opts?.logger ?? new Logger();
     }
 
