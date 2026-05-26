@@ -21,7 +21,6 @@
                     "node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({type:'commonjs'}))\"",
                     "cp package.json dist/package.json",
                     "cp README.md dist/README.md",
-                    "cp CLAUDE.md dist/CLAUDE.md",
                     "cp -R docs dist/docs"
                 ]
             }

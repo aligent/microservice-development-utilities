@@ -23,7 +23,6 @@
     "cjs",
     "esm",
     "README.md",
-    "CLAUDE.md",
     "docs"
   ],
   "repository": {
