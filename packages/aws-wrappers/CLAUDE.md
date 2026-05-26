@@ -26,24 +26,30 @@ One folder per service, lowercase. No barrel files inside service folders — `i
 
 ## Build layout
 
-The package is **dual-published** as both CommonJS and ES modules. The build emits two parallel trees under `dist/`:
+The package is **dual-published** as both CommonJS and ES modules via `@nx/rollup`. `rollup.config.mjs` invokes `withNx` twice — once per format — and emits two parallel trees under `dist/`:
 
 ```
 dist/
-├── cjs/                # CommonJS build (tsconfig.lib.cjs.json → module: Node16)
-│   ├── package.json    # {"type":"commonjs"} sidecar
-│   └── ...
-├── esm/                # ES modules build (tsconfig.lib.esm.json → module: ESNext, moduleResolution: Bundler)
-│   ├── package.json    # {"type":"module"} sidecar
-│   └── ...
-└── package.json        # `exports` map routes consumers to the right build
+├── cjs/                # CommonJS build (format: 'cjs', entryFileNames: '[name].cjs')
+│   ├── index.cjs
+│   ├── src/            # per-module .d.ts tree
+│   └── package.json    # {"type":"commonjs"} sidecar, auto-written by withNx
+├── esm/                # ES modules build (format: 'esm', entryFileNames: '[name].mjs')
+│   ├── index.mjs
+│   ├── src/            # per-module .d.ts tree
+│   └── package.json    # {"type":"module"} sidecar, auto-written by withNx
+├── package.json        # publishable manifest, `exports` map routes consumers
+├── README.md
+└── docs/
 ```
 
-`package.json` `exports` routes CJS consumers (`require`) to `dist/cjs/` and ESM consumers (`import`) to `dist/esm/`, each with its own `.d.ts`. This sidesteps the dual-package hazard — ESM and CJS consumers each resolve their own build of any `#private`-bearing dependency type (e.g. Powertools' `Logger` class), so the nominal-distinctness trap doesn't fire.
+The `package-dist` target (see `project.json`) copies the source `package.json`, `README.md`, and `docs/` into `dist/` so `nx-release-publish` has a complete publishable manifest at `{projectRoot}/dist`. `build` `dependsOn` `package-dist` so the copy runs before rollup.
+
+`package.json` `exports` routes ESM consumers (`import`) to `dist/esm/` and CJS consumers (`require`) to `dist/cjs/`, each with its own `.d.ts`. **This sidesteps the dual-package hazard** — ESM and CJS consumers each resolve their own build of any `#private`-bearing dependency type (e.g. Powertools' `Logger` class), so the nominal-distinctness trap doesn't fire.
 
 ### Rules that fall out of dual-publishing
 
-- **Relative imports must include the `.js` extension** (e.g. `from './util/redact.js'`, not `'./util/redact'`). Required for ESM resolution under Node16; harmless for CJS. The build will fail in ESM consumers if this is missed.
+- **Relative imports must include the `.js` extension** (e.g. `from './util/redact.js'`, not `'./util/redact'`). Emitted into the published `.d.ts` and required for ESM consumer resolution under Node16/NodeNext; harmless for CJS.
 - **No named imports from CJS-only dependencies.** Some deps (`aws-xray-sdk-core` is the current example) publish only CJS with no `exports` map. Node ESM uses `cjs-module-lexer` to surface named exports from CJS, and it doesn't reliably pick up every name — `import { foo } from 'cjs-only-pkg'` will throw `SyntaxError: does not provide an export named 'foo'` at runtime in ESM consumers, even though it compiles and runs under CJS. **Use default import + property access instead**:
   ```ts
   // Bad — breaks in Node ESM consumers
@@ -54,8 +60,17 @@ dist/
   import xray from 'aws-xray-sdk-core';
   xray.captureAWSv3Client(client);
   ```
-  When adding a new dependency, check its published format (`main` only, no `exports`, no `"type":"module"` → CJS-only) and prefer default import for those. The local consumer smoke-test in `feature/MI-321_dual-publish-aws-wrappers` history is the reference for verifying ESM resolution before merging.
+  When adding a new dependency, check its published format (`main` only, no `exports`, no `"type":"module"` → CJS-only) and prefer default import for those.
 - **No `__dirname` / `require` / `module.exports`** in source — those don't survive the ESM build.
+- **`tsconfig.lib.json` overrides `module: ESNext` / `moduleResolution: Bundler` / `checkJs: false`** from the `@aligent/ts-code-standards` base. Required by `@rollup/plugin-typescript` and by the rollup pipeline (rollup *is* the bundler, so `moduleResolution: Bundler` is the truthful setting). `tsconfig.spec.json` mirrors these overrides so the in-repo typecheck doesn't fire the dual-package hazard on its own source.
+
+### Prefer Rollup for new dual-published packages in this monorepo
+
+This setup is the recommended template for any new package in this monorepo that needs to be dual-published as CJS + ESM. Copy the pattern from `rollup.config.mjs`, `project.json` (`build` + `package-dist` targets), `tsconfig.lib.json`, and `tsconfig.spec.json`. The reasons it's preferred over a hand-rolled `tsc -p` `nx:run-commands` chain:
+
+- Single source `tsconfig.lib.json` instead of one per format.
+- Idiomatic Nx — `@nx/rollup/plugin` infers the build target so `project.json` stays small.
+- The compiled JS is bundled per format, so consumers download one file per entry instead of a tree of transpiled modules.
 
 ## Locked-in conventions
 

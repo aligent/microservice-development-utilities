@@ -2,19 +2,18 @@
   "name": "@aligent/aws-wrappers",
   "version": "0.1.0",
   "description": "Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing",
-  "type": "commonjs",
-  "main": "./cjs/index.js",
-  "module": "./esm/index.js",
-  "types": "./cjs/index.d.ts",
+  "main": "./cjs/index.cjs",
+  "module": "./esm/index.mjs",
+  "types": "./cjs/src/index.d.ts",
   "exports": {
     ".": {
       "import": {
-        "types": "./esm/index.d.ts",
-        "default": "./esm/index.js"
+        "types": "./esm/src/index.d.ts",
+        "default": "./esm/index.mjs"
       },
       "require": {
-        "types": "./cjs/index.d.ts",
-        "default": "./cjs/index.js"
+        "types": "./cjs/src/index.d.ts",
+        "default": "./cjs/index.cjs"
       }
     },
     "./package.json": "./package.json"

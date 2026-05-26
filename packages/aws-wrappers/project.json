@@ -5,23 +5,29 @@
     "sourceRoot": "packages/aws-wrappers/src",
     "targets": {
         "build": {
+            "dependsOn": ["^typedoc", "package-dist"]
+        },
+        "package-dist": {
             "executor": "nx:run-commands",
-            "outputs": ["{projectRoot}/dist"],
-            "inputs": ["production", "^production"],
+            "outputs": [
+                "{projectRoot}/dist/package.json",
+                "{projectRoot}/dist/README.md",
+                "{projectRoot}/dist/docs"
+            ],
+            "inputs": [
+                "{projectRoot}/package.json",
+                "{projectRoot}/README.md",
+                "{projectRoot}/docs/**/*"
+            ],
             "cache": true,
-            "dependsOn": ["^typedoc"],
             "options": {
                 "cwd": "{projectRoot}",
                 "parallel": false,
                 "commands": [
-                    "rm -rf dist",
-                    "tsc -p tsconfig.lib.cjs.json",
-                    "tsc -p tsconfig.lib.esm.json",
-                    "node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}))\"",
-                    "node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({type:'commonjs'}))\"",
+                    "mkdir -p dist",
                     "cp package.json dist/package.json",
                     "cp README.md dist/README.md",
-                    "cp -R docs dist/docs"
+                    "rm -rf dist/docs && cp -R docs dist/docs"
                 ]
             }
         },
