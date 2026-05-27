@@ -97,7 +97,7 @@ The app generator always renders a **base** subtree into `<app-name>/`:
   - `package.json` `nx.targets` block - declares the custom `check-types` and `deploy` targets; `lint` and `test` are inferred by the `@nx/eslint/plugin` and `@nx/vitest` plugins from `eslint.config.mjs` and `vitest.config.ts`
   - `tsconfig.json` / `tsconfig.base.json` - TypeScript project config
   - `babel.actions.config.js` - Babel preset for App Builder actions
-  - `eslint.config.mjs` / `prettier.config.mjs` - Lint and formatter config (`@aligent/ts-code-standards`)
+  - `eslint.config.mjs` / `prettier.config.mjs` - Lint and formatter config (`@aligent/ts-code-standards`). The eslint preset is `react` when `hasAdminUI=true` and `base` otherwise, so action-only apps don't load the React/JSX/a11y rules.
   - `vitest.config.ts` - Vitest config
   - `.editorconfig`, `.nvmrc`, `.gitignore`, `README.md`
 
@@ -178,6 +178,15 @@ npx nx build nx-appbuilder
 ```
 
 The `@nx/js:tsc` build executor compiles `src/**/*.ts` to `dist/src/` and copies the templates under `src/generators/<gen>/files/` verbatim. Template files use the `.template` suffix (e.g. `app.commerce.config.ts.template`) so they aren't picked up by lint or `tsc`; `@nx/devkit`'s `generateFiles` strips the suffix at generation time.
+
+#### Dependency version pins
+
+Each generator reads the npm version specs it injects into generated files from a real `package.json` at `src/generators/<gen>/template-package/package.json`:
+
+- `preset/template-package/package.json` pins the workspace-level devDeps (`nx`, `@nx/*` plugins, `eslint`, `prettier`, `typescript`, `vitest`, `@aligent/ts-code-standards`).
+- `app/template-package/package.json` pins the per-app deps (`@adobe/aio-*`, React + Spectrum, lint/test tooling, etc.).
+
+Both files are tracked by Dependabot (see `.github/dependabot.yml`) so version bumps land via PR. To add a new pin, add it to the relevant template-package and reference it from `pickVersions()` in `preset.ts` / `compose-package-json.ts`. The shared helper at `src/generators/helpers/template-package.ts` enforces that every requested key exists in the template file, so missing pins fail loudly at runtime.
 
 ### Running tests / lint / type-check
 

@@ -1,7 +1,7 @@
 import { eslintConfigs } from '@aligent/ts-code-standards';
 
 export default [
-    ...eslintConfigs.react,
+    ...eslintConfigs.<%= hasAdminUI ? 'react' : 'base' %>,
     {
         ignores: ['**/*.js', '**/*.cjs', '**/*.mjs', '**/coverage'],
     },
