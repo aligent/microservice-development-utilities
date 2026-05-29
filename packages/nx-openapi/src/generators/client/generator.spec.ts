@@ -15,6 +15,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
             skipValidate: false,
             override: false,
+            authMethod: 'api-key',
         };
         await clientGenerator(tree, options);
 
@@ -38,6 +39,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
             skipValidate: true,
             override: false,
+            authMethod: 'api-key',
         };
 
         await clientGenerator(tree, options);
@@ -53,6 +55,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/random.xml`,
             skipValidate: false,
             override: false,
+            authMethod: 'api-key',
         };
         await expect(clientGenerator(tree, options)).rejects.toThrowError();
     });
@@ -63,6 +66,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/missing.yaml`,
             skipValidate: true,
             override: false,
+            authMethod: 'api-key',
         };
         await expect(clientGenerator(tree, options)).rejects.toThrowError();
     });
@@ -73,6 +77,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/invalid.yaml`,
             skipValidate: false,
             override: false,
+            authMethod: 'api-key',
         };
 
         await expect(clientGenerator(tree, options)).rejects.toThrowError();
@@ -84,6 +89,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/unsupported.yaml`,
             skipValidate: false,
             override: false,
+            authMethod: 'api-key',
         };
 
         await expect(clientGenerator(tree, options)).rejects.toThrowError();
@@ -95,6 +101,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
             skipValidate: true,
             override: false,
+            authMethod: 'api-key',
         };
 
         // First generation
@@ -112,6 +119,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
             skipValidate: true,
             override: false,
+            authMethod: 'api-key',
         };
 
         // First generation
@@ -139,6 +147,7 @@ describe('client generator', () => {
             schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
             skipValidate: true,
             override: false,
+            authMethod: 'api-key',
         };
 
         await clientGenerator(tree, options);
@@ -147,13 +156,29 @@ describe('client generator', () => {
         expect(tsconfig.compilerOptions.paths['@clients']).toBeDefined();
     });
 
+    it('should include logMiddleware in generated client', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+        await clientGenerator(tree, options);
+
+        const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
+        expect(clientContent).toContain('logMiddleware');
+        expect(clientContent).toContain("logMiddleware('test')");
+    });
+
     describe('authMethod option', () => {
-        it('should generate client with apiKeyAuthMiddleware by default', async () => {
+        it('should generate client with apiKeyAuthMiddleware for api-key auth method', async () => {
             const options: ClientGeneratorSchema = {
                 name: 'test',
                 schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
                 skipValidate: true,
                 override: false,
+                authMethod: 'api-key',
             };
 
             await clientGenerator(tree, options);

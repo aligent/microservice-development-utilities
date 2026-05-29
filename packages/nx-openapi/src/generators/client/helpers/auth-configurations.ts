@@ -172,10 +172,12 @@ export function applyAuthMethodConfiguration(
             })
         );`;
 
-    // Find the retryMiddleware use statement and insert before it
+    // Find the middleware use statement and insert auth before it
     const statements = constructor.getStatements();
-    const retryStatementIndex = statements.findIndex(statement =>
-        /this\.client\.use\(\s*retryMiddleware/.test(statement.getText())
+    const retryStatementIndex = statements.findIndex(
+        statement =>
+            /this\.client\.use\(/.test(statement.getText()) &&
+            /retryMiddleware/.test(statement.getText())
     );
 
     if (retryStatementIndex !== -1) {
