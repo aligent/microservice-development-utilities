@@ -20,9 +20,9 @@ import {
     SendMessageCommandOutput,
     SQSClient,
 } from '@aws-sdk/client-sqs';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
-import { truncateUtf8 } from '../util/truncate';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
+import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
 const SQS_MESSAGE_BODY_MAX_BYTES = 256 * 1024;
@@ -59,7 +59,7 @@ export class SQSService {
      * option.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SQSClient; truncate?: boolean }) {
-        this.client = opts?.client ?? captureAWSv3Client(new SQSClient());
+        this.client = opts?.client ?? xray.captureAWSv3Client(new SQSClient());
         this.logger = opts?.logger ?? new Logger();
         this.truncate = opts?.truncate ?? false;
     }

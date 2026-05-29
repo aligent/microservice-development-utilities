@@ -31,6 +31,10 @@ npm run test
 npx nx g @tools/generators:package
 ```
 
+### Build tooling
+
+- **Prefer `@nx/rollup` for new packages that need to be dual-published as CJS + ESM.** See `packages/aws-wrappers` for the reference setup (`rollup.config.mjs`, `project.json` with `build` + `package-dist` targets, single `tsconfig.lib.json` overriding `module: ESNext` / `moduleResolution: Bundler`). The pattern is documented in detail in `packages/aws-wrappers/CLAUDE.md` under "Build layout". Avoid hand-rolling a dual-`tsc` chain via `nx:run-commands` — it works but doesn't compose cleanly with Nx's plugin model and duplicates the tsconfig per format.
+
 ### TypeScript
 
 - **Never use the non-null assertion operator (`!`)**. Use explicit runtime checks instead so errors surface with a clear message rather than a runtime crash.

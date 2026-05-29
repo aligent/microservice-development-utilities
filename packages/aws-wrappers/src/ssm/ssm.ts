@@ -11,8 +11,8 @@ import {
     PutParameterCommandOutput,
     SSMClient,
 } from '@aws-sdk/client-ssm';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO level for `putParameter`. Omits `Value` (the
@@ -55,7 +55,7 @@ export class SSMService {
      * the wrapper does not apply X-Ray instrumentation.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SSMClient }) {
-        this.client = opts?.client ?? captureAWSv3Client(new SSMClient());
+        this.client = opts?.client ?? xray.captureAWSv3Client(new SSMClient());
         this.logger = opts?.logger ?? new Logger();
     }
 

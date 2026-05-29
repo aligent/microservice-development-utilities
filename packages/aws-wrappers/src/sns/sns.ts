@@ -10,9 +10,9 @@ import {
     PublishCommandOutput,
     SNSClient,
 } from '@aws-sdk/client-sns';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
-import { truncateCodepoints, truncateUtf8 } from '../util/truncate';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
+import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
 const PUBLISH_BATCH_LIMIT = 10;
 const SNS_MESSAGE_MAX_BYTES = 256 * 1024;
@@ -53,7 +53,7 @@ export class SNSService {
      * its own `truncate` option.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SNSClient; truncate?: boolean }) {
-        this.client = opts?.client ?? captureAWSv3Client(new SNSClient());
+        this.client = opts?.client ?? xray.captureAWSv3Client(new SNSClient());
         this.logger = opts?.logger ?? new Logger();
         this.truncate = opts?.truncate ?? false;
     }

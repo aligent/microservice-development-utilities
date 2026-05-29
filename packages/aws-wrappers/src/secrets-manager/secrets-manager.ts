@@ -16,8 +16,8 @@ import {
     UpdateSecretCommandInput,
     UpdateSecretCommandOutput,
 } from '@aws-sdk/client-secrets-manager';
-import { captureAWSv3Client } from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact';
+import xray from 'aws-xray-sdk-core';
+import { filterFieldsForLogLevel } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO level. Omits `SecretString` and `SecretBinary` —
@@ -81,7 +81,7 @@ export class SecretsManagerService {
      * owns that decision.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SecretsManagerClient }) {
-        this.client = opts?.client ?? captureAWSv3Client(new SecretsManagerClient());
+        this.client = opts?.client ?? xray.captureAWSv3Client(new SecretsManagerClient());
         this.logger = opts?.logger ?? new Logger();
     }
 
