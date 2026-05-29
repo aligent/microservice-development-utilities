@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { rfc3986, sign } from 'oauth-sign';
 import { MiddlewareCallbackParams } from 'openapi-fetch';
-import { OAuth10a } from '../authentications';
+import { OAuth10a, resolve } from '../authentications';
 
 /**
  * Determines whether a given URL is absolute.
@@ -171,7 +171,7 @@ export async function generateOauthParams(
     config: OAuth10a
 ): Promise<string> {
     const { algorithm, includeBodyHash = 'auto', realm, callback, verifier } = config;
-    const { consumerKey, consumerSecret, token, tokenSecret } = await config.credentials();
+    const { consumerKey, consumerSecret, token, tokenSecret } = await resolve(config.credentials);
 
     // Due to the way that openapi-fetch & fetch API are implemented in NodeJS (undici),
     // each request only can be used ONCE. We have to clone the request like this to extract information
