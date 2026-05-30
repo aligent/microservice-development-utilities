@@ -25,7 +25,7 @@ export class <%= className %> {
          */
 
         this.client.use(
-            logMiddleware('<%= name %>'),
+            logMiddleware('<%= className %>'),
             retryMiddleware({
                 onRetry: ({ attempt, error }) =>
                     console.log(`Retrying...${attempt} due to ${String(error)}`),

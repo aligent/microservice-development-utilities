@@ -78,7 +78,6 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     const className = toClassName(name);
     generateFiles(tree, joinPathFragments(__dirname, './client-specific-files'), apiClientDest, {
         className,
-        name,
     });
 
     // Apply auth method configuration using ts-morph

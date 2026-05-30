@@ -168,7 +168,7 @@ describe('client generator', () => {
 
         const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
         expect(clientContent).toContain('logMiddleware');
-        expect(clientContent).toContain("logMiddleware('test')");
+        expect(clientContent).toContain("logMiddleware('Test')");
     });
 
     describe('authMethod option', () => {
