@@ -155,33 +155,25 @@ function shouldGenerateBodyHash(
     return includeBodyHash === true;
 }
 
+interface SignOauth10aInput {
+    method: string;
+    oauthUrl: string;
+    contentType: string | null;
+    body: string;
+    query: URLSearchParams | Record<string, unknown> | undefined;
+}
+
 /**
- * Generates OAuth 1.0a parameters for signing a request.
+ * Core signing logic shared by both the middleware path and the standalone re-sign path.
  *
- * @param {MiddlewareCallbackParams['request']} request - The request object.
- * @param {MiddlewareCallbackParams['options']} options - The options object.
- * @param {MiddlewareCallbackParams['params']} params - The parameters object.
- * @param {OAuth10a} config - The OAuth 1.0a configuration.
- * @returns {Promise<string>} The generated OAuth 1.0a Authorization header.
+ * @param input - The request details needed for signing.
+ * @param config - The OAuth 1.0a configuration.
+ * @returns The OAuth 1.0a Authorization header value (without the "OAuth " prefix).
  */
-export async function generateOauthParams(
-    request: MiddlewareCallbackParams['request'],
-    options: MiddlewareCallbackParams['options'],
-    params: MiddlewareCallbackParams['params'],
-    config: OAuth10a
-): Promise<string> {
+async function signOauth10a(input: SignOauth10aInput, config: OAuth10a): Promise<string> {
     const { algorithm, includeBodyHash = 'auto', realm, callback, verifier } = config;
+    const { method, oauthUrl, body, contentType, query } = input;
     const { consumerKey, consumerSecret, token, tokenSecret } = await resolve(config.credentials);
-
-    // Due to the way that openapi-fetch & fetch API are implemented in NodeJS (undici),
-    // each request only can be used ONCE. We have to clone the request like this to extract information
-    // Otherwise, undici will not be able to create & send the request.
-    const clonedRequest = request.clone();
-
-    const method = (clonedRequest.method || 'GET').toUpperCase();
-    const url = combineUrlAndPathParams(clonedRequest.url, params.path);
-    const contentType = clonedRequest.headers.get('Content-Type');
-    const body = await clonedRequest.text();
 
     const oauthParams: Record<string, string> = {
         oauth_consumer_key: consumerKey,
@@ -209,8 +201,8 @@ export async function generateOauthParams(
 
     addParamsToSign(paramsToSign, oauthParams);
 
-    if (params.query) {
-        addParamsToSign(paramsToSign, params.query);
+    if (query) {
+        addParamsToSign(paramsToSign, query);
     }
 
     // If user submit a form, then include form parameters in the
@@ -227,7 +219,6 @@ export async function generateOauthParams(
         addParamToSign(paramsToSign, 'oauth_body_hash', bodyHash);
     }
 
-    const oauthUrl = getOAuthUrl(options.baseUrl, url);
     oauthParams.oauth_signature = sign(
         algorithm,
         method,
@@ -248,4 +239,73 @@ export async function generateOauthParams(
     return Object.entries(oauthParams)
         .map(e => [e[0], '="', rfc3986(e[1]), '"'].join(''))
         .join(',');
+}
+
+/**
+ * Generates OAuth 1.0a parameters for signing a request.
+ *
+ * @param {MiddlewareCallbackParams['request']} request - The request object.
+ * @param {MiddlewareCallbackParams['options']} options - The options object.
+ * @param {MiddlewareCallbackParams['params']} params - The parameters object.
+ * @param {OAuth10a} config - The OAuth 1.0a configuration.
+ * @returns {Promise<string>} The generated OAuth 1.0a Authorization header.
+ */
+export async function generateOauthParams(
+    request: MiddlewareCallbackParams['request'],
+    options: MiddlewareCallbackParams['options'],
+    params: MiddlewareCallbackParams['params'],
+    config: OAuth10a
+): Promise<string> {
+    const clonedRequest = request.clone();
+    const method = (clonedRequest.method || 'GET').toUpperCase();
+    const url = combineUrlAndPathParams(clonedRequest.url, params.path);
+
+    return signOauth10a(
+        {
+            method,
+            oauthUrl: getOAuthUrl(options.baseUrl, url),
+            contentType: clonedRequest.headers.get('Content-Type'),
+            body: await clonedRequest.text(),
+            query: params.query,
+        },
+        config
+    );
+}
+
+/**
+ * Standalone function that re-signs a `Request` with fresh OAuth 1.0a credentials.
+ * This function derives all information (URL, method, query params, body)
+ * directly from the `Request` object, without requiring openapi-fetch middleware context.
+ *
+ * Designed for use with the retry middleware's `onRetry` hook to regenerate
+ * OAuth 1.0a signatures on retried requests.
+ *
+ * @param {Request} request - The request to re-sign.
+ * @param {OAuth10a} config - The OAuth 1.0a configuration.
+ * @returns {Promise<Request>} The request with a fresh `Authorization` header.
+ *
+ * @example
+ * client.use(retryMiddleware({
+ *     onRetry: ({ request }) => resignOauth10aRequest(request, config),
+ * }));
+ */
+export async function resignOauth10aRequest(request: Request, config: OAuth10a): Promise<Request> {
+    const clonedRequest = request.clone();
+    const method = (clonedRequest.method || 'GET').toUpperCase();
+    const parsedUrl = new URL(clonedRequest.url);
+
+    const oauthParams = await signOauth10a(
+        {
+            method,
+            oauthUrl: getOAuthUrl(parsedUrl.origin, parsedUrl.pathname),
+            contentType: clonedRequest.headers.get('Content-Type'),
+            body: await clonedRequest.text(),
+            query: parsedUrl.search ? parsedUrl.searchParams : undefined,
+        },
+        config
+    );
+
+    request.headers.set('Authorization', `OAuth ${oauthParams}`);
+
+    return request;
 }

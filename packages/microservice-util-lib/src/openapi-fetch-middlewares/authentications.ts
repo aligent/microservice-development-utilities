@@ -1,5 +1,5 @@
 import type { Middleware } from 'openapi-fetch';
-import { generateOauthParams } from './oauth10a/oauth10a';
+import { generateOauthParams, resignOauth10aRequest } from './oauth10a/oauth10a';
 import type { ApiKey, Basic, OAuth10a, OAuth20, Resolvable } from './types/authentications';
 
 /**
@@ -146,4 +146,10 @@ function oAuth20AuthMiddleware(options: OAuth20): Middleware {
 export { resolve };
 export type { ApiKey, Basic, OAuth10a, OAuth20, Resolvable };
 
-export { apiKeyAuthMiddleware, basicAuthMiddleware, oAuth10aAuthMiddleware, oAuth20AuthMiddleware };
+export {
+    apiKeyAuthMiddleware,
+    basicAuthMiddleware,
+    oAuth10aAuthMiddleware,
+    oAuth20AuthMiddleware,
+    resignOauth10aRequest,
+};
