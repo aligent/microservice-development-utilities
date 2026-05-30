@@ -53,7 +53,11 @@ describe('HttpResponseError', () => {
         });
 
         it('should capture response data', async () => {
-            const response = createTestResponse(502, 'Bad Gateway', JSON.stringify({ error: 'upstream' }));
+            const response = createTestResponse(
+                502,
+                'Bad Gateway',
+                JSON.stringify({ error: 'upstream' })
+            );
             const request = createTestRequest({ contentType: 'application/json' });
 
             const error = await HttpResponseError.create(response, request);
@@ -116,7 +120,10 @@ describe('HttpResponseError', () => {
 describe('isHttpResponseError', () => {
     it('should return true for HttpResponseError instances', async () => {
         const request = new Request('https://api.example.com/test', { method: 'GET' });
-        const response = new Response('error', { status: 500, statusText: 'Internal Server Error' });
+        const response = new Response('error', {
+            status: 500,
+            statusText: 'Internal Server Error',
+        });
 
         const error = await HttpResponseError.create(response, request);
 
