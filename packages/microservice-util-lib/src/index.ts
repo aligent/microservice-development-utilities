@@ -12,6 +12,7 @@ import {
     basicAuthMiddleware,
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
+    resignOauth10aRequest,
 } from './openapi-fetch-middlewares/authentications';
 import { LogLevel, Logger, logMiddleware } from './openapi-fetch-middlewares/log';
 import {
@@ -47,6 +48,7 @@ export {
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
     remap,
+    resignOauth10aRequest,
     retryMiddleware,
     retryWrapper,
 };

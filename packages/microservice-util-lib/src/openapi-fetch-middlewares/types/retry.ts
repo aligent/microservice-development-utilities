@@ -41,10 +41,15 @@ export type RetryDelayFn = (attempt: number, context: RetryContext) => number | 
  * Function type for the onRetry callback.
  * Called before each retry attempt.
  *
+ * - If the function returns a `Request` (or `Promise<Request>`), that request replaces
+ *   the current one for the retry attempt. This is useful for regenerating authentication
+ *   headers (e.g., OAuth 1.0a re-signing).
+ * - If the function returns `void`, the original request is used as-is.
+ *
  * @param {RetryContext} context - The retry context containing attempt information.
- * @returns {void | Promise<void>}
+ * @returns {Request | void | Promise<Request | void>}
  */
-export type OnRetryFn = (context: RetryContext) => void | Promise<void>;
+export type OnRetryFn = (context: RetryContext) => Request | void | Promise<Request | void>;
 
 /**
  * Configuration for the retry middleware.
@@ -68,7 +73,11 @@ export type OnRetryFn = (context: RetryContext) => void | Promise<void>;
  * @property {number} [baseDelay=100] - Base delay in milliseconds for built-in delay strategies.
  * @property {number} [maxDelay=30000] - Maximum delay in milliseconds between retry attempts.
  * @property {boolean} [shouldResetTimeout=false] - Whether to reset the timeout between retries.
- * @property {OnRetryFn} [onRetry] - Callback function executed before each retry attempt.
+ * @property {OnRetryFn} [onRetry]
+ * - Callback executed before each retry attempt (not the initial request).
+ * - If it returns a `Request`, that request replaces the current one for the retry.
+ *   Useful for regenerating authentication headers (e.g., OAuth 1.0a re-signing).
+ * - If it returns `void`, the original request is used as-is.
  * @property {number[]} [retryOn]
  * - Array of HTTP status codes that should trigger a retry.
  * - Defaults to 5xx, 429, and 408 errors.
