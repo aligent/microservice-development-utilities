@@ -133,4 +133,141 @@ describe('authentications middlewares', () => {
         const request = mockFetch.mock.calls?.[0]?.[0] as Request;
         expect(request.headers.get('Authorization')).toBe('Bearer mock-access-token');
     });
+
+    describe('static and sync function values', () => {
+        it('apiKeyAuthMiddleware should accept a static string value', async () => {
+            const config: ApiKey = {
+                header: 'x-api-key',
+                value: 'static-api-key',
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(apiKeyAuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('x-api-key')).toBe('static-api-key');
+        });
+
+        it('apiKeyAuthMiddleware should accept a sync function value', async () => {
+            const config: ApiKey = {
+                header: 'x-api-key',
+                value: () => 'sync-api-key',
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(apiKeyAuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('x-api-key')).toBe('sync-api-key');
+        });
+
+        it('basicAuthMiddleware should accept a static credentials object', async () => {
+            const config: Basic = {
+                credentials: { username: 'user', password: 'pass' },
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(basicAuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('Authorization')).toBe(
+                'Basic ' + Buffer.from('user:pass').toString('base64')
+            );
+        });
+
+        it('basicAuthMiddleware should accept a sync function returning credentials', async () => {
+            const config: Basic = {
+                credentials: () => ({ username: 'user', password: 'pass' }),
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(basicAuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('Authorization')).toBe(
+                'Basic ' + Buffer.from('user:pass').toString('base64')
+            );
+        });
+
+        it('oAuth20AuthMiddleware should accept a static token string', async () => {
+            const config: OAuth20 = {
+                token: 'static-token',
+                tokenType: 'Bearer',
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(oAuth20AuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('Authorization')).toBe('Bearer static-token');
+        });
+
+        it('oAuth20AuthMiddleware should accept a sync function returning a token', async () => {
+            const config: OAuth20 = {
+                token: () => 'sync-token',
+                tokenType: 'Bearer',
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(oAuth20AuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('Authorization')).toBe('Bearer sync-token');
+        });
+
+        it('oAuth10aAuthMiddleware should accept a static credentials object', async () => {
+            vi.spyOn(oauth10aAuth, 'generateOauthParams').mockResolvedValue('mock-oauth-params');
+
+            const config: OAuth10a = {
+                algorithm: 'HMAC-SHA256',
+                credentials: {
+                    consumerKey: 'k',
+                    consumerSecret: 's',
+                    token: 't',
+                    tokenSecret: 'ts',
+                },
+            };
+
+            const client = createClient<paths>({
+                baseUrl: 'https://base.url/api',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(oAuth10aAuthMiddleware(config));
+
+            await client.GET('/path');
+
+            const request = mockFetch.mock.calls?.[0]?.[0] as Request;
+            expect(request.headers.get('Authorization')).toBe('OAuth mock-oauth-params');
+        });
+    });
 });

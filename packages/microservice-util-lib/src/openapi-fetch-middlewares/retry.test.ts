@@ -833,6 +833,197 @@ describe('retry middleware', () => {
         });
     });
 
+    describe('onRetry request transformation', () => {
+        it('should transform the request when onRetry returns a Request', async () => {
+            const retryFetch = vi.fn();
+
+            // Initial request returns 500, retry succeeds
+            mockFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ error: 'Server Error' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+            retryFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'success' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    fetch: retryFetch as typeof fetch,
+                    onRetry: ({ request }) => {
+                        request.headers.set('X-Retry-Token', 'refreshed');
+                        return request;
+                    },
+                })
+            );
+
+            await client.GET('/test');
+
+            expect(retryFetch).toHaveBeenCalledTimes(1);
+            const firstCall = retryFetch.mock.calls[0];
+            if (!firstCall) throw new Error('Expected retryFetch to have been called');
+            const retriedRequest = firstCall[0] as Request;
+            expect(retriedRequest.headers.get('X-Retry-Token')).toBe('refreshed');
+        });
+
+        it('should keep the original request when onRetry returns void', async () => {
+            const retryFetch = vi.fn();
+            const onRetry = vi.fn();
+
+            mockFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ error: 'Server Error' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+            retryFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'success' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    fetch: retryFetch as typeof fetch,
+                    onRetry,
+                })
+            );
+
+            await client.GET('/test');
+
+            expect(onRetry).toHaveBeenCalledTimes(1);
+            expect(retryFetch).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not be called on the initial request', async () => {
+            const onRetry = vi.fn();
+
+            mockFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'success' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    onRetry,
+                })
+            );
+
+            await client.GET('/test');
+
+            expect(onRetry).not.toHaveBeenCalled();
+        });
+
+        it('should receive the correct RetryContext', async () => {
+            const retryFetch = vi.fn();
+            const onRetry = vi.fn((ctx: { request: Request }) => ctx.request);
+
+            mockFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ error: 'Server Error' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+            retryFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'success' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    fetch: retryFetch as typeof fetch,
+                    onRetry,
+                })
+            );
+
+            await client.GET('/test');
+
+            expect(onRetry).toHaveBeenCalledTimes(1);
+            expect(onRetry).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    attempt: 1,
+                    request: expect.any(Request),
+                    response: expect.any(Response),
+                    error: null,
+                })
+            );
+        });
+
+        it('should await async onRetry functions that return a Request', async () => {
+            const retryFetch = vi.fn();
+
+            mockFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ error: 'Server Error' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+            retryFetch.mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'success' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    fetch: retryFetch as typeof fetch,
+                    onRetry: async ({ request }) => {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                        request.headers.set('X-Async-Header', 'async-value');
+                        return request;
+                    },
+                })
+            );
+
+            await client.GET('/test');
+
+            const firstCall = retryFetch.mock.calls[0];
+            if (!firstCall) throw new Error('Expected retryFetch to have been called');
+            const retriedRequest = firstCall[0] as Request;
+            expect(retriedRequest.headers.get('X-Async-Header')).toBe('async-value');
+        });
+    });
+
     it('should throw error when final response is not ok after exhausting retries', async () => {
         mockFetch.mockResolvedValue(
             new Response(JSON.stringify({ error: 'Internal Server Error' }), {

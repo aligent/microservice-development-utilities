@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { MiddlewareCallbackParams } from 'openapi-fetch';
 import { vi } from 'vitest';
 import { OAuth10a } from '../authentications';
-import { generateOauthParams } from './oauth10a';
+import { generateOauthParams, resignOauth10aRequest } from './oauth10a';
 
 describe('generateOauthParams', () => {
     const baseRequest: MiddlewareCallbackParams['request'] = {
@@ -318,5 +318,188 @@ describe('generateOauthParams', () => {
 
         const result = await generateOauthParams(request, options, params, config);
         expect(result).toEqual(expected);
+    });
+});
+
+describe('resignOauth10aRequest', () => {
+    const credentials = {
+        consumerKey: 'k',
+        consumerSecret: 's',
+        token: 't',
+        tokenSecret: 'ts',
+    };
+
+    beforeEach(() => {
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue('123-456-789-0ab-cde');
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2025-04-30T12:00:00Z'));
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.useRealTimers();
+    });
+
+    it('should return a Request with a valid OAuth Authorization header', async () => {
+        const request = new Request('https://base.url/path/with/string');
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA256',
+            credentials,
+        };
+
+        const result = await resignOauth10aRequest(request, config);
+
+        expect(result).toBeInstanceOf(Request);
+        const authHeader = result.headers.get('Authorization');
+        expect(authHeader).not.toBeNull();
+        expect(authHeader).toMatch(/^OAuth /);
+        expect(authHeader).toContain('oauth_consumer_key="k"');
+        expect(authHeader).toContain('oauth_nonce="123-456-789-0ab-cde"');
+        expect(authHeader).toContain('oauth_timestamp="1746014400"');
+        expect(authHeader).toContain('oauth_signature_method="HMAC-SHA256"');
+        expect(authHeader).toContain('oauth_version="1.0"');
+        expect(authHeader).toContain('oauth_token="t"');
+        expect(authHeader).toContain('oauth_signature=');
+    });
+
+    it('should generate fresh nonce and timestamp on each invocation', async () => {
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA256',
+            credentials,
+        };
+
+        vi.mocked(crypto.randomUUID).mockReturnValueOnce(
+            'nonce-1' as `${string}-${string}-${string}-${string}-${string}`
+        );
+        vi.setSystemTime(new Date('2025-04-30T12:00:00Z'));
+        const result1 = await resignOauth10aRequest(new Request('https://base.url/path'), config);
+
+        vi.mocked(crypto.randomUUID).mockReturnValueOnce(
+            'nonce-2' as `${string}-${string}-${string}-${string}-${string}`
+        );
+        vi.setSystemTime(new Date('2025-04-30T12:01:00Z'));
+        const result2 = await resignOauth10aRequest(new Request('https://base.url/path'), config);
+
+        const auth1 = result1.headers.get('Authorization');
+        const auth2 = result2.headers.get('Authorization');
+
+        expect(auth1).toContain('oauth_nonce="nonce-1"');
+        expect(auth2).toContain('oauth_nonce="nonce-2"');
+        expect(auth1).toContain('oauth_timestamp="1746014400"');
+        expect(auth2).toContain('oauth_timestamp="1746014460"');
+    });
+
+    it('should handle GET request with query parameters', async () => {
+        const request = new Request('https://base.url/path?a=1&b=2');
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA256',
+            credentials,
+        };
+
+        const result = await resignOauth10aRequest(request, config);
+
+        const authHeader = result.headers.get('Authorization');
+        expect(authHeader).toContain('oauth_signature=');
+    });
+
+    it('should handle POST with JSON body and generate body hash', async () => {
+        const request = new Request('https://base.url/path', {
+            method: 'POST',
+            body: '{"a":1,"b":2}',
+        });
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA256',
+            credentials,
+        };
+
+        const result = await resignOauth10aRequest(request, config);
+
+        const authHeader = result.headers.get('Authorization');
+        expect(authHeader).toContain('oauth_body_hash=');
+        expect(authHeader).toContain('oauth_signature=');
+    });
+
+    it('should handle POST with form-encoded body', async () => {
+        const request = new Request('https://base.url/path', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'a=1&b=2',
+        });
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA1',
+            credentials,
+        };
+
+        const result = await resignOauth10aRequest(request, config);
+
+        const authHeader = result.headers.get('Authorization');
+        expect(authHeader).not.toContain('oauth_body_hash=');
+        expect(authHeader).toContain('oauth_signature=');
+    });
+
+    it('should handle request with no body', async () => {
+        const request = new Request('https://base.url/path');
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA1',
+            credentials,
+        };
+
+        const result = await resignOauth10aRequest(request, config);
+
+        const authHeader = result.headers.get('Authorization');
+        expect(authHeader).not.toContain('oauth_body_hash=');
+        expect(authHeader).toContain('oauth_signature=');
+    });
+
+    it('should produce the same signature as generateOauthParams for equivalent requests', async () => {
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA256',
+            credentials: () => Promise.resolve(credentials),
+        };
+
+        // Use generateOauthParams with middleware-style params
+        const middlewareRequest: MiddlewareCallbackParams['request'] = {
+            method: 'get',
+            url: 'path/with/string',
+            cache: 'default',
+            credentials: 'same-origin',
+            headers: new Headers(),
+            integrity: '',
+            keepalive: false,
+            mode: 'cors',
+            redirect: 'follow',
+            referrer: '',
+            referrerPolicy: '',
+            signal: new AbortController().signal,
+            body: null,
+            bodyUsed: false,
+            destination: 'document',
+            duplex: 'half',
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+            blob: () => Promise.resolve(new Blob(Array(new ArrayBuffer(0)))),
+            formData: () => Promise.resolve(new FormData()),
+            json: () => Promise.resolve({}),
+            text: () => Promise.resolve(''),
+            clone: () => ({ ...middlewareRequest }),
+        };
+        const options: MiddlewareCallbackParams['options'] = {
+            baseUrl: 'https://base.url',
+            bodySerializer: () => '',
+            fetch: () => Promise.resolve(new Response()),
+            pathSerializer: () => '',
+            querySerializer: () => '',
+            parseAs: 'json',
+        };
+
+        const middlewareResult = await generateOauthParams(middlewareRequest, options, {}, config);
+
+        // Use generateOauth10aParams with a real Request (fully resolved URL)
+        const standaloneResult = await resignOauth10aRequest(
+            new Request('https://base.url/path/with/string'),
+            config
+        );
+
+        const standaloneAuth = standaloneResult.headers.get('Authorization');
+        expect(standaloneAuth).toBe(`OAuth ${middlewareResult}`);
     });
 });
