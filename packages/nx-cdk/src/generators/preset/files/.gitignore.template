@@ -19,10 +19,9 @@
 !nx.json
 !package.json
 !prettier.config.mjs
-!rolldown.config.base.mjs
 !tsconfig.json
 !vitest.global.setup.mjs
-!vitest.config.base.mjs
+!vite.config.base.mjs
 
 # Package manager
 !.yarn
