@@ -34,10 +34,8 @@ const ADMIN_UI_DEPS = pickVersions(TEMPLATE.dependencies, [
 
 const BASE_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
     '@aligent/ts-code-standards',
-    '@babel/preset-env',
-    '@babel/preset-typescript',
     '@types/node',
-    'babel-loader',
+    'esbuild-loader',
     // `eslint` is also pinned at the workspace root; declaring it here keeps
     // the app's `lint` script resolvable independent of npm workspace hoisting.
     'eslint',

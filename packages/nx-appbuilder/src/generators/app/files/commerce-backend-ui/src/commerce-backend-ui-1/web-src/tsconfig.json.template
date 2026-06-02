@@ -1,6 +1,8 @@
 {
     "extends": "@aligent/ts-code-standards/tsconfigs-react",
     "compilerOptions": {
+        "module": "Preserve",
+        "moduleResolution": "Bundler",
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,
         "baseUrl": "../../..",

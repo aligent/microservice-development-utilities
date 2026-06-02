@@ -290,10 +290,36 @@ describe('app generator', () => {
             expect(config).toContain('eslintConfigs.react');
         });
 
+        it('sets module=Preserve + moduleResolution=Bundler on the web tsconfig', () => {
+            // Required so the webpack bundle preserves ESM-style imports and
+            // resolves them like a bundler would, matching what aio's web
+            // build expects.
+            const ts = readJson(tree, 'my-app/src/commerce-backend-ui-1/web-src/tsconfig.json');
+            expect(ts.compilerOptions.module).toBe('Preserve');
+            expect(ts.compilerOptions.moduleResolution).toBe('Bundler');
+        });
+
         it('adds the check-types:web pre-build hook', () => {
             expect(tree.exists('my-app/hooks/check-web-types.sh')).toBe(true);
             const yaml = readText(tree, 'my-app/app.config.yaml');
             expect(yaml).toContain('./hooks/check-web-types.sh');
+        });
+    });
+
+    describe('actions webpack config', () => {
+        it('uses esbuild-loader pinned to the workspace Node major', async () => {
+            tree.write('.nvmrc', 'v22.18.0\n');
+            await generate(tree, { name: 'my-app', hasRestActions: true });
+            const cfg = readText(tree, 'my-app/src/actions/webpack-config.cjs');
+
+            expect(cfg).toContain("loader: 'esbuild-loader'");
+            expect(cfg).toContain("target: 'node22'");
+            expect(cfg).not.toContain('babel-loader');
+        });
+
+        it('does not emit a babel.actions.config.js', async () => {
+            await generate(tree, { name: 'my-app' });
+            expect(tree.exists('my-app/babel.actions.config.js')).toBe(false);
         });
     });
 
