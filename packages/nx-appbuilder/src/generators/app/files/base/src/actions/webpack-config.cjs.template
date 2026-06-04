@@ -1,6 +1,8 @@
-// Webpack configuration required to compile typescript action and web source code
-// using the Adobe aio CLI. Adapted from https://github.com/adobe/aio-cli-plugin-app-dev, then switched to babel-loader
-// Appbuilder documentation: https://developer.adobe.com/app-builder/docs/guides/configuration/webpack-configuration/
+// Webpack config for action source. esbuild-loader strips the TypeScript and
+// targets the same Node version as the OpenWhisk runtime declared in
+// ext.config.yaml. aio's webpack pipeline emits a CommonJS bundle
+// (libraryTarget: 'commonjs2') which OpenWhisk loads via require().
+// Appbuilder docs: https://developer.adobe.com/app-builder/docs/guides/configuration/webpack-configuration/
 
 const path = require('path');
 
@@ -18,15 +20,12 @@ module.exports = {
     module: {
         rules: [
             {
-                // Test for .ts - in theory actions should never use .tsx
                 test: /\.ts$/,
                 exclude: /node_modules/,
-                loader: 'babel-loader',
+                loader: 'esbuild-loader',
                 options: {
-                    // Point to the babel config for actions
-                    // This is done to avoid Parcel reading the config file
-                    // while building web code
-                    configFile: './babel.actions.config.js',
+                    loader: 'ts',
+                    target: 'node<%= nodeMajor %>',
                 },
             },
         ],

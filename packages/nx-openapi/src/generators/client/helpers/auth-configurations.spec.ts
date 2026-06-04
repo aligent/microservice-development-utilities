@@ -2,11 +2,12 @@ import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { applyAuthMethodConfiguration } from './auth-configurations';
 
-const BASE_CLIENT = `import { retryMiddleware } from '@aligent/microservice-util-lib';
+const BASE_CLIENT = `import { logMiddleware, retryMiddleware } from '@aligent/microservice-util-lib';
 export class TestClient {
     public readonly client: any;
     constructor() {
         this.client.use(
+            logMiddleware('test'),
             retryMiddleware({})
         );
     }

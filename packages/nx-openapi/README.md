@@ -24,7 +24,7 @@ Run `nx g @aligent/nx-openapi:client` with optional flags:
 - `--configPath` path to the redocly config file responsible for authentication when fetching a schema remotely. For more information: https://openapi-ts.dev/cli#auth.
 - `--skipValidate` If passed, this will skip schema pre-validation. Only do this if you have good reason to - not validating the schema beforehand may produce unpredictable results (either things may not generate at all or they may generate something that is incorrect).
 - `--override` Override the schema (and the generated type) of an existing client.
-- `--authMethod` Authentication method for the generated client middleware. Defaults to `api-key`. Available options:
+- `--authMethod` **(required)** Authentication method for the generated client middleware. Available options:
   - `api-key` - API key authentication using SSM Parameter Store
   - `oauth1.0a` - OAuth 1.0a authentication
   - `basic` - Basic authentication (username/password)
@@ -78,9 +78,12 @@ A `types` file that will contain several typescript interfaces depending on the 
 - `operations`: The defined operations that can be performed on a given path. [More information.](https://swagger.io/docs/specification/v3_0/paths-and-operations/#operations)
 - `components`: A way of avoid duplication when paths or operations contain the same structure in their responses. Components define a structure that is used multiple time throughout the API. [More information.](https://swagger.io/docs/specification/v3_0/components/)
 
-A `client` file that will contain boilerplate code to help you get started. The client includes authentication middleware configured based on the `--authMethod` flag:
+A `client` file that will contain boilerplate code to help you get started. The client includes:
 
-- **api-key**: Configured to fetch credentials from AWS SSM Parameter Store
-- **oauth1.0a**: Configured with HMAC-SHA256 algorithm and placeholder credentials
-- **basic**: Configured with placeholder username/password credentials
-- **oauth2.0**: Configured with placeholder token and Bearer token type
+- `logMiddleware` for request/response logging
+- `retryMiddleware` for automatic retry with exponential backoff
+- Authentication middleware configured based on the `--authMethod` flag:
+  - **api-key**: Configured to fetch credentials from AWS SSM Parameter Store
+  - **oauth1.0a**: Configured with HMAC-SHA256 algorithm and placeholder credentials
+  - **basic**: Configured with placeholder username/password credentials
+  - **oauth2.0**: Configured with placeholder token and Bearer token type

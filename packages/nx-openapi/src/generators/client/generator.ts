@@ -27,7 +27,7 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         importPath = `@clients`,
         skipValidate,
         override,
-        authMethod = 'api-key',
+        authMethod,
     } = options;
 
     const ext = schemaPath.split('.').pop() || '';

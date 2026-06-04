@@ -133,14 +133,31 @@ async function throwErrorIfNotOkResponse(
  * const middleware = retryMiddleware();
  *
  * @example
- * // Custom configuration
+ * // Custom configuration with logging
  * const middleware = retryMiddleware({
  *     retries: 5,
  *     retryDelay: 'linear',
  *     baseDelay: 200,
  *     retryOn: [500, 502, 503, 504],
  *     onRetry: (context) => {
- *         console.log(`Retrying request (attempt ${context.attemptNumber})`);
+ *         console.log(`Retrying request (attempt ${context.attempt})`);
+ *     },
+ * });
+ *
+ * @example
+ * // Re-sign OAuth 1.0a requests on retry (returns a Request to replace the original)
+ * const middleware = retryMiddleware({
+ *     retries: 3,
+ *     onRetry: (context) => resignOauth10aRequest(context.request, oauthConfig),
+ * });
+ *
+ * @example
+ * // Combine logging and request transformation in onRetry
+ * const middleware = retryMiddleware({
+ *     retries: 3,
+ *     onRetry: async (context) => {
+ *         console.log(`Retrying request (attempt ${context.attempt})`);
+ *         return resignOauth10aRequest(context.request, oauthConfig);
  *     },
  * });
  *
@@ -150,7 +167,7 @@ async function throwErrorIfNotOkResponse(
  *     retries: 3,
  *     retryCondition: async (context) => {
  *         // Only retry on 503 Service Unavailable
- *         return context.response.status === 503;
+ *         return context.response?.status === 503;
  *     },
  * });
  *
@@ -235,7 +252,10 @@ async function performRetries(config: NormalisedConfig, context: RetryContext): 
         await new Promise(resolve => setTimeout(resolve, delay));
 
         if (config.onRetry) {
-            await config.onRetry({ ...context, attempt, response });
+            const mutatedReq = await config.onRetry({ ...context, attempt, response });
+            if (mutatedReq instanceof Request) {
+                context = { ...context, attempt, request: mutatedReq };
+            }
         }
 
         try {

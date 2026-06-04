@@ -6,6 +6,7 @@
  * - For more information about openapi-fetch middlewares: https://openapi-ts.dev/openapi-fetch/middleware-auth#middleware
  */
 import {
+    logMiddleware,
     retryMiddleware,
 } from '@aligent/microservice-util-lib';
 import createClient, { Client, ClientOptions } from 'openapi-fetch';
@@ -24,6 +25,7 @@ export class <%= className %> {
          */
 
         this.client.use(
+            logMiddleware('<%= className %>'),
             retryMiddleware({
                 onRetry: ({ attempt, error }) =>
                     console.log(`Retrying...${attempt} due to ${String(error)}`),

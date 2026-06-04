@@ -45,8 +45,17 @@
             "type": "string",
             "description": "Authentication method to use for the generated client middleware",
             "enum": ["api-key", "oauth1.0a", "basic", "oauth2.0"],
-            "default": "api-key"
+            "x-prompt": {
+                "message": "Which authentication method should the client use?",
+                "type": "list",
+                "items": [
+                    { "value": "api-key", "label": "API Key" },
+                    { "value": "oauth1.0a", "label": "OAuth 1.0a" },
+                    { "value": "basic", "label": "Basic Auth" },
+                    { "value": "oauth2.0", "label": "OAuth 2.0" }
+                ]
+            }
         }
     },
-    "required": ["name", "schemaPath"]
+    "required": ["name", "schemaPath", "authMethod"]
 }
