@@ -1,4 +1,5 @@
 import { globSync } from 'node:fs';
+import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
@@ -51,45 +52,44 @@ const __dirname = __shim_dirname(__filename);`;
  * Creates Vite environments for bundling Lambda handlers using the Vite Environment API.
  * Each handler file gets its own environment that outputs to dist/<entryName>/index.mjs.
  *
- * This replaces the previous Rolldown-based `defineLambdaConfig()`.
- *
- * @param {string} subPath Relative path to the handlers directory
- * @param {object} [options] Configuration options
- * @param {string} [options.mode] Vite mode (e.g. 'development', 'production')
- * @param {Record<string, string>} [options.moduleTypes] Module type overrides (e.g. { '.hbs': 'text' })
- * @returns Partial Vite config with environments and builder for Lambda bundling
+ * This uses Vite's built-in `mode` to control build behaviour.
+ * See https://vite.dev/guide/env-and-mode
  */
-export function defineLambdaEnvironments(subPath, options = {}) {
-    // Skip Lambda environments during test runs
+export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lambda') {
+    // When running vitest, skip the Lambda environments entirely
     if (process.env.VITEST === 'true') return {};
 
     if (subPath.includes('..')) throw new Error('Invalid path provided');
 
+    const isProduction = (options.mode ?? 'production') === 'production';
     const handlersPath = resolve(process.cwd(), subPath);
     const handlers = globSync(`${handlersPath}/**/*.ts`);
 
     const environments = {};
-
     for (const handler of handlers) {
         const bundledPath = handler.replace(`${handlersPath}/`, '');
         const entryName = bundledPath.replace(extname(bundledPath), '');
-        const envName = `lambda_${entryName.replace(/[\\/]/g, '_')}`;
-        const isProduction = options.mode !== 'development';
+        const envName = `${envPrefix}_${entryName.replace(/[\\/]/g, '_')}`;
 
         environments[envName] = {
+            resolve: { noExternal: true },
             build: {
+                outDir: `dist/${entryName}`,
+                sourcemap: !isProduction,
+                platform: 'node',
                 rollupOptions: {
-                    input: { [entryName]: handler },
-                    external: [/^node:/],
+                    input: { index: handler },
+                    moduleTypes: { ...options.moduleTypes },
+                    external: [...builtinModules, ...builtinModules.map(m => `node:${m}`)],
                     output: {
-                        entryFileNames: '[name]/index.mjs',
+                        entryFileNames: 'index.mjs',
                         format: 'esm',
-                        sourcemap: isProduction ? false : true,
+                        minify: false,
+                        comments: { legal: false },
+                        codeSplitting: false,
                         banner: shimBanner,
                     },
-                    ...(options.moduleTypes ? { moduleTypes: options.moduleTypes } : {}),
                 },
-                outDir: 'dist',
             },
         };
     }
@@ -97,11 +97,11 @@ export function defineLambdaEnvironments(subPath, options = {}) {
     return {
         environments,
         builder: {
-            async buildApp(builder) {
-                const envNames = Object.keys(builder.environments).filter(name =>
-                    name.startsWith('lambda_')
-                );
-                await Promise.all(envNames.map(name => builder.build(builder.environments[name])));
+            buildApp: async builder => {
+                const lambdaEnvs = Object.entries(builder.environments)
+                    .filter(([name]) => name.startsWith(`${envPrefix}_`))
+                    .map(([, env]) => env);
+                await Promise.all(lambdaEnvs.map(env => builder.build(env)));
             },
         },
     };
