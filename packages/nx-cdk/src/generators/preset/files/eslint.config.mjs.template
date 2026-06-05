@@ -1,5 +1,6 @@
 import { eslintConfigs } from '@aligent/ts-code-standards';
 import nxEslintPlugin from '@nx/eslint-plugin';
+import { importX } from 'eslint-plugin-import-x';
 import * as jsonParser from 'jsonc-eslint-parser';
 
 const eslintBaseConfig = [
@@ -18,7 +19,7 @@ const eslintBaseConfig = [
     },
     {
         files: ['**/*.ts'],
-        plugins: { '@nx': nxEslintPlugin },
+        plugins: { '@nx': nxEslintPlugin, 'import-x': importX },
         rules: {
             '@nx/enforce-module-boundaries': [
                 'error',
@@ -38,6 +39,14 @@ const eslintBaseConfig = [
                             onlyDependOnLibsWithTags: ['scope:libs'],
                         },
                     ],
+                },
+            ],
+            'import-x/no-extraneous-dependencies': [
+                'warn',
+                {
+                    optionalDependencies: false,
+                    peerDependencies: false,
+                    packageDir: ['.', '..', '../..'],
                 },
             ],
             'no-console': 'warn',

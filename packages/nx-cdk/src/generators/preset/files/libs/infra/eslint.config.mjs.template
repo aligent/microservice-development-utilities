@@ -1,20 +1,3 @@
-import eslintPluginImport from 'eslint-plugin-import';
 import baseConfig from '../../eslint.config.mjs';
 
-export default [
-    ...baseConfig,
-    {
-        files: ['**/*.ts'],
-        plugins: { import: eslintPluginImport },
-        rules: {
-            'import/no-extraneous-dependencies': [
-                'warn',
-                {
-                    optionalDependencies: false,
-                    peerDependencies: false,
-                    packageDir: ['.', '..', '../..'],
-                },
-            ],
-        },
-    },
-];
+export default [...baseConfig];

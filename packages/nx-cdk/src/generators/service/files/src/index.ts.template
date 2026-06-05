@@ -1,6 +1,6 @@
-import { SharedInfraProps } from '@libs/infra';
-import { Stack, StackProps, Stage, Tags } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import { type SharedInfraProps } from '@libs/infra';
+import { Stack, type StackProps, Stage, Tags } from 'aws-cdk-lib';
+import { type Construct } from 'constructs';
 
 /**
 * @important

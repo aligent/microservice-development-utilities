@@ -9,7 +9,7 @@ interface PackageJsonInput {
     name: string;
     projectName: string;
     version: string;
-    nodeVersion: string;
+    nodeVersion: { major: string; full: string };
 }
 
 interface Service {
@@ -50,6 +50,7 @@ export function constructPackageJsonFile(input: PackageJsonInput) {
     const devDependencies = Object.fromEntries(
         Object.entries({
             '@aligent/nx-cdk': input.version,
+            '@types/node': `^${input.nodeVersion.major}`,
             ...config.devDependencies,
         }).sort()
     );
@@ -61,7 +62,7 @@ export function constructPackageJsonFile(input: PackageJsonInput) {
             version: input.version,
             ...config,
             devDependencies,
-            engines: { node: `^${input.nodeVersion}` },
+            engines: { node: `^${input.nodeVersion.full}` },
             nx: { name: `${input.name}-int`, ...config.nx },
         })
     );

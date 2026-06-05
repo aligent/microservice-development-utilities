@@ -35,7 +35,6 @@
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.21",
     "@types/aws-lambda": "^8.10.161",
-    "@types/node": "^24",
     "@typescript-eslint/eslint-plugin": "8.60.1",
     "@typescript-eslint/parser": "8.60.1",
     "@vitest/coverage-v8": "^4.1.8",
@@ -46,7 +45,7 @@
     "constructs": "^10.6.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-import-x": "^4.16.2",
     "jiti": "^2.7.0",
     "jsonc-eslint-parser": "^3.1.0",
     "nx": "22.7.3",
@@ -66,5 +65,5 @@
     "libs/*",
     "services/*"
   ],
-  "packageManager": "yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8"
+  "packageManager": "yarn@4.16.0+sha512.5374c94eb4ef6aa8188fb112f20c1aa6569f248d676c5e576e1fd2a1a4d8d87a96df65d9dfe1c2a0252cbe38bda46cf18d955005b81b43cc7607a5c9d56fd2b6"
 }

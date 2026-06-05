@@ -4,6 +4,7 @@
   "main": "./bin/main.ts",
   "types": "./bin/main.ts",
   "nx": {
+    "projectType": "application",
     "tags": [
       "scope:application"
     ],

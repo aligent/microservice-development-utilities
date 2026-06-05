@@ -17,12 +17,11 @@ export const TS_CONFIG_JSON: TsConfig = {
 } as const;
 
 export const TS_CONFIG_LIB_JSON: TsConfig = {
-    extends: BASE_CONFIG,
+    extends: './tsconfig.json',
     compilerOptions: {
-        baseUrl: '.',
         rootDir: 'src',
-        outDir: 'dist',
-        tsBuildInfoFile: 'dist/tsconfig.lib.tsbuildinfo',
+        outDir: 'out-tsc/lib',
+        tsBuildInfoFile: 'out-tsc/tsconfig.lib.tsbuildinfo',
         types: ['node'],
     },
     include: ['src/**/*.ts'],
@@ -31,7 +30,7 @@ export const TS_CONFIG_LIB_JSON: TsConfig = {
 } as const;
 
 export const TS_CONFIG_SPEC_JSON: TsConfig = {
-    extends: BASE_CONFIG,
+    extends: './tsconfig.json',
     compilerOptions: {
         outDir: './out-tsc/vitest',
         types: ['vitest/globals', 'vitest/importMeta', 'node', 'vitest'],
