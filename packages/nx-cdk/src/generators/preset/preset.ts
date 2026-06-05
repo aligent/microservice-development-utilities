@@ -16,6 +16,10 @@ export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema
     const nameParts = splitInputName(name);
     const projectName = nameParts.join(' ');
 
+    if (!nodeVersionMajor) {
+        throw new Error(`Malformed NodeJs Version: ${nodeVersion}`);
+    }
+
     const templateVars = {
         ...options,
         projectName,
@@ -36,7 +40,7 @@ export async function presetGenerator(tree: Tree, options: PresetGeneratorSchema
         name: options.name,
         projectName,
         version: getGeneratorVersion(),
-        nodeVersion,
+        nodeVersion: { major: nodeVersionMajor, full: nodeVersion },
     });
     writeJson(tree, 'package.json', packageJson);
 

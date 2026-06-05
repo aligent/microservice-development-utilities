@@ -1,10 +1,15 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
-import { vitestBaseConfig } from '../../vitest.config.base.mjs';
+import { defineConfig, mergeConfig } from 'vite';
+import { baseConfig, defineLambdaEnvironments } from '../../vite.config.base.mjs';
 
 export default defineConfig(configEnv => {
+    const lambdaConfig = defineLambdaEnvironments('src/runtime/handlers', {
+        mode: configEnv.mode,
+    });
+
     return mergeConfig(
-        vitestBaseConfig(configEnv),
+        baseConfig(configEnv),
         defineConfig({
+            ...lambdaConfig,
             cacheDir: '../../node_modules/.vitest/<%= name %>',
             test: {
                 env: {

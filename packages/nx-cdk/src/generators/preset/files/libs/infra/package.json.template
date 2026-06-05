@@ -12,6 +12,7 @@
     "./package.json": "./package.json"
   },
   "nx": {
+    "projectType": "library",
     "tags": [
       "scope:libs"
     ]

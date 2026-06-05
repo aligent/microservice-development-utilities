@@ -8,7 +8,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
     plugins: [
         { plugin: '@nx/eslint/plugin', options: {} },
         { plugin: '@nx/js/typescript', options: { build: false } },
-        { plugin: '@nx/vitest', options: {} },
+        { plugin: '@nx/vite', options: {} },
     ],
     namedInputs: {
         default: ['{projectRoot}/**/*', 'sharedGlobals'],
@@ -17,7 +17,7 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
             '!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)',
             '!{projectRoot}/tests/*',
             '!{projectRoot}/tsconfig.spec.json',
-            '!{projectRoot}/vitest.config.m[jt]s',
+            '!{projectRoot}/vite.config.m[jt]s',
         ],
         sharedGlobals: [],
     },
