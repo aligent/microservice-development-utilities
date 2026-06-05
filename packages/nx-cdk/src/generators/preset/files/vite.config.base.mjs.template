@@ -61,7 +61,6 @@ export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lam
 
     if (subPath.includes('..')) throw new Error('Invalid path provided');
 
-    const isProduction = (options.mode ?? 'production') === 'production';
     const handlersPath = resolve(process.cwd(), subPath);
     const handlers = globSync(`${handlersPath}/**/*.ts`);
 
@@ -75,7 +74,8 @@ export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lam
             resolve: { noExternal: true },
             build: {
                 outDir: `dist/${entryName}`,
-                sourcemap: !isProduction,
+                minify: option.mode === 'development' ? 'oxc' : false,
+                sourcemap: options.mode !== 'production' ? true : false,
                 platform: 'node',
                 rollupOptions: {
                     input: { index: handler },
@@ -84,7 +84,6 @@ export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lam
                     output: {
                         entryFileNames: 'index.mjs',
                         format: 'esm',
-                        minify: false,
                         comments: { legal: false },
                         codeSplitting: false,
                         banner: shimBanner,
