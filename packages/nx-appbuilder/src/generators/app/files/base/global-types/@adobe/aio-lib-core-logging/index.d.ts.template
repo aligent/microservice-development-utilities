@@ -1,0 +1,11 @@
+// Module augmentation for the targeted Adobe logging lib.
+//
+// The package's own types declare `level` as plain `string`. The Adobe Commerce
+// docs list the levels actually accepted by the runtime as a closed union, so
+// we add the strict type here for app code that wants to constrain its config.
+//
+// https://developer.adobe.com/commerce/extensibility/app-development/best-practices/logging-troubleshooting/#set-the-log-level
+
+declare module '@adobe/aio-lib-core-logging' {
+    export type LogLevel = 'error' | 'warn' | 'info' | 'verbose' | 'debug' | 'silly';
+}

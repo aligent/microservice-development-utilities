@@ -50,6 +50,23 @@ npx nx g @tools/generators:package
   }
   ```
 
+### Adobe App Builder action code
+
+- **Never import the umbrella `@adobe/aio-sdk`.** It re-exports every sub-SDK (Files, State, Events, Target, Analytics, …) so the action bundle inflates with code it doesn't use. Import the targeted lib instead:
+
+  ```ts
+  // Bad — drags every sub-SDK into the bundle
+  import { Core } from '@adobe/aio-sdk';
+  const logger = Core.Logger('action');
+
+  // Good — only the lib you actually use
+  import Logger from '@adobe/aio-lib-core-logging';
+  const logger = Logger('action');
+  ```
+
+  Common mappings: `Core.Logger` → `@adobe/aio-lib-core-logging`, `Core.Config` → `@adobe/aio-lib-core-config`, `Events` → `@adobe/aio-lib-events`, `State` → `@adobe/aio-lib-state`, `Files` → `@adobe/aio-lib-files`. The generated app's `eslint.config.mjs` ships a `no-restricted-imports` rule that enforces this.
+- **Don't read `process.env` inside action handlers.** App Builder routes runtime configuration through OpenWhisk `params` (declared as `inputs:` in `app.config.yaml`); `process.env` is not reliably propagated between activations. The generated app's eslint config flags `process.env.*` reads under `src/**/actions/**`.
+
 ## Workflow
 
 - Whenever the user says "No" or corrects an approach, update this file with the relevant rule so the same mistake is not repeated.

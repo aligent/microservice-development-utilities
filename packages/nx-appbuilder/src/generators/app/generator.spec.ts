@@ -86,6 +86,35 @@ describe('app generator', () => {
             expect(config).not.toContain('eslintConfigs.react');
         });
 
+        describe('app-builder eslint guardrails', () => {
+            let config: string;
+            beforeEach(() => {
+                config = readText(tree, 'my-app/eslint.config.mjs');
+            });
+
+            it('bans the umbrella @adobe/aio-sdk import', () => {
+                // Both the rule and the educational message must survive — if the
+                // message drops, contributors lose the pointer to the targeted libs.
+                expect(config).toContain("'no-restricted-imports'");
+                expect(config).toContain("name: '@adobe/aio-sdk'");
+                expect(config).toContain('@adobe/aio-lib-core-logging');
+            });
+
+            it('enables no-non-null-assertion (aligns with workspace CLAUDE.md)', () => {
+                expect(config).toContain("'@typescript-eslint/no-non-null-assertion': 'error'");
+            });
+
+            it('enables prefer-nullish-coalescing (catches `LOG_LEVEL || "info"`)', () => {
+                expect(config).toContain("'@typescript-eslint/prefer-nullish-coalescing': 'error'");
+            });
+
+            it('bans process.env inside src/**/actions/**', () => {
+                expect(config).toContain('src/**/actions/**');
+                expect(config).toContain("'no-restricted-syntax'");
+                expect(config).toContain("[object.name='process'][property.name='env']");
+            });
+        });
+
         it('writes the webpack config for actions', () => {
             expect(tree.exists('my-app/src/actions/webpack-config.cjs')).toBe(true);
         });
@@ -94,13 +123,13 @@ describe('app generator', () => {
             expect(tree.exists('my-app/hooks/check-action-types.sh')).toBe(true);
         });
 
-        it('writes the AIO SDK global type stubs', () => {
-            expect(tree.exists('my-app/global-types/@adobe/aio-sdk/aio-core-logging.d.ts')).toBe(
+        it('writes the targeted Adobe lib type augmentation (LogLevel), not an umbrella shim', () => {
+            expect(tree.exists('my-app/global-types/@adobe/aio-lib-core-logging/index.d.ts')).toBe(
                 true
             );
-            expect(tree.exists('my-app/global-types/@adobe/aio-sdk/aio-lib-core-config.d.ts')).toBe(
-                true
-            );
+            // The umbrella `@adobe/aio-sdk` is banned by the generated eslint config,
+            // so the shims that used to declare against it are gone too.
+            expect(tree.exists('my-app/global-types/@adobe/aio-sdk')).toBe(false);
         });
 
         it('writes the .editorconfig, .nvmrc and .gitignore (dotted, not __dot__)', () => {
@@ -125,7 +154,11 @@ describe('app generator', () => {
 
             expect(pkg.name).toBe('@aligent/my-app');
             expect(pkg.description).toBe('an app');
-            expect(pkg.dependencies['@adobe/aio-sdk']).toBeDefined();
+            // Apps depend on the targeted logging lib directly; the umbrella
+            // `@adobe/aio-sdk` is intentionally not installed (and is banned by
+            // the generated eslint config).
+            expect(pkg.dependencies['@adobe/aio-lib-core-logging']).toBeDefined();
+            expect(pkg.dependencies['@adobe/aio-sdk']).toBeUndefined();
         });
 
         it('adds commerce-lib deps when hasAdminUI is set', async () => {
@@ -379,6 +412,15 @@ describe('app generator', () => {
             expect(yaml).toContain('rest-sample:');
             expect(yaml).toContain('src/actions/rest-sample.ts');
         });
+
+        it('imports Logger from @adobe/aio-lib-core-logging (not the umbrella)', () => {
+            // If the sample template ever regresses to `import { Core } from
+            // '@adobe/aio-sdk'`, the lint rule we ship would fail on the first
+            // `npm run lint` — catch it here before that happens.
+            const action = readText(tree, 'my-app/src/actions/rest-sample.ts');
+            expect(action).toContain("from '@adobe/aio-lib-core-logging'");
+            expect(action).not.toContain("from '@adobe/aio-sdk'");
+        });
     });
 
     describe('hasEvents', () => {
@@ -390,10 +432,15 @@ describe('app generator', () => {
             expect(tree.exists('my-app/src/actions/handle-sample-event.ts')).toBe(true);
         });
 
-        it('writes the events global types', () => {
-            expect(tree.exists('my-app/global-types/@adobe/aio-sdk/aio-lib-events.d.ts')).toBe(
-                true
-            );
+        it('imports Logger from @adobe/aio-lib-core-logging (not the umbrella)', () => {
+            const action = readText(tree, 'my-app/src/actions/handle-sample-event.ts');
+            expect(action).toContain("from '@adobe/aio-lib-core-logging'");
+            expect(action).not.toContain("from '@adobe/aio-sdk'");
+        });
+
+        it('pulls in @adobe/aio-lib-events as a runtime dep', () => {
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.dependencies['@adobe/aio-lib-events']).toBeDefined();
         });
 
         it('registers the event handler in app.config.yaml', () => {
@@ -422,6 +469,12 @@ describe('app generator', () => {
 
         it('writes the cron-sample action', () => {
             expect(tree.exists('my-app/src/actions/cron-sample.ts')).toBe(true);
+        });
+
+        it('imports Logger from @adobe/aio-lib-core-logging (not the umbrella)', () => {
+            const action = readText(tree, 'my-app/src/actions/cron-sample.ts');
+            expect(action).toContain("from '@adobe/aio-lib-core-logging'");
+            expect(action).not.toContain("from '@adobe/aio-sdk'");
         });
 
         it('declares triggers and rules in app.config.yaml', () => {

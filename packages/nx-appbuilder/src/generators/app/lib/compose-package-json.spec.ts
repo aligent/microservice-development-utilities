@@ -70,10 +70,14 @@ describe('writePackageJson', () => {
             writePackageJson(tree, makeOptions());
             const pkg = readPackageJson(tree);
 
+            // The targeted logging lib replaces the `@adobe/aio-sdk` umbrella so
+            // actions don't drag every sub-SDK into their bundle; the lint rule
+            // in `eslint.config.mjs.template` enforces the same constraint.
             expect(pkg.dependencies).toMatchObject({
-                '@adobe/aio-sdk': expect.any(String),
+                '@adobe/aio-lib-core-logging': expect.any(String),
                 '@adobe/aio-lib-telemetry': expect.any(String),
             });
+            expect(pkg.dependencies['@adobe/aio-sdk']).toBeUndefined();
             expect(pkg.devDependencies).toMatchObject({
                 '@aligent/ts-code-standards': expect.any(String),
                 typescript: expect.any(String),
@@ -171,6 +175,18 @@ describe('writePackageJson', () => {
             writePackageJson(tree, makeOptions({ hasEvents: true, hasRestActions: true }));
             const pkg = readPackageJson(tree);
             expect(pkg.dependencies['@adobe/aio-commerce-lib-app']).toBeUndefined();
+        });
+
+        it('adds @adobe/aio-lib-events when hasEvents', () => {
+            writePackageJson(tree, makeOptions({ hasEvents: true }));
+            const pkg = readPackageJson(tree);
+            expect(pkg.dependencies['@adobe/aio-lib-events']).toBeDefined();
+        });
+
+        it('does NOT add @adobe/aio-lib-events when hasEvents is false', () => {
+            writePackageJson(tree, makeOptions({ hasEvents: false }));
+            const pkg = readPackageJson(tree);
+            expect(pkg.dependencies['@adobe/aio-lib-events']).toBeUndefined();
         });
 
         it('adds React + admin-UI runtime deps when hasAdminUI', () => {
