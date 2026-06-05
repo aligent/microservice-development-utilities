@@ -3,8 +3,7 @@ import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
-// More information about mode: https://vite.dev/guide/env-and-mode.html#node-env-and-modes
-export const baseConfig = defineConfig(({ command, mode }) => {
+export const baseConfig = defineConfig(() => {
     return {
         test: {
             globals: true,
@@ -74,8 +73,8 @@ export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lam
             resolve: { noExternal: true },
             build: {
                 outDir: `dist/${entryName}`,
-                minify: option.mode === 'development' ? 'oxc' : false,
-                sourcemap: options.mode !== 'production' ? true : false,
+                minify: options.mode === 'development' ? 'oxc' : false,
+                sourcemap: options.mode !== 'production',
                 platform: 'node',
                 rollupOptions: {
                     input: { index: handler },
