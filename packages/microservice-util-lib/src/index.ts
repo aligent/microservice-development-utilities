@@ -34,6 +34,7 @@ import S3Dao from './s3/s3';
 export type {
     ApiKey,
     Basic,
+    ErrorThrowingClient,
     LogLevel,
     Logger,
     OAuth10a,
@@ -43,7 +44,6 @@ export type {
     RetryConfig,
     RetryMiddlewareConfig,
     S3Dao,
-    ErrorThrowingClient,
 };
 
 export {
