@@ -19,6 +19,14 @@ import {
     RetryConfig as RetryMiddlewareConfig,
     retryMiddleware,
 } from './openapi-fetch-middlewares/retry';
+import {
+    ErrorThrowingClient,
+    asErrorThrowingClient,
+} from './openapi-fetch-middlewares/throwing-client';
+import {
+    HttpResponseError,
+    isHttpResponseError,
+} from './openapi-fetch-middlewares/utils/http-response-error';
 import remap, { ObjectMap, Remap } from './remap/remap';
 import retryWrapper, { RetryConfig } from './retry-wrapper/retry-wrapper';
 import S3Dao from './s3/s3';
@@ -35,15 +43,19 @@ export type {
     RetryConfig,
     RetryMiddlewareConfig,
     S3Dao,
+    ErrorThrowingClient,
 };
 
 export {
+    HttpResponseError,
     apiKeyAuthMiddleware,
+    asErrorThrowingClient,
     basicAuthMiddleware,
     chunkBy,
     fetchSsmParams,
     getAwsIdFromArn,
     hasDefinedProperties,
+    isHttpResponseError,
     logMiddleware,
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
