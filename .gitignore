@@ -43,9 +43,14 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Agents
+.claude/worktrees
+
 # Nx cache
 .nx/cache
 .nx/workspace-data
+.nx/polygraph
+.nx/self-healing
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
