@@ -5,4 +5,55 @@ export default [
     {
         ignores: ['**/*.js', '**/*.cjs', '**/*.mjs', '**/coverage'],
     },
+    {
+        // App-Builder-specific guardrails. Each rule below was added to prevent
+        // a pattern that has repeatedly bitten apps in the wild.
+        files: ['src/**/*.ts', 'src/**/*.tsx'],
+        rules: {
+            // The umbrella `@adobe/aio-sdk` re-exports every sub-SDK (Files,
+            // State, Events, Target, Analytics, CampaignStandard, ...), so
+            // importing it pulls all of them into the action bundle even when
+            // only `Core.Logger` is used. Import the targeted lib instead.
+            'no-restricted-imports': [
+                'error',
+                {
+                    paths: [
+                        {
+                            name: '@adobe/aio-sdk',
+                            message:
+                                'Import the targeted Adobe lib instead — `@adobe/aio-lib-core-logging` for Logger, `@adobe/aio-lib-core-config` for Config, `@adobe/aio-lib-state` for State, `@adobe/aio-lib-files` for Files, `@adobe/aio-lib-events` for Events. The umbrella bundles every sub-SDK and inflates the action bundle.',
+                        },
+                    ],
+                },
+            ],
+            // `x!` silently swallows runtime null/undefined — a real hazard in
+            // action handlers where it surfaces as an opaque 500. Use an
+            // explicit runtime check so the failure mode is a clear error
+            // message instead of `Cannot read properties of undefined`.
+            '@typescript-eslint/no-non-null-assertion': 'error',
+            // `params.MAX_RETRIES || 3` treats a valid `0` as missing and
+            // silently forces the fallback. Use `??` so only null/undefined
+            // trigger the default and legitimate falsy values (`0`, `false`,
+            // `''`) are preserved.
+            '@typescript-eslint/prefer-nullish-coalescing': 'error',
+        },
+    },
+    {
+        // Action handlers receive runtime configuration via OpenWhisk
+        // `params` (declared as `inputs:` in `app.config.yaml`). `process.env`
+        // is not reliably populated across activations and is forbidden in
+        // action code — read from `params` instead.
+        files: ['src/**/actions/**/*.ts', 'src/**/actions/**/*.tsx'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector:
+                        "MemberExpression[object.type='Identifier'][object.name='process'][property.name='env']",
+                    message:
+                        'Read runtime configuration from action `params` (declared under `inputs:` in app.config.yaml), not `process.env`. App Builder does not guarantee `process.env` propagation between activations.',
+                },
+            ],
+        },
+    },
 ];

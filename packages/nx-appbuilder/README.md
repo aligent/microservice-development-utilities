@@ -105,7 +105,7 @@ The app generator always renders a **base** subtree into `<app-name>/`:
   - `src/actions/webpack-config.cjs` - Webpack config used by the `aio` CLI to compile actions via `esbuild-loader` (targets the workspace's Node major)
   - `tests/tsconfig.json` - TypeScript config for the test suite
   - `hooks/check-action-types.sh` - Wired as the application-level `pre-app-build` hook in `app.config.yaml` so the action TypeScript is type-checked before every deploy. Custom (non-Adobe) actions also live under `application.runtimeManifest` in `app.config.yaml`; the scaffolded `ext.config.yaml` files are left for Adobe-generated content only.
-  - `global-types/@adobe/aio-sdk/*.d.ts` - Local type augmentations for the Adobe AIO SDK
+  - `global-types/@adobe/<pkg>/index.d.ts` - Local module augmentations for the targeted Adobe libs. Currently augments `@adobe/aio-lib-core-logging` with a strict `LogLevel` string-literal union; the layout mirrors `node_modules/` so additional augmentations can be dropped in alongside.
 
 - **Root updates**:
   - Adds `<app-name>` to the root `package.json` workspaces array
@@ -119,7 +119,7 @@ Additional subtrees are layered on top depending on the selected flags:
 | `hasBusinessConfig`                                             | `commerce-config/`                        | `commerce/configuration/1` extension config wired into `app.commerce.config.ts`; adds a `businessConfig.schema` block to `app.commerce.config.ts`.                                                                                                                       |
 | `hasCommerceWebhooks`                                           | none (modifies `commerce-extensibility/`) | Adds a `webhooks` section to `app.commerce.config.ts` for binding Commerce extensibility hooks to runtime actions or external URLs. No new files; relies on the `commerce-extensibility/` subtree being rendered.                                                        |
 | `hasRestActions`                                                | `rest-actions/`                           | `src/actions/rest-sample.ts` registered as a web action in `app.config.yaml`.                                                                                                                                                                                            |
-| `hasEvents`                                                     | `events/`                                 | `src/actions/handle-sample-event.ts`, sample Commerce + external event subscriptions, `aio-lib-events` global types.                                                                                                                                                     |
+| `hasEvents`                                                     | `events/`                                 | `src/actions/handle-sample-event.ts`, sample Commerce + external event subscriptions; pulls `@adobe/aio-lib-events` into the app's dependencies.                                                                                                                         |
 | `hasScheduledActions`                                           | `scheduled/`                              | `src/actions/cron-sample.ts` plus the `triggers`/`rules` entries that fire it on a cron schedule.                                                                                                                                                                        |
 | `hasCustomInstallSteps`                                         | `install-steps/`                          | `scripts/install/sample-step.js` and an `installation.customInstallationSteps` entry in `app.commerce.config.ts`.                                                                                                                                                        |
 
@@ -138,6 +138,21 @@ npx nx g @aligent/nx-appbuilder:app loyalty-rules \
     --hasBusinessConfig=true \
     --hasCommerceWebhooks=true
 ```
+
+### App Builder guardrails
+
+The generated `eslint.config.mjs` ships four rules on top of `@aligent/ts-code-standards`. Each was added to head off a pattern that has repeatedly bitten App Builder apps:
+
+| Rule                                           | Scope               | Why                                                                                                                                                                                                                                                                  |
+|------------------------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `no-restricted-imports` on `@adobe/aio-sdk`    | `src/**/*.{ts,tsx}` | The umbrella `@adobe/aio-sdk` re-exports every sub-SDK (Files, State, Events, Target, Analytics, ...). Import the targeted lib instead — `@adobe/aio-lib-core-logging` for Logger, `@adobe/aio-lib-core-config` for Config, `@adobe/aio-lib-events` for Events, etc. |
+| `@typescript-eslint/no-non-null-assertion`     | `src/**/*.{ts,tsx}` | `x!` silently swallows runtime null/undefined, which surfaces as opaque action 500s. Aligns with the workspace's `CLAUDE.md` rule.                                                                                                                                   |
+| `@typescript-eslint/prefer-nullish-coalescing` | `src/**/*.{ts,tsx}` | `params.MAX_RETRIES \|\| 3` treats a valid `0` as missing and forces the fallback; `??` only triggers on null/undefined, preserving legitimate falsy values (`0`, `false`, `''`).                                                                                    |
+| `no-restricted-syntax` (`process.env`)         | `src/**/actions/**` | App Builder routes runtime configuration through OpenWhisk `params`; `process.env` is not reliably propagated between activations. Read from `params` (declared under `inputs:` in `app.config.yaml`) instead.                                                       |
+
+To loosen any rule for a specific case, override it in the same `eslint.config.mjs` (later config blocks win); to disable globally, remove the entry from the block.
+
+Because the umbrella import is banned, the generator no longer ships `@adobe/aio-sdk` as a dep. Instead it pins `@adobe/aio-lib-core-logging` unconditionally (used by every sample action) and `@adobe/aio-lib-events` only when `--hasEvents=true`. Add additional targeted libs (`@adobe/aio-lib-state`, `@adobe/aio-lib-files`, `@adobe/aio-lib-core-config`, ...) to your generated app's `package.json` as the action code that uses them is added.
 
 ## Project Structure
 
