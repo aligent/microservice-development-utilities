@@ -1,5 +1,79 @@
-import type { Client } from 'openapi-fetch';
-import type { MediaType } from 'openapi-typescript-helpers';
+/**
+ * @module throwing-client
+ *
+ * An `ErrorThrowingClient` wrapper around `openapi-fetch` whose HTTP methods
+ * return only the success branch of `FetchResponse`, reflecting the runtime
+ * contract when `retryMiddleware` is registered with `throwOnNotOk: true`.
+ *
+ * **TS2590 fix** — The original implementation used a mapped conditional type
+ * with `Extract<FetchResponse<...>, { error?: never }>`, which caused
+ * TypeScript to eagerly expand the full response union across all API paths,
+ * triggering TS2590 ("Expression produces a union type that is too complex to
+ * represent") on schemas with ~70+ endpoints. The current implementation fixes
+ * this by:
+ *
+ * 1. Using explicit generic method signatures instead of a mapped type, so
+ *    generics are preserved and evaluation is deferred to the call site.
+ * 2. Reconstructing the success response type directly (`SuccessOnlyResponse`)
+ *    instead of filtering a union with `Extract`.
+ *
+ * See {@link ./ard/ErrorThrowingClient-TS2590-Fix.md | ErrorThrowingClient-TS2590-Fix.md}
+ * for full details on the problem, solution, trade-offs, and mitigations.
+ */
+
+import type { ClientOptions, MaybeOptionalInit, Middleware, ParseAsResponse } from 'openapi-fetch';
+import createClient from 'openapi-fetch';
+import type {
+    HttpMethod,
+    MediaType,
+    PathsWithMethod,
+    Readable,
+    RequiredKeysOf,
+    ResponseObjectMap,
+    SuccessResponse,
+} from 'openapi-typescript-helpers';
+
+type InitParam<Init> =
+    RequiredKeysOf<Init> extends never
+        ? [(Init & { [key: string]: unknown })?]
+        : [Init & { [key: string]: unknown }];
+
+/**
+ * The success branch of FetchResponse, reconstructed directly instead of
+ * using Extract. Extract<FetchResponse<...>, { error?: never }> forces
+ * TypeScript to eagerly expand the full FetchResponse union across all paths,
+ * triggering TS2590 on schemas with ~70+ endpoints. Reconstructing the
+ * success branch avoids the union-wide filter entirely.
+ */
+type SuccessOnlyResponse<
+    T extends Record<string | number, any>,
+    Options,
+    Media extends MediaType,
+> = {
+    data: ParseAsResponse<Readable<SuccessResponse<ResponseObjectMap<T>, Media>>, Options>;
+    error?: never;
+    response: Response;
+};
+
+/**
+ * Like ClientMethod, but returns only the success branch of FetchResponse.
+ *
+ * Uses the same Paths constraint as openapi-fetch's ClientMethod so that
+ * Paths[Path][Method] indexing is valid. The outer ErrorThrowingClient uses
+ * Paths extends {} (matching Client), and TypeScript defers the stricter
+ * constraint check until concrete instantiation — same pattern as Client + ClientMethod.
+ */
+type ThrowingClientMethod<
+    Paths extends Record<string, Record<HttpMethod, {}>>,
+    Method extends HttpMethod,
+    Media extends MediaType,
+> = <
+    Path extends PathsWithMethod<Paths, Method>,
+    Init extends MaybeOptionalInit<Paths[Path], Method>,
+>(
+    url: Path,
+    ...init: InitParam<Init>
+) => Promise<SuccessOnlyResponse<Paths[Path][Method], Init, Media>>;
 
 /**
  * A Client whose HTTP methods return only the success branch
@@ -8,29 +82,30 @@ import type { MediaType } from 'openapi-typescript-helpers';
  *
  * Errors are thrown as HttpResponseError, never returned in the union.
  */
-export type ErrorThrowingClient<
-    Paths extends Record<string, unknown>,
-    Media extends MediaType = MediaType,
-> = {
-    [K in keyof Client<Paths, Media>]: Client<Paths, Media>[K] extends (
-        ...args: infer A
-    ) => Promise<infer R>
-        ? (...args: A) => Promise<Extract<R, { error?: never }>>
-        : Client<Paths, Media>[K];
-};
+export interface ErrorThrowingClient<Paths extends {}, Media extends MediaType = MediaType> {
+    GET: ThrowingClientMethod<Paths, 'get', Media>;
+    PUT: ThrowingClientMethod<Paths, 'put', Media>;
+    POST: ThrowingClientMethod<Paths, 'post', Media>;
+    DELETE: ThrowingClientMethod<Paths, 'delete', Media>;
+    OPTIONS: ThrowingClientMethod<Paths, 'options', Media>;
+    HEAD: ThrowingClientMethod<Paths, 'head', Media>;
+    PATCH: ThrowingClientMethod<Paths, 'patch', Media>;
+    TRACE: ThrowingClientMethod<Paths, 'trace', Media>;
+    use(...middleware: Middleware[]): void;
+    eject(...middleware: Middleware[]): void;
+}
 
 /**
- * Cast an openapi-fetch Client to an ErrorThrowingClient.
+ * Create an openapi-fetch client and cast it to an ErrorThrowingClient.
  *
- * Use this after registering retryMiddleware (with default throwOnNotOk: true),
- * which throws HttpResponseError on !response.ok and makes the error branch
- * of the discriminated union unreachable. Zero runtime cost — purely a type narrowing.
+ * This is a convenience wrapper around createClient + asErrorThrowingClient.
+ * The caller MUST register retryMiddleware (with default throwOnNotOk: true)
+ * on the returned client for the type guarantee to hold at runtime.
  *
  * WARNING: Do not use if retryMiddleware is configured with throwOnNotOk: false.
  */
-export function asErrorThrowingClient<
-    Paths extends Record<string, unknown>,
-    Media extends MediaType = MediaType,
->(client: Client<Paths, Media>): ErrorThrowingClient<Paths, Media> {
-    return client as unknown as ErrorThrowingClient<Paths, Media>;
+export function createErrorThrowingClient<Paths extends {}, Media extends MediaType = MediaType>(
+    options: ClientOptions
+) {
+    return createClient({ ...options }) as ErrorThrowingClient<Paths, Media>;
 }
