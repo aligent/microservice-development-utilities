@@ -46,7 +46,7 @@ type InitParam<Init> =
  * success branch avoids the union-wide filter entirely.
  */
 type SuccessOnlyResponse<
-    T extends Record<string | number, any>,
+    T extends Record<string | number, unknown>,
     Options,
     Media extends MediaType,
 > = {
@@ -64,6 +64,7 @@ type SuccessOnlyResponse<
  * constraint check until concrete instantiation — same pattern as Client + ClientMethod.
  */
 type ThrowingClientMethod<
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Matches openapi-fetch's ClientMethod constraint where {} means "any object shape"
     Paths extends Record<string, Record<HttpMethod, {}>>,
     Method extends HttpMethod,
     Media extends MediaType,
@@ -82,6 +83,7 @@ type ThrowingClientMethod<
  *
  * Errors are thrown as HttpResponseError, never returned in the union.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Matches openapi-fetch's Client<Paths extends {}> constraint
 export interface ErrorThrowingClient<Paths extends {}, Media extends MediaType = MediaType> {
     GET: ThrowingClientMethod<Paths, 'get', Media>;
     PUT: ThrowingClientMethod<Paths, 'put', Media>;
@@ -104,6 +106,7 @@ export interface ErrorThrowingClient<Paths extends {}, Media extends MediaType =
  *
  * WARNING: Do not use if retryMiddleware is configured with throwOnNotOk: false.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Matches openapi-fetch's Client<Paths extends {}> constraint
 export function createErrorThrowingClient<Paths extends {}, Media extends MediaType = MediaType>(
     options: ClientOptions
 ) {
