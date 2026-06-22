@@ -35,9 +35,11 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         throw new Error(`Invalid schema file extension: ${ext}`);
     }
 
-    const hasError = await validateSchema(schemaPath);
-    if (!skipValidate && hasError) {
-        throw new Error('Schema validation failed!');
+    if (!skipValidate) {
+        const hasError = await validateSchema(schemaPath);
+        if (hasError) {
+            throw new Error('Schema validation failed!');
+        }
     }
 
     const projectRoot = PROJECT_NAME;
@@ -45,10 +47,20 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     const schemaDest = `${apiClientDest}/schema.${ext}`;
     const typesDest = `${apiClientDest}/generated-types.ts`;
 
-    if (!override && tree.exists(apiClientDest)) {
+    const isOverriding = override && tree.exists(apiClientDest);
+
+    if (tree.exists(apiClientDest) && !override) {
         throw new Error(
             `Directory "${name}" already exists. If you want to override the current api client in this directory use "--override"`
         );
+    }
+
+    if (isOverriding) {
+        // Remove stale schema files (extension may have changed)
+        const schemaChildren = tree
+            .children(apiClientDest)
+            .filter(child => child.startsWith('schema.'));
+        schemaChildren.forEach(schema => tree.delete(`${apiClientDest}/${schema}`));
     }
 
     const existingProject = getExistingProject(tree, PROJECT_NAME);
@@ -71,18 +83,20 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     await copySchema(tree, schemaDest, schemaPath);
     await generateOpenApiTypes(tree, schemaDest, typesDest);
 
-    /**
-     * Each time we add new API client, we actually add a new class into `clients` project (if it exists).
-     * This add a new example client class to `apiClientDest` folder
-     */
-    const className = toClassName(name);
-    generateFiles(tree, joinPathFragments(__dirname, './client-specific-files'), apiClientDest, {
-        className,
-    });
+    // Only scaffold client.ts and apply auth config on first generation.
+    // On override, preserve the user's customized client.ts.
+    if (!isOverriding) {
+        const className = toClassName(name);
+        generateFiles(
+            tree,
+            joinPathFragments(__dirname, './client-specific-files'),
+            apiClientDest,
+            { className }
+        );
 
-    // Apply auth method configuration using ts-morph
-    const clientFilePath = joinPathFragments(apiClientDest, 'client.ts');
-    applyAuthMethodConfiguration(tree, clientFilePath, authMethod, className);
+        const clientFilePath = joinPathFragments(apiClientDest, 'client.ts');
+        applyAuthMethodConfiguration(tree, clientFilePath, authMethod, className);
+    }
 
     /**
      * The `clients` project expose all the API clients via `src/index.ts` file.

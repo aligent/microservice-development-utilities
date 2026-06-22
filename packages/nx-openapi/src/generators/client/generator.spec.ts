@@ -130,6 +130,70 @@ describe('client generator', () => {
         await expect(clientGenerator(tree, overrideOptions)).resolves.not.toThrow();
     });
 
+    it('should preserve client.ts on override', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        await clientGenerator(tree, options);
+
+        // Simulate user customization
+        const clientPath = 'clients/src/test/client.ts';
+        tree.write(clientPath, '// custom user code\n');
+
+        await clientGenerator(tree, { ...options, override: true });
+
+        const content = tree.read(clientPath, 'utf-8');
+        expect(content).toBe('// custom user code\n');
+    });
+
+    it('should remove stale files when overriding with a different schema extension', async () => {
+        const yamlOptions: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        // First generation with YAML schema
+        await clientGenerator(tree, yamlOptions);
+        expect(tree.exists('clients/src/test/schema.yaml')).toBe(true);
+
+        // Second generation with JSON schema and override
+        const jsonOptions: ClientGeneratorSchema = {
+            ...yamlOptions,
+            schemaPath: `${__dirname}/unit-test-schemas/valid.json`,
+            override: true,
+        };
+        await clientGenerator(tree, jsonOptions);
+
+        expect(tree.exists('clients/src/test/schema.json')).toBe(true);
+        expect(tree.exists('clients/src/test/schema.yaml')).toBe(false);
+    });
+
+    it('should not duplicate index export when overriding', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        await clientGenerator(tree, options);
+        await clientGenerator(tree, { ...options, override: true });
+
+        const indexContent = tree.read('clients/src/index.ts', 'utf-8');
+        expect(indexContent).not.toBeNull();
+        const matches = indexContent!.match(/\.\/test\/client/g);
+        expect(matches).toHaveLength(1);
+    });
+
     it('should add tsconfig path when using tsconfig.base.json', async () => {
         // Create tsconfig.base.json instead of tsconfig.json
         tree.delete('tsconfig.json');
