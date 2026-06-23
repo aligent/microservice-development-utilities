@@ -21,7 +21,7 @@ import {
 } from './openapi-fetch-middlewares/retry';
 import {
     ErrorThrowingClient,
-    asErrorThrowingClient,
+    createErrorThrowingClient,
 } from './openapi-fetch-middlewares/throwing-client';
 import {
     HttpResponseError,
@@ -49,9 +49,9 @@ export type {
 export {
     HttpResponseError,
     apiKeyAuthMiddleware,
-    asErrorThrowingClient,
     basicAuthMiddleware,
     chunkBy,
+    createErrorThrowingClient,
     fetchSsmParams,
     getAwsIdFromArn,
     hasDefinedProperties,
