@@ -60,7 +60,9 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         const schemaChildren = tree
             .children(apiClientDest)
             .filter(child => child.startsWith('schema.'));
-        schemaChildren.forEach(schema => tree.delete(`${apiClientDest}/${schema}`));
+        schemaChildren.forEach(schema => {
+            tree.delete(`${apiClientDest}/${schema}`);
+        });
     }
 
     const existingProject = getExistingProject(tree, PROJECT_NAME);
