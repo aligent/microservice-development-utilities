@@ -118,6 +118,25 @@ describe('utilities', () => {
             const content = tree.read('clients/src/index.ts', 'utf-8');
             expect(content).toContain('export * from "./my-client/client";');
         });
+
+        it('should not duplicate export if it already exists', () => {
+            tree.write('clients/src/index.ts', '// existing content\n');
+            appendToIndexFile(tree, 'clients', 'my-client');
+            appendToIndexFile(tree, 'clients', 'my-client');
+
+            const content = tree.read('clients/src/index.ts', 'utf-8');
+            const matches = content?.match(/\.\/my-client\/client/g);
+            expect(matches).toHaveLength(1);
+        });
+
+        it('should not duplicate export when quotes differ', () => {
+            tree.write('clients/src/index.ts', "export * from './my-client/client';\n");
+            appendToIndexFile(tree, 'clients', 'my-client');
+
+            const content = tree.read('clients/src/index.ts', 'utf-8');
+            const matches = content?.match(/\.\/my-client\/client/g);
+            expect(matches).toHaveLength(1);
+        });
     });
 
     describe('toClassName', () => {

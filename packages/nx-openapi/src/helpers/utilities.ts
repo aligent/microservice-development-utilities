@@ -106,6 +106,15 @@ export function appendToIndexFile(tree: Tree, projectRoot: string, clientName: s
     const newLine = `export * from "./${clientName}/client";\n`;
 
     const indexContent = tree.read(indexPath, 'utf-8');
+    if (indexContent === null) {
+        throw new Error(`Failed to read index file: ${indexPath}`);
+    }
+
+    const exportPattern = `./${clientName}/client`;
+    if (indexContent.includes(exportPattern)) {
+        return;
+    }
+
     tree.write(indexPath, indexContent + newLine);
 }
 
