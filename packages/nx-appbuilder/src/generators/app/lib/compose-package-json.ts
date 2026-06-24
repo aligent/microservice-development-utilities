@@ -13,8 +13,14 @@ import type { NormalizedSchema } from '../schema';
  */
 const TEMPLATE = loadTemplatePackage(__dirname);
 
+// Adobe ships an umbrella `@adobe/aio-sdk` that re-exports every sub-SDK
+// (Files, State, Events, Target, Analytics, ...). Importing the umbrella
+// drags all of them into the action bundle even when only `Core.Logger` is
+// used. We pin the targeted libs instead — and the matching `no-restricted-
+// imports` lint rule in the generated app's eslint config keeps app code
+// honest. See `app/files/base/eslint.config.mjs.template`.
 const BASE_DEPS = pickVersions(TEMPLATE.dependencies, [
-    '@adobe/aio-sdk',
+    '@adobe/aio-lib-core-logging',
     '@adobe/aio-lib-telemetry',
 ]);
 
@@ -22,6 +28,11 @@ const COMMERCE_DEPS = pickVersions(TEMPLATE.dependencies, [
     '@adobe/aio-commerce-lib-app',
     '@adobe/aio-commerce-lib-config',
 ]);
+
+// Only pulled in when the `events` subtree is rendered — that subtree's
+// global-types shim re-exports `init` from the package, so the package must
+// resolve at type-check time.
+const EVENT_DEPS = pickVersions(TEMPLATE.dependencies, ['@adobe/aio-lib-events']);
 
 const ADMIN_UI_DEPS = pickVersions(TEMPLATE.dependencies, [
     '@adobe/uix-guest',
@@ -63,6 +74,10 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
 
     if (usesCommerceLib) {
         Object.assign(dependencies, COMMERCE_DEPS);
+    }
+
+    if (options.hasEvents) {
+        Object.assign(dependencies, EVENT_DEPS);
     }
 
     if (options.hasAdminUI) {

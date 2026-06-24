@@ -1,4 +1,4 @@
-import { Core } from '@adobe/aio-sdk';
+import Logger from '@adobe/aio-lib-core-logging';
 
 /**
  * Stub event handler.
@@ -18,7 +18,7 @@ interface EventParams {
 }
 
 export async function main(params: EventParams) {
-    const logger = Core.Logger('handle-sample-event', { level: params.LOG_LEVEL || 'info' });
+    const logger = Logger('handle-sample-event', { level: params.LOG_LEVEL ?? 'info' });
 
     logger.info('Event received', {
         type: params.type,

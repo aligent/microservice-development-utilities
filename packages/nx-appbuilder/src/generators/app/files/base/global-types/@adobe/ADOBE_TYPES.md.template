@@ -1,10 +1,17 @@
-# Type declarations for @adobe/aio-sdk
+# Type augmentations for Adobe libs
 
-Although some of the modules contained within the sdk have type definitions, they are not exported by the sdk itself.
-This folder declares a minimal module for the sdk.
+App code should import the targeted Adobe libs directly (`@adobe/aio-lib-core-logging`, `@adobe/aio-lib-core-config`, `@adobe/aio-lib-events`, etc.) rather than the umbrella `@adobe/aio-sdk`. The umbrella re-exports every sub-SDK unconditionally, which bloats the deployed action bundle.
 
-## Currently supported
+The lint rule in `eslint.config.mjs` (the `no-restricted-imports` entry under `src/**`) enforces this and ships an inline pointer to the targeted alternatives.
 
-- Core.Logger (from @adobe/aio-lib-core-logging)
-- Core.Config (from @adobe/aio-lib-core-config)
-- Events (from @adobe/aio-lib-events)
+## What's in this folder
+
+This folder mirrors `node_modules/` (`<scope>/<package>/index.d.ts`) and provides module augmentations where the upstream types are missing or imprecise. Augmentations declared here merge with the package's own types — no need to redeclare anything the package already ships correctly.
+
+### Currently augmented
+
+- `@adobe/aio-lib-core-logging` — adds a strict `LogLevel` string-literal union (the upstream type defines `level` as plain `string`).
+
+### Adding more
+
+Drop a new `<scope>/<package>/index.d.ts` file with a `declare module '<scope>/<package>'` block. The action and test tsconfigs both `include` this directory, so the augmentation is picked up automatically.

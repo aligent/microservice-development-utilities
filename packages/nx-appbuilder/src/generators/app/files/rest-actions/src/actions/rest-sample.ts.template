@@ -1,4 +1,4 @@
-import { Core } from '@adobe/aio-sdk';
+import Logger from '@adobe/aio-lib-core-logging';
 
 /**
  * Stub REST endpoint. Adjust the response shape and add domain logic as needed.
@@ -16,7 +16,7 @@ interface ActionParams {
 }
 
 export async function main(params: ActionParams) {
-    const logger = Core.Logger('rest-sample', { level: params.LOG_LEVEL || 'info' });
+    const logger = Logger('rest-sample', { level: params.LOG_LEVEL ?? 'info' });
 
     logger.info('REST request received', {
         method: params.__ow_method,
