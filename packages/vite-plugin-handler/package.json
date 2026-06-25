@@ -1,0 +1,16 @@
+{
+  "name": "@aligent/vite-plugin-handler",
+  "version": "0.1.0",
+  "description": "TBD later",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligent/microservice-development-utilities.git",
+    "directory": "packages/vite-plugin-handler"
+  },
+  "dependencies": {},
+  "author": "Aligent",
+  "license": "MIT"
+}

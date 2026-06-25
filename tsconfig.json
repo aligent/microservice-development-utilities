@@ -26,6 +26,9 @@
         },
         {
             "path": "./packages/aws-wrappers"
+        },
+        {
+            "path": "./packages/vite-plugin-handler"
         }
     ]
 }
