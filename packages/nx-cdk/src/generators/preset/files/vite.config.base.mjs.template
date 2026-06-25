@@ -39,6 +39,7 @@ export const baseConfig = defineConfig(() => {
     };
 });
 
+// TODO: [MI-251] Extract all of the below to a package or util module to move forward
 // ESM doesn't define __dirname/__filename. This shim ensures bundled CJS dependencies
 // that reference them won't throw a ReferenceError at runtime.
 // TODO: [MI-251] Support shims only when needed instead consider looking at tsup, tsdown and rollup shims plugins
@@ -46,6 +47,21 @@ const shimBanner = `import { fileURLToPath as __shim_fileURLToPath } from 'node:
 import { dirname as __shim_dirname } from 'node:path';
 const __filename = __shim_fileURLToPath(import.meta.url);
 const __dirname = __shim_dirname(__filename);`;
+
+// These built-in Vite plugins handle CSS, HTML, assets, and package.json watching
+// — none of which apply to Node.js Lambda bundling.
+const stripUnneededPlugins = {
+    name: 'strip-unneeded-plugins',
+    configResolved(config) {
+        const remove = new Set([
+            'vite:asset',
+            'vite:css-post',
+            'vite:build-html',
+            'vite:watch-package-data',
+        ]);
+        config.plugins = config.plugins.filter(p => !remove.has(p.name));
+    },
+};
 
 /**
  * Creates Vite environments for bundling Lambda handlers using the Vite Environment API.
@@ -67,11 +83,12 @@ export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lam
     for (const handler of handlers) {
         const bundledPath = handler.replace(`${handlersPath}/`, '');
         const entryName = bundledPath.replace(extname(bundledPath), '');
-        const envName = `${envPrefix}_${entryName.replace(/[\\/]/g, '_')}`;
+        const envName = `${envPrefix}_${entryName.replace(/[^a-zA-Z0-9$_]/g, '_')}`;
 
         environments[envName] = {
             resolve: { noExternal: true },
             build: {
+                license: false,
                 outDir: `dist/${entryName}`,
                 minify: options.mode === 'development' ? 'oxc' : false,
                 sourcemap: options.mode !== 'production',
@@ -93,13 +110,19 @@ export function defineLambdaEnvironments(subPath, options = {}, envPrefix = 'lam
     }
 
     return {
+        plugins: [stripUnneededPlugins],
         environments,
         builder: {
             buildApp: async builder => {
                 const lambdaEnvs = Object.entries(builder.environments)
                     .filter(([name]) => name.startsWith(`${envPrefix}_`))
                     .map(([, env]) => env);
-                await Promise.all(lambdaEnvs.map(env => builder.build(env)));
+                const limit = options.concurrency ?? Infinity;
+                for (let i = 0; i < lambdaEnvs.length; i += limit) {
+                    await Promise.all(
+                        lambdaEnvs.slice(i, i + limit).map(env => builder.build(env))
+                    );
+                }
             },
         },
     };
