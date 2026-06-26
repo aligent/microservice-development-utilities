@@ -10,7 +10,8 @@ export interface HandlerBundleOptions {
     concurrency?: number;
     /** Inject CJS __dirname/__filename shim banner (default: true) */
     shims?: boolean;
-    /** Extra Rollup module type overrides (default: {}) */
+    /** Extra Rolldown module type overrides (default: {}) */
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     moduleTypes?: {};
 }
 
