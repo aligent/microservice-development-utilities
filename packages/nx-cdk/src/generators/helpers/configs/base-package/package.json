@@ -11,14 +11,14 @@
     "typecheck": "nx affected -t typecheck",
     "typecheck:all": "nx run-many -t typecheck",
     "audit": "nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache",
-    "pg:synth": "nx run application:pg:synth --mode=development --profile playground",
-    "pg:deploy": "nx run application:pg:deploy --mode=development --method=direct --require-approval never --profile playground",
-    "pg:diff": "nx run application:pg:diff --mode=development --profile playground",
-    "pg:destroy": "nx run application:pg:destroy --mode=development --profile playground",
+    "pg:synth": "nx run application:cdk -- synth '**' --mode=development --profile playground",
+    "pg:deploy": "nx run application:cdk -- deploy '**' --mode=development --method=direct --require-approval never --profile playground",
+    "pg:diff": "nx run application:cdk -- diff '**' --mode=development --profile playground",
+    "pg:destroy": "nx run application:cdk -- destroy '**' --mode=development --profile playground",
     "postinstall": "[ -d .git ] && git config core.hooksPath '.git-hooks' && chmod +x .git-hooks/* || true"
   },
   "dependencies": {
-    "@aligent/microservice-util-lib": "^1.2.0"
+    "@aligent/microservice-util-lib": "^1.6.0"
   },
   "devDependencies": {
     "@aligent/cdk-aspects": "^0.6.3",
@@ -26,6 +26,7 @@
     "@aligent/cdk-step-function-from-file": "^0.5.3",
     "@aligent/nx-openapi": "^2.1.2",
     "@aligent/ts-code-standards": "^5.0.0",
+    "@aligent/vite-plugin-handler": "^0.1.0",
     "@nx/eslint": "22.7.3",
     "@nx/eslint-plugin": "22.7.3",
     "@nx/js": "22.7.3",
@@ -65,5 +66,5 @@
     "libs/*",
     "services/*"
   ],
-  "packageManager": "yarn@4.16.0+sha512.5374c94eb4ef6aa8188fb112f20c1aa6569f248d676c5e576e1fd2a1a4d8d87a96df65d9dfe1c2a0252cbe38bda46cf18d955005b81b43cc7607a5c9d56fd2b6"
+  "packageManager": "yarn@4.17.0+sha512.c2957de2f9025ab14d63b24d0d8be1f1655810e22c341042c27f7ecd017b180ec12db73d69ac366d71b304ef9f069349ce462de96f04f8f1da317f4f762c95ae"
 }

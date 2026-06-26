@@ -1,8 +1,10 @@
 import { NxJsonConfiguration } from '@nx/devkit';
 import { SERVICES_SCOPE } from '../../constants';
 
-export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
+export const NX_JSON: NxJsonConfiguration = {
     $schema: './node_modules/nx/schemas/nx-schema.json',
+    neverConnectToCloud: true,
+    analytics: false,
     defaultBase: 'origin/staging',
     sync: { applyChanges: true },
     plugins: [
@@ -38,9 +40,6 @@ export const NX_JSON: NxJsonConfiguration & { $schema: string } = {
         },
         typecheck: { cache: true, inputs: ['default', '^production'] },
         cdk: {
-            dependsOn: [{ target: 'build', params: 'forward', projects: `${SERVICES_SCOPE}/*` }],
-        },
-        pg: {
             dependsOn: [{ target: 'build', params: 'forward', projects: `${SERVICES_SCOPE}/*` }],
         },
     },

@@ -15,6 +15,7 @@ Aligent's TypeScript monorepo for microservice development utilities.
 | `packages/nx-appbuilder`         | Nx plugin with generators for Adobe App Builder apps          |
 | `packages/nx-cdk`                | Nx plugin with generators for AWS CDK projects                |
 | `packages/nx-openapi`            | Nx plugin with generators for OpenAPI client generation       |
+| `packages/vite-plugin-handler`   | Vite plugin for bundling Lambda handlers as ESM               |
 
 ## Commands
 
@@ -65,6 +66,7 @@ npx nx g @tools/generators:package
   ```
 
   Common mappings: `Core.Logger` → `@adobe/aio-lib-core-logging`, `Core.Config` → `@adobe/aio-lib-core-config`, `Events` → `@adobe/aio-lib-events`, `State` → `@adobe/aio-lib-state`, `Files` → `@adobe/aio-lib-files`. The generated app's `eslint.config.mjs` ships a `no-restricted-imports` rule that enforces this.
+
 - **Don't read `process.env` inside action handlers.** App Builder routes runtime configuration through OpenWhisk `params` (declared as `inputs:` in `app.config.yaml`); `process.env` is not reliably propagated between activations. The generated app's eslint config flags `process.env.*` reads under `src/**/actions/**`.
 
 ## Workflow

@@ -20,67 +20,44 @@ This application manages the deployment of microservices and their shared infras
 
 ```bash
 # Synthesize for default environment/stage (dev)
-yarn pg:synth --args="dev/**"
+yarn pg:synth
 
 # Synthesize for a custom environment/stage
-yarn pg:synth --args="plg/** -c environment=plg"
+yarn pg:synth -c environment=plg
 ```
 
 ##### Deploy
 
 ```bash
 # Deploy for default environment/stage (dev)
-yarn pg:deploy --args="dev/**"
+yarn pg:deploy
 
 # Deploy to a custom environment/stage
-yarn pg:deploy --args="plg/** -c environment=plg"
+yarn pg:deploy -c environment=plg
 ```
 
 ##### Diff
 
 ```bash
 # Diff checking for default environment/stage (dev)
-yarn pg:diff --args="dev/**"
+yarn pg:diff
 
 # Diff checking for a custom environment/stage
-yarn pg:diff --args="plg/** -c environment=plg"
+yarn pg:diff -c environment=plg
 ```
 
 ##### Destroy
 
 ```bash
 # Destroy default environment/stage (dev)
-yarn pg:destroy --args="dev/**"
+yarn pg:destroy
 
 # Destroy a custom environment/stage
-yarn pg:destroy --args="plg/** -c environment=plg"
+yarn pg:destroy -c environment=plg
 ```
 
 ### Direct Nx Commands
 
 ```bash
-yarn nx run application:cdk <command> <args>
-```
-
-## Testing
-
-### Mock Services
-
-The application may include mock services for testing integrations without external dependencies.
-
-<!-- list mock services here -->
-
-Change the value of the `/application/dev/url` SSM Parameter to switch between real and mock endpoints
-
-### Local Development
-
-```bash
-# Type checking
-yarn typecheck
-
-# Testing
-yarn test
-
-# Linting
-yarn lint
+yarn nx run application:cdk -- <command> <args>
 ```

@@ -35,4 +35,22 @@ describe('preset generator', () => {
         expect(infraIndex).not.toContain('paramExample');
         expect(infraIndex).not.toContain('secretExample');
     });
+
+    it('should not contain inline Lambda bundling code in vite base config', async () => {
+        await presetGenerator(tree, options);
+
+        const baseConfig = tree.read('vite.config.base.mjs', 'utf-8');
+        expect(baseConfig).toBeDefined();
+        expect(baseConfig).not.toContain('defineLambdaEnvironments');
+        expect(baseConfig).not.toContain('shimBanner');
+        expect(baseConfig).not.toContain('stripUnneededPlugins');
+    });
+
+    it('should include @aligent/vite-plugin-handler in generated devDependencies', async () => {
+        await presetGenerator(tree, options);
+
+        const packageJson = tree.read('package.json', 'utf-8');
+        expect(packageJson).toBeDefined();
+        expect(packageJson).toContain('@aligent/vite-plugin-handler');
+    });
 });
