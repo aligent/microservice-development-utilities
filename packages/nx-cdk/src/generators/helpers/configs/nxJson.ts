@@ -42,8 +42,5 @@ export const NX_JSON: NxJsonConfiguration = {
         cdk: {
             dependsOn: [{ target: 'build', params: 'forward', projects: `${SERVICES_SCOPE}/*` }],
         },
-        pg: {
-            dependsOn: [{ target: 'build', params: 'forward', projects: `${SERVICES_SCOPE}/*` }],
-        },
     },
 } as const;

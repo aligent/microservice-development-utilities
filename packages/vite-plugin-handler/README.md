@@ -10,7 +10,7 @@ Each `.ts` file discovered under the given handler path gets its own build envir
 npm install --save-dev @aligent/vite-plugin-handler
 ```
 
-Requires `vite >= 7.3.1` as a peer dependency.
+Requires `vite >= 8.0.14` as a peer dependency.
 
 ## Usage
 
