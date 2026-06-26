@@ -1,5 +1,2 @@
-/**
- * Main entry point for @aligent/vite-plugin-handler
- */
-
-export * from './lib';
+export { handlerBundle } from './lib/handler-bundle.js';
+export type { HandlerBundleOptions } from './lib/handler-bundle.js';

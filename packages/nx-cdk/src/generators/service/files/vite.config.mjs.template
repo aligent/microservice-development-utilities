@@ -1,15 +1,12 @@
 import { defineConfig, mergeConfig } from 'vite';
-import { baseConfig, defineLambdaEnvironments } from '../../vite.config.base.mjs';
+import { handlerBundle } from '@aligent/vite-plugin-handler';
+import { baseConfig } from '../../vite.config.base.mjs';
 
 export default defineConfig(configEnv => {
-    const lambdaConfig = defineLambdaEnvironments('src/runtime/handlers', {
-        mode: configEnv.mode,
-    });
-
     return mergeConfig(
         baseConfig(configEnv),
         defineConfig({
-            ...lambdaConfig,
+            plugins: [handlerBundle('src/runtime/handlers')],
             cacheDir: '../../node_modules/.vitest/<%= name %>',
             test: {
                 env: {

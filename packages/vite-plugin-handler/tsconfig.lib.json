@@ -5,6 +5,8 @@
         "rootDir": "src",
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
         "types": ["node"]
     },
     "include": ["src/**/*.ts"],

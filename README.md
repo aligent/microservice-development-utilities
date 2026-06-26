@@ -11,6 +11,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 - [Nx App Builder](/packages/nx-appbuilder/README.md)
 - [Nx CDK](/packages/nx-cdk/README.md)
 - [Nx Openapi](/packages/nx-openapi/README.md)
+- [Vite Plugin Handler](/packages/vite-plugin-handler/README.md)
 
 # Development
 
@@ -48,6 +49,7 @@ microservice-development-utilities/
 │   ├── nx-appbuilder/          # Nx plugin with generators for Adobe App Builder apps
 │   ├── nx-cdk/                 # Nx plugin for CDK project generation
 │   ├── nx-openapi/             # Nx plugin for OpenAPI code generation
+│   ├── vite-plugin-handler/    # Vite plugin for bundling Lambda handlers
 └── package.json                # Root package configuration
 ```
 

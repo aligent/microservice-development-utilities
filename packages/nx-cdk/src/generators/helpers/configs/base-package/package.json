@@ -26,6 +26,7 @@
     "@aligent/cdk-step-function-from-file": "^0.5.3",
     "@aligent/nx-openapi": "^2.1.2",
     "@aligent/ts-code-standards": "^5.0.0",
+    "@aligent/vite-plugin-handler": "^0.1.0",
     "@nx/eslint": "22.7.3",
     "@nx/eslint-plugin": "22.7.3",
     "@nx/js": "22.7.3",

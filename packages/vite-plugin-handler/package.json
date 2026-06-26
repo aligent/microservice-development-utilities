@@ -1,14 +1,17 @@
 {
   "name": "@aligent/vite-plugin-handler",
   "version": "0.1.0",
-  "description": "TBD later",
-  "type": "commonjs",
-  "main": "./src/index.js",
-  "typings": "./src/index.d.ts",
+  "description": "Vite plugin for bundling Lambda handlers",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "typings": "./dist/src/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/aligent/microservice-development-utilities.git",
     "directory": "packages/vite-plugin-handler"
+  },
+  "peerDependencies": {
+    "vite": ">=8.0.14"
   },
   "dependencies": {},
   "author": "Aligent",
