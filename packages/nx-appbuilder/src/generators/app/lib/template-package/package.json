@@ -14,7 +14,7 @@
     "@adobe/react-spectrum": "^3.46.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router": "^7.13.0"
+    "react-router": "^8.1.0"
   },
   "devDependencies": {
     "@aligent/ts-code-standards": "^4.2.0",
