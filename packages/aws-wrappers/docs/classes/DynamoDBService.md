@@ -6,7 +6,7 @@
 
 # Class: DynamoDBService
 
-Defined in: [dynamodb/dynamodb.ts:49](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L49)
+Defined in: [dynamodb/dynamodb.ts:155](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L155)
 
 Wrapper around the AWS DynamoDB Document client providing structured
 Powertools logging and X-Ray tracing by default.
@@ -22,7 +22,7 @@ callers work with plain TypeScript objects in both directions.
 
 > **new DynamoDBService**(`opts?`): `DynamoDBService`
 
-Defined in: [dynamodb/dynamodb.ts:62](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L62)
+Defined in: [dynamodb/dynamodb.ts:168](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L168)
 
 #### Parameters
 
@@ -40,10 +40,10 @@ tracing captures every DynamoDB call.
 
 ###### logger?
 
-`Logger`
+`LoggerInterface`
 
-Optional Powertools logger. Defaults to a logger with
-`serviceName: 'DynamoDBService'`.
+Optional Powertools logger. Defaults to `new Logger()`,
+which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
 
 #### Returns
 
@@ -57,7 +57,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **batchGet**(`input`): `Promise`\<`BatchGetCommandOutput`\>
 
-Defined in: [dynamodb/dynamodb.ts:159](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L159)
+Defined in: [dynamodb/dynamodb.ts:319](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L319)
 
 Batch-get items from one or more DynamoDB tables.
 
@@ -84,7 +84,7 @@ Callers should narrow the result type at the call site.
 
 > **batchWrite**(`input`): `Promise`\<`BatchWriteCommandOutput`\>
 
-Defined in: [dynamodb/dynamodb.ts:169](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L169)
+Defined in: [dynamodb/dynamodb.ts:336](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L336)
 
 Batch-write items to DynamoDB, retrying `UnprocessedItems` with jittered
 exponential backoff. Up to 5 attempts (200ms base delay). Throws when
@@ -106,18 +106,24 @@ items remain unprocessed after the final attempt.
 
 ### deleteItem()
 
-> **deleteItem**\<`T`\>(`input`): `Promise`\<`Omit`\<`DeleteCommandOutput`, `"Attributes"`\> & `object`\>
+> **deleteItem**\<`K`, `R`\>(`input`): `Promise`\<`Omit`\<`DeleteCommandOutput`, `"Attributes"`\> & `object`\>
 
-Defined in: [dynamodb/dynamodb.ts:116](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L116)
+Defined in: [dynamodb/dynamodb.ts:249](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L249)
 
 Delete an item from DynamoDB. The `Attributes` field on the response is
-typed as `T` — relevant when `ReturnValues: 'ALL_OLD'` is set.
+typed as `R` — relevant when `ReturnValues: 'ALL_OLD'` is set.
 
 #### Type Parameters
 
-##### T
+##### K
 
-`T` = `Record`\<`string`, `unknown`\>
+`K` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
+
+Shape of the partition / sort key.
+
+##### R
+
+`R` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected shape of the returned `Attributes`.
 
@@ -125,7 +131,7 @@ Expected shape of the returned `Attributes`.
 
 ##### input
 
-`DeleteCommandInput`
+`WithTypedKey`\<`DeleteCommandInput`, `K`\>
 
 #### Returns
 
@@ -137,17 +143,23 @@ Expected shape of the returned `Attributes`.
 
 ### getItem()
 
-> **getItem**\<`T`\>(`input`): `Promise`\<`T` \| `undefined`\>
+> **getItem**\<`K`, `R`\>(`input`): `Promise`\<`R` \| `undefined`\>
 
-Defined in: [dynamodb/dynamodb.ts:76](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L76)
+Defined in: [dynamodb/dynamodb.ts:183](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L183)
 
 Get an item from DynamoDB.
 
 #### Type Parameters
 
-##### T
+##### K
 
-`T` = `Record`\<`string`, `unknown`\>
+`K` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
+
+Shape of the partition / sort key.
+
+##### R
+
+`R` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected unmarshalled item shape.
 
@@ -155,11 +167,11 @@ Expected unmarshalled item shape.
 
 ##### input
 
-`GetCommandInput`
+`WithTypedKey`\<`GetCommandInput`, `K`\>
 
 #### Returns
 
-`Promise`\<`T` \| `undefined`\>
+`Promise`\<`R` \| `undefined`\>
 
 The item, or `undefined` if not found.
 
@@ -171,7 +183,7 @@ The item, or `undefined` if not found.
 
 > **paginateItems**\<`T`\>(`input`): `AsyncGenerator`\<`T`\>
 
-Defined in: [dynamodb/dynamodb.ts:190](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L190)
+Defined in: [dynamodb/dynamodb.ts:364](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L364)
 
 Paginate over Query results, yielding one unmarshalled item at a time.
 
@@ -179,7 +191,7 @@ Paginate over Query results, yielding one unmarshalled item at a time.
 
 ##### T
 
-`T` = `Record`\<`string`, `unknown`\>
+`T` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected shape of each yielded item.
 
@@ -201,7 +213,7 @@ Expected shape of each yielded item.
 
 > **paginateScan**\<`T`\>(`input`): `AsyncGenerator`\<`T`\>
 
-Defined in: [dynamodb/dynamodb.ts:203](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L203)
+Defined in: [dynamodb/dynamodb.ts:381](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L381)
 
 Paginate over Scan results, yielding one unmarshalled item at a time.
 
@@ -209,7 +221,7 @@ Paginate over Scan results, yielding one unmarshalled item at a time.
 
 ##### T
 
-`T` = `Record`\<`string`, `unknown`\>
+`T` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected shape of each yielded item.
 
@@ -231,7 +243,7 @@ Expected shape of each yielded item.
 
 > **putItem**\<`T`\>(`input`): `Promise`\<`PutCommandOutput`\>
 
-Defined in: [dynamodb/dynamodb.ts:87](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L87)
+Defined in: [dynamodb/dynamodb.ts:203](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L203)
 
 Put an item into DynamoDB. The caller's `Item` is typed as `T`, which
 the document client marshalls automatically.
@@ -262,7 +274,7 @@ Type of the item being stored.
 
 > **query**\<`T`\>(`input`): `Promise`\<`Omit`\<`QueryCommandOutput`, `"Items"`\> & `object`\>
 
-Defined in: [dynamodb/dynamodb.ts:130](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L130)
+Defined in: [dynamodb/dynamodb.ts:272](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L272)
 
 Execute a DynamoDB Query. The full `QueryCommandOutput` is returned with
 `Items` typed as `T[]` so callers retain pagination metadata
@@ -272,7 +284,7 @@ Execute a DynamoDB Query. The full `QueryCommandOutput` is returned with
 
 ##### T
 
-`T` = `Record`\<`string`, `unknown`\>
+`T` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected shape of each unmarshalled item.
 
@@ -294,16 +306,29 @@ Expected shape of each unmarshalled item.
 
 > **scan**\<`T`\>(`input`): `Promise`\<`Omit`\<`ScanCommandOutput`, `"Items"`\> & `object`\>
 
-Defined in: [dynamodb/dynamodb.ts:143](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L143)
+Defined in: [dynamodb/dynamodb.ts:301](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L301)
 
 Scan a DynamoDB table. The full `ScanCommandOutput` is returned with
 `Items` typed as `T[]` so callers retain pagination metadata.
+
+Scan reads every item in the table, so cost and latency grow linearly
+with table size; it is rarely the right tool in a runtime service.
+Prefer, in order:
+
+  1. `query` with the table's partition key.
+  2. `query` against a GSI or LSI whose key matches your access pattern.
+  3. A sparse GSI populated only for the items you need to enumerate.
+  4. A denormalised lookup item or table maintained on write.
+
+Legitimate scan use cases are mostly one-off admin work (export,
+migration, audit). For those, prefer the AWS CLI or Console rather than
+embedding a scan in a Lambda.
 
 #### Type Parameters
 
 ##### T
 
-`T` = `Record`\<`string`, `unknown`\>
+`T` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected shape of each unmarshalled item.
 
@@ -323,12 +348,12 @@ Expected shape of each unmarshalled item.
 
 ### updateItem()
 
-> **updateItem**\<`T`\>(`input`): `Promise`\<`Omit`\<`UpdateCommandOutput`, `"Attributes"`\> & `object`\>
+> **updateItem**\<`K`, `R`\>(`input`): `Promise`\<`Omit`\<`UpdateCommandOutput`, `"Attributes"`\> & `object`\>
 
-Defined in: [dynamodb/dynamodb.ts:103](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L103)
+Defined in: [dynamodb/dynamodb.ts:226](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/dynamodb/dynamodb.ts#L226)
 
 Update an item in DynamoDB. The `Attributes` field on the response is
-typed as `T` — the caller should choose `T` to match their
+typed as `R` — the caller should choose `R` to match their
 `ReturnValues` setting:
 - `NONE` (default): no `Attributes` returned.
 - `ALL_OLD` / `ALL_NEW`: full item.
@@ -336,9 +361,15 @@ typed as `T` — the caller should choose `T` to match their
 
 #### Type Parameters
 
-##### T
+##### K
 
-`T` = `Record`\<`string`, `unknown`\>
+`K` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
+
+Shape of the partition / sort key.
+
+##### R
+
+`R` *extends* `Record`\<`string`, `unknown`\> = `Record`\<`string`, `unknown`\>
 
 Expected shape of the returned `Attributes`.
 
@@ -346,7 +377,7 @@ Expected shape of the returned `Attributes`.
 
 ##### input
 
-`UpdateCommandInput`
+`WithTypedKey`\<`UpdateCommandInput`, `K`\>
 
 #### Returns
 

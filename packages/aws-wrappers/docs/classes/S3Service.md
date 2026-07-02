@@ -6,7 +6,7 @@
 
 # Class: S3Service
 
-Defined in: [s3/s3.ts:35](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L35)
+Defined in: [s3/s3.ts:68](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L68)
 
 Wrapper around the AWS S3 client providing structured Powertools logging
 and X-Ray tracing by default.
@@ -23,7 +23,7 @@ tagging, version IDs) should use `S3Client` directly.
 
 > **new S3Service**(`opts?`): `S3Service`
 
-Defined in: [s3/s3.ts:45](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L45)
+Defined in: [s3/s3.ts:78](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L78)
 
 #### Parameters
 
@@ -38,10 +38,10 @@ the wrapper does not apply X-Ray instrumentation.
 
 ###### logger?
 
-`Logger`
+`LoggerInterface`
 
-Optional Powertools logger. Defaults to a logger with
-`serviceName: 'S3Service'`.
+Optional Powertools logger. Defaults to `new Logger()`,
+which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
 
 #### Returns
 
@@ -55,7 +55,7 @@ Optional Powertools logger. Defaults to a logger with
 
 > **copyObject**(`input`): `Promise`\<`CopyObjectCommandOutput`\>
 
-Defined in: [s3/s3.ts:145](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L145)
+Defined in: [s3/s3.ts:173](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L173)
 
 Copy an object within S3.
 
@@ -77,7 +77,7 @@ Copy an object within S3.
 
 > **deleteObject**(`input`): `Promise`\<`DeleteObjectCommandOutput`\>
 
-Defined in: [s3/s3.ts:199](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L199)
+Defined in: [s3/s3.ts:266](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L266)
 
 Delete a single object from S3.
 
@@ -99,7 +99,7 @@ Delete a single object from S3.
 
 > **deleteObjects**(`bucket`, `keys`): `Promise`\<`DeleteObjectsCommandOutput`[]\>
 
-Defined in: [s3/s3.ts:211](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L211)
+Defined in: [s3/s3.ts:278](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L278)
 
 Delete multiple objects from S3, auto-chunking the request into batches
 of 1000 keys (the S3-enforced DeleteObjects limit). Returns one output
@@ -127,7 +127,7 @@ per chunk.
 
 > **emptyBucket**(`bucket`): `Promise`\<`string`[]\>
 
-Defined in: [s3/s3.ts:234](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L234)
+Defined in: [s3/s3.ts:307](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L307)
 
 Delete every object in a bucket. Streams the listing page-by-page and
 delegates each page's deletion to `deleteObjects`, so peak memory stays
@@ -153,7 +153,7 @@ The keys of every deleted object.
 
 > **getAllObjects**\<`T`\>(`bucket`, `prefix?`): `Promise`\<`T`[]\>
 
-Defined in: [s3/s3.ts:176](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L176)
+Defined in: [s3/s3.ts:204](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L204)
 
 List and JSON-parse every object under a bucket and optional prefix.
 Auto-paginated. Objects without a body are skipped.
@@ -188,7 +188,7 @@ Expected type of each parsed object.
 
 > **getJsonObject**\<`T`\>(`input`): `Promise`\<`T` \| `undefined`\>
 
-Defined in: [s3/s3.ts:123](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L123)
+Defined in: [s3/s3.ts:151](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L151)
 
 Get an object from S3 and parse it as JSON.
 
@@ -224,7 +224,7 @@ If the body is non-empty and not valid JSON.
 
 > **getObject**(`input`): `Promise`\<`GetObjectCommandOutput`\>
 
-Defined in: [s3/s3.ts:97](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L97)
+Defined in: [s3/s3.ts:125](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L125)
 
 Get an object from S3.
 
@@ -246,7 +246,7 @@ Get an object from S3.
 
 > **getObjectBody**(`input`): `Promise`\<`string` \| `undefined`\>
 
-Defined in: [s3/s3.ts:109](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L109)
+Defined in: [s3/s3.ts:137](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L137)
 
 Get an object from S3 and return its body as a string.
 
@@ -265,13 +265,67 @@ has no body.
 
 ***
 
+<a id="getpresignedurl"></a>
+
+### getPresignedUrl()
+
+> **getPresignedUrl**(`input`): `Promise`\<`string`\>
+
+Defined in: [s3/s3.ts:242](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L242)
+
+Generate a presigned URL that callers can use to GET or PUT an S3 object
+directly, without going through the wrapper. The signing happens against
+the wrapper's `S3Client`, so callers do not need their own client.
+
+GET URLs are signed with `ResponseContentDisposition: 'attachment'` so
+browsers download the object rather than rendering it in-place.
+
+The input shape is an inline object (rather than the `Required<Pick<...>>`
+pattern used by other S3 methods) because this method wraps two SDK
+commands rather than one, and `action` / `expiresIn` are wrapper-level
+concerns with no SDK-input equivalent.
+
+#### Parameters
+
+##### input
+
+###### action
+
+`"get"` \| `"put"`
+
+`'get'` to download, `'put'` to upload.
+
+###### Bucket
+
+`string`
+
+The S3 bucket name.
+
+###### expiresIn?
+
+`number`
+
+URL lifetime in seconds. Defaults to 3600 (1 hour).
+
+###### Key
+
+`string`
+
+The S3 object key.
+
+#### Returns
+
+`Promise`\<`string`\>
+
+***
+
 <a id="headobject"></a>
 
 ### headObject()
 
 > **headObject**(`input`): `Promise`\<`HeadObjectCommandOutput`\>
 
-Defined in: [s3/s3.ts:135](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L135)
+Defined in: [s3/s3.ts:163](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L163)
 
 Fetch the metadata for an S3 object without downloading its body.
 
@@ -293,7 +347,7 @@ Fetch the metadata for an S3 object without downloading its body.
 
 > **listObjects**(`bucket`, `prefix?`): `Promise`\<`string`[]\>
 
-Defined in: [s3/s3.ts:156](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L156)
+Defined in: [s3/s3.ts:184](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L184)
 
 List object keys under a bucket and optional prefix, auto-paginating
 across all pages.
@@ -320,7 +374,7 @@ across all pages.
 
 > **putJsonObject**\<`T`\>(`input`): `Promise`\<`PutObjectCommandOutput`\>
 
-Defined in: [s3/s3.ts:75](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L75)
+Defined in: [s3/s3.ts:108](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L108)
 
 Serialise a value to JSON and store it as an S3 object.
 
@@ -340,21 +394,7 @@ Type of the value being stored.
 
 ##### input
 
-###### Body
-
-`T`
-
-###### Bucket
-
-`string`
-
-###### Key
-
-`string`
-
-###### Metadata?
-
-`Record`\<`string`, `string`\>
+`PutJsonObjectInput`\<`T`\>
 
 #### Returns
 
@@ -368,7 +408,7 @@ Type of the value being stored.
 
 > **putObject**(`input`): `Promise`\<`PutObjectCommandOutput`\>
 
-Defined in: [s3/s3.ts:59](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/s3/s3.ts#L59)
+Defined in: [s3/s3.ts:92](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/s3/s3.ts#L92)
 
 Put an object into S3.
 
@@ -380,7 +420,7 @@ content into CloudWatch.
 
 ##### input
 
-`Required`\<`Pick`\<`PutObjectCommandInput`, `"Bucket"` \| `"Key"` \| `"Body"`\>\>
+`PutObjectInput`
 
 Bucket, Key, and Body of the object to store.
 
