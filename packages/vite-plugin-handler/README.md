@@ -31,14 +31,36 @@ export default defineConfig({
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `concurrency` | `number` | `Infinity` | Max concurrent environment builds. Useful for resource-constrained CI. |
-| `shims` | `boolean` | `true` | Inject CJS `__dirname`/`__filename` shim banner into each bundle. |
+| `shims` | `boolean \| string` | `true` | Inject CJS `__dirname`/`__filename` shim banner into each bundle. Pass a string to use a custom banner instead. |
+| `external` | `(string \| RegExp)[]` | `[]` | Additional modules to exclude from the bundle, appended to Node.js built-ins. |
 | `moduleTypes` | `Record<string, string>` | `{}` | Extra Rolldown module type overrides (e.g. `{ '.graphql': 'text' }`). |
 
 ```js
 handlerBundle('src/runtime/handlers', {
     concurrency: 2,
     shims: false,
+    external: ['@aws-sdk/client-s3', /^@smithy\//],
     moduleTypes: { '.graphql': 'text' },
+});
+```
+
+### Custom shims
+
+Pass a string to `shims` to replace the built-in banner with your own:
+
+```js
+handlerBundle('src/runtime/handlers', {
+    shims: 'const MY_VAR = "value";',
+});
+```
+
+To compose with the built-in shim, import `shimBanner` and concatenate:
+
+```js
+import { handlerBundle, shimBanner } from '@aligent/vite-plugin-handler';
+
+handlerBundle('src/runtime/handlers', {
+    shims: `${shimBanner}\nconst MY_VAR = "value";`,
 });
 ```
 

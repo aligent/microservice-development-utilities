@@ -180,6 +180,68 @@ describe('handlerBundle', () => {
         expect(output['banner']).toBeUndefined();
     });
 
+    it('uses custom shim string when shims is a string', () => {
+        const customShim = 'const __custom = "shim";';
+        const plugin = handlerBundle('src/handlers', { shims: customShim });
+        const result = callConfigHook(plugin) as Record<string, unknown>;
+
+        const environments = result['environments'] as Record<string, Record<string, unknown>>;
+        const env = Object.values(environments)[0] as Record<string, unknown>;
+        const build = env['build'] as Record<string, unknown>;
+        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
+        const output = rolldownOptions['output'] as Record<string, unknown>;
+
+        expect(output['banner']).toBe(customShim);
+        expect(output['banner']).not.toContain('__dirname');
+    });
+
+    it('uses empty string as banner when shims is an empty string', () => {
+        const plugin = handlerBundle('src/handlers', { shims: '' });
+        const result = callConfigHook(plugin) as Record<string, unknown>;
+
+        const environments = result['environments'] as Record<string, Record<string, unknown>>;
+        const env = Object.values(environments)[0] as Record<string, unknown>;
+        const build = env['build'] as Record<string, unknown>;
+        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
+        const output = rolldownOptions['output'] as Record<string, unknown>;
+
+        expect(output['banner']).toBe('');
+    });
+
+    it('appends custom external entries to built-in modules', () => {
+        const plugin = handlerBundle('src/handlers', {
+            external: ['@aws-sdk/client-s3', /^@smithy\//],
+        });
+        const result = callConfigHook(plugin) as Record<string, unknown>;
+
+        const environments = result['environments'] as Record<string, Record<string, unknown>>;
+        const env = Object.values(environments)[0] as Record<string, unknown>;
+        const build = env['build'] as Record<string, unknown>;
+        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
+        const external = rolldownOptions['external'] as Array<string | RegExp>;
+
+        // Still includes built-ins
+        expect(external).toContain('fs');
+        expect(external).toContain('node:fs');
+        // Includes custom entries
+        expect(external).toContain('@aws-sdk/client-s3');
+        expect(external).toContainEqual(/^@smithy\//);
+    });
+
+    it('does not add extra externals when external is not provided', () => {
+        const plugin = handlerBundle(HANDLERS_PATH);
+        const result = callConfigHook(plugin) as Record<string, unknown>;
+
+        const environments = result['environments'] as Record<string, Record<string, unknown>>;
+        const env = Object.values(environments)[0] as Record<string, unknown>;
+        const build = env['build'] as Record<string, unknown>;
+        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
+        const external = rolldownOptions['external'] as string[];
+
+        // Only built-in modules (bare + node: prefixed)
+        expect(external.every(e => typeof e === 'string')).toBe(true);
+    });
+
     it('merges moduleTypes into rolldown config', () => {
         const plugin = handlerBundle('src/handlers', {
             moduleTypes: { '.graphql': 'text' },

@@ -8,14 +8,25 @@ import { stripUnneededPlugins } from './strip-unneeded-plugins.js';
 export interface HandlerBundleOptions {
     /** Max concurrent environment builds (default: Infinity) */
     concurrency?: number;
-    /** Inject CJS __dirname/__filename shim banner (default: true) */
-    shims?: boolean;
+    /** Inject CJS __dirname/__filename shim banner (default: true).
+     *  Pass a string to use a custom banner instead of the built-in shim. */
+    shims?: boolean | string;
+    /** Additional modules to exclude from the bundle, appended to Node.js built-ins (default: []) */
+    external?: Array<string | RegExp>;
     /** Extra Rolldown module type overrides (default: {}) */
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     moduleTypes?: {};
 }
 
 const ENV_PREFIX = 'handler';
+
+function decideShimBanner(shim?: boolean | string) {
+    if (shim === false) return undefined;
+
+    if (typeof shim === 'string') return shim;
+
+    return shimBanner;
+}
 
 /**
  * Creates a Vite environment configuration for each handler file, producing
@@ -26,7 +37,13 @@ function buildHandlerEnvironments(
     mode: string | undefined,
     options: HandlerBundleOptions
 ): Record<string, EnvironmentOptions> {
-    const banner = options.shims === false ? undefined : shimBanner;
+    const banner = decideShimBanner(options.shims);
+    const external = [
+        ...builtinModules,
+        ...builtinModules.map(m => `node:${m}`),
+        ...(options.external ?? []),
+    ];
+
     const environments: Record<string, EnvironmentOptions> = {};
     const handlers = globSync(`${handlersDir}/**/*.ts`);
 
@@ -45,11 +62,11 @@ function buildHandlerEnvironments(
                 rolldownOptions: {
                     input: { index: handler },
                     moduleTypes: { ...options.moduleTypes },
-                    external: [...builtinModules, ...builtinModules.map(m => `node:${m}`)],
+                    external,
                     output: {
                         entryFileNames: 'index.mjs',
                         format: 'esm',
-                        ...(banner ? { banner } : {}),
+                        ...(banner !== undefined ? { banner } : {}),
                     },
                 },
             },
