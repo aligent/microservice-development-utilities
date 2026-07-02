@@ -1,4 +1,5 @@
 import { Tree, formatFiles, generateFiles, joinPathFragments, logger } from '@nx/devkit';
+import { prompt } from 'enquirer';
 import {
     copySchema,
     generateOpenApiTypes,
@@ -19,6 +20,21 @@ const VALID_EXTENSIONS = ['yaml', 'yml', 'json'];
 
 // We also use this as the project root for all generated clients
 const PROJECT_NAME = 'clients';
+
+async function promptForAuthMethod(): Promise<string> {
+    const answer = await prompt<{ authMethod: string }>({
+        type: 'select',
+        name: 'authMethod',
+        message: 'Which authentication method should the client use?',
+        choices: [
+            { name: 'api-key', message: 'API Key' },
+            { name: 'oauth1.0a', message: 'OAuth 1.0a' },
+            { name: 'basic', message: 'Basic Auth' },
+            { name: 'oauth2.0', message: 'OAuth 2.0' },
+        ],
+    });
+    return answer.authMethod;
+}
 
 export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema) {
     const {
@@ -47,14 +63,13 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     const schemaDest = `${apiClientDest}/schema.${ext}`;
     const typesDest = `${apiClientDest}/generated-types.ts`;
 
-    const isOverriding = override && tree.exists(apiClientDest);
-
     if (tree.exists(apiClientDest) && !override) {
         throw new Error(
             `Directory "${name}" already exists. If you want to override the current api client in this directory use "--override"`
         );
     }
 
+    const isOverriding = override && tree.exists(apiClientDest);
     if (isOverriding) {
         // Remove stale schema files (extension may have changed)
         const schemaChildren = tree
@@ -66,7 +81,6 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     }
 
     const existingProject = getExistingProject(tree, PROJECT_NAME);
-
     if (!existingProject) {
         logger.warn(`Creating new project ${PROJECT_NAME} at ${projectRoot}`);
 
@@ -88,6 +102,8 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
     // Only scaffold client.ts and apply auth config on first generation.
     // On override, preserve the user's customized client.ts.
     if (!isOverriding) {
+        const resolvedAuthMethod = authMethod ?? (await promptForAuthMethod());
+
         const className = toClassName(name);
         generateFiles(
             tree,
@@ -97,7 +113,7 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         );
 
         const clientFilePath = joinPathFragments(apiClientDest, 'client.ts');
-        applyAuthMethodConfiguration(tree, clientFilePath, authMethod, className);
+        applyAuthMethodConfiguration(tree, clientFilePath, resolvedAuthMethod, className);
     }
 
     /**

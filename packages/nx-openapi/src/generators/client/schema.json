@@ -34,7 +34,8 @@
         "skipValidate": {
             "type": "boolean",
             "description": "Skip validation in the generation process",
-            "default": false
+            "default": false,
+            "x-prompt": "Skip schema validation?"
         },
         "override": {
             "type": "boolean",
@@ -44,18 +45,8 @@
         "authMethod": {
             "type": "string",
             "description": "Authentication method to use for the generated client middleware",
-            "enum": ["api-key", "oauth1.0a", "basic", "oauth2.0"],
-            "x-prompt": {
-                "message": "Which authentication method should the client use?",
-                "type": "list",
-                "items": [
-                    { "value": "api-key", "label": "API Key" },
-                    { "value": "oauth1.0a", "label": "OAuth 1.0a" },
-                    { "value": "basic", "label": "Basic Auth" },
-                    { "value": "oauth2.0", "label": "OAuth 2.0" }
-                ]
-            }
+            "enum": ["api-key", "oauth1.0a", "basic", "oauth2.0"]
         }
     },
-    "required": ["name", "schemaPath", "authMethod"]
+    "required": ["name", "schemaPath"]
 }
