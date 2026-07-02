@@ -1,6 +1,6 @@
 {
   "name": "@aligent/vite-plugin-handler",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Vite plugin for bundling Lambda handlers",
   "type": "module",
   "main": "./dist/src/index.js",
