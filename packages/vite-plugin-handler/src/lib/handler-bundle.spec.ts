@@ -153,7 +153,7 @@ describe('handlerBundle', () => {
         expect(build['sourcemap']).toBe(true);
     });
 
-    it('includes shim banner by default', () => {
+    it('does not set a static banner on output options', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;
 
@@ -163,49 +163,7 @@ describe('handlerBundle', () => {
         const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
         const output = rolldownOptions['output'] as Record<string, unknown>;
 
-        expect(output['banner']).toContain('__dirname');
-        expect(output['banner']).toContain('__filename');
-    });
-
-    it('omits shim banner when shims is false', () => {
-        const plugin = handlerBundle('src/handlers', { shims: false });
-        const result = callConfigHook(plugin) as Record<string, unknown>;
-
-        const environments = result['environments'] as Record<string, Record<string, unknown>>;
-        const env = Object.values(environments)[0] as Record<string, unknown>;
-        const build = env['build'] as Record<string, unknown>;
-        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
-        const output = rolldownOptions['output'] as Record<string, unknown>;
-
         expect(output['banner']).toBeUndefined();
-    });
-
-    it('uses custom shim string when shims is a string', () => {
-        const customShim = 'const __custom = "shim";';
-        const plugin = handlerBundle('src/handlers', { shims: customShim });
-        const result = callConfigHook(plugin) as Record<string, unknown>;
-
-        const environments = result['environments'] as Record<string, Record<string, unknown>>;
-        const env = Object.values(environments)[0] as Record<string, unknown>;
-        const build = env['build'] as Record<string, unknown>;
-        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
-        const output = rolldownOptions['output'] as Record<string, unknown>;
-
-        expect(output['banner']).toBe(customShim);
-        expect(output['banner']).not.toContain('__dirname');
-    });
-
-    it('uses empty string as banner when shims is an empty string', () => {
-        const plugin = handlerBundle('src/handlers', { shims: '' });
-        const result = callConfigHook(plugin) as Record<string, unknown>;
-
-        const environments = result['environments'] as Record<string, Record<string, unknown>>;
-        const env = Object.values(environments)[0] as Record<string, unknown>;
-        const build = env['build'] as Record<string, unknown>;
-        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
-        const output = rolldownOptions['output'] as Record<string, unknown>;
-
-        expect(output['banner']).toBe('');
     });
 
     it('appends custom external entries to built-in modules', () => {
@@ -257,12 +215,81 @@ describe('handlerBundle', () => {
         expect(moduleTypes['.graphql']).toBe('text');
     });
 
-    it('includes strip-unneeded-plugins in returned config', () => {
+    it('includes strip-unneeded-plugins and conditional-shims in returned config', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;
 
         const plugins = result['plugins'] as Array<{ name: string }>;
         expect(plugins.some(p => p.name === 'strip-unneeded-plugins')).toBe(true);
+        expect(plugins.some(p => p.name === 'conditional-shims')).toBe(true);
+    });
+
+    describe('conditional-shims', () => {
+        function getRenderChunk(options?: Parameters<typeof handlerBundle>[1]) {
+            const plugin = handlerBundle(HANDLERS_PATH, options);
+            const result = callConfigHook(plugin) as Record<string, unknown>;
+            const plugins = result['plugins'] as Array<{ name: string; renderChunk?: (code: string) => unknown }>;
+            const shimsPlugin = plugins.find(p => p.name === 'conditional-shims');
+            const renderChunk = shimsPlugin?.renderChunk;
+            if (typeof renderChunk !== 'function') {
+                throw new Error('Expected renderChunk to be a function');
+            }
+            return renderChunk;
+        }
+
+        it('prepends node_http2 import when chunk references it', () => {
+            const renderChunk = getRenderChunk();
+            const output = renderChunk('const x = node_http2.connect();') as { code: string };
+            expect(output.code).toContain("import * as node_http2 from 'node:http2';");
+        });
+
+        it('prepends __dirname/__filename shim when chunk references __dirname', () => {
+            const renderChunk = getRenderChunk();
+            const output = renderChunk('console.log(__dirname);') as { code: string };
+            expect(output.code).toContain('const __dirname');
+            expect(output.code).toContain('const __filename');
+        });
+
+        it('prepends __dirname/__filename shim when chunk references __filename', () => {
+            const renderChunk = getRenderChunk();
+            const output = renderChunk('console.log(__filename);') as { code: string };
+            expect(output.code).toContain('const __filename');
+        });
+
+        it('returns null when chunk has no matching references', () => {
+            const renderChunk = getRenderChunk();
+            expect(renderChunk('const x = 42;')).toBeNull();
+        });
+
+        it('disables all shims when shims is false', () => {
+            const renderChunk = getRenderChunk({ shims: false });
+            expect(renderChunk('console.log(__dirname);')).toBeNull();
+            expect(renderChunk('node_http2.connect();')).toBeNull();
+        });
+
+        it('injects user-defined conditional shim when needle matches', () => {
+            const renderChunk = getRenderChunk({
+                shims: [{ needles: ['myGlobal'], statement: 'const myGlobal = {};' }],
+            });
+            const output = renderChunk('console.log(myGlobal);') as { code: string };
+            expect(output.code).toContain('const myGlobal = {};');
+        });
+
+        it('skips user-defined conditional shim when needle does not match', () => {
+            const renderChunk = getRenderChunk({
+                shims: [{ needles: ['myGlobal'], statement: 'const myGlobal = {};' }],
+            });
+            expect(renderChunk('console.log(42);')).toBeNull();
+        });
+
+        it('replaces built-in shims when ConditionalShim array is provided', () => {
+            const renderChunk = getRenderChunk({
+                shims: [{ needles: ['myGlobal'], statement: 'const myGlobal = {};' }],
+            });
+            const output = renderChunk('console.log(__dirname, myGlobal);') as { code: string };
+            expect(output.code).not.toContain('const __dirname');
+            expect(output.code).toContain('const myGlobal = {};');
+        });
     });
 
     it('returns a builder with buildApp', () => {

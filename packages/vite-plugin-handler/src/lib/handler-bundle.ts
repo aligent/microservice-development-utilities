@@ -2,15 +2,15 @@ import { globSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
 import type { BuildEnvironment, EnvironmentOptions, Plugin, ViteBuilder } from 'vite';
-import { shimBanner } from './shim-banner.js';
-import { stripUnneededPlugins } from './strip-unneeded-plugins.js';
+import type { ConditionalShim } from './plugins.js';
+import { createConditionalShims, stripUnneededPlugins } from './plugins.js';
 
 export interface HandlerBundleOptions {
     /** Max concurrent environment builds (default: Infinity) */
     concurrency?: number;
-    /** Inject CJS __dirname/__filename shim banner (default: true).
-     *  Pass a string to use a custom banner instead of the built-in shim. */
-    shims?: boolean | string;
+    /** Controls conditional shims (default: true).
+     *  Pass false to disable all shims, or a ConditionalShim array to replace the built-ins. */
+    shims?: boolean | ConditionalShim[];
     /** Additional modules to exclude from the bundle, appended to Node.js built-ins (default: []) */
     external?: Array<string | RegExp>;
     /** Extra Rolldown module type overrides (default: {}) */
@@ -19,14 +19,6 @@ export interface HandlerBundleOptions {
 }
 
 const ENV_PREFIX = 'handler';
-
-function decideShimBanner(shim?: boolean | string) {
-    if (shim === false) return undefined;
-
-    if (typeof shim === 'string') return shim;
-
-    return shimBanner;
-}
 
 /**
  * Creates a Vite environment configuration for each handler file, producing
@@ -37,7 +29,6 @@ function buildHandlerEnvironments(
     mode: string | undefined,
     options: HandlerBundleOptions
 ): Record<string, EnvironmentOptions> {
-    const banner = decideShimBanner(options.shims);
     const external = [
         ...builtinModules,
         ...builtinModules.map(m => `node:${m}`),
@@ -66,7 +57,6 @@ function buildHandlerEnvironments(
                     output: {
                         entryFileNames: 'index.mjs',
                         format: 'esm',
-                        ...(banner !== undefined ? { banner } : {}),
                     },
                 },
             },
@@ -131,7 +121,7 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             const environments = buildHandlerEnvironments(handlersDir, config.mode, options);
 
             return {
-                plugins: [stripUnneededPlugins],
+                plugins: [stripUnneededPlugins, createConditionalShims(options.shims)],
                 environments,
                 builder: {
                     buildApp: (builder: ViteBuilder) =>

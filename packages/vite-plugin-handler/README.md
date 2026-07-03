@@ -31,7 +31,7 @@ export default defineConfig({
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `concurrency` | `number` | `Infinity` | Max concurrent environment builds. Useful for resource-constrained CI. |
-| `shims` | `boolean \| string` | `true` | Inject CJS `__dirname`/`__filename` shim banner into each bundle. Pass a string to use a custom banner instead. |
+| `shims` | `boolean \| ConditionalShim[]` | `true` | Controls conditional shims. `true` uses the built-in shims, `false` disables all shims, or pass a `ConditionalShim[]` to replace the built-ins with your own. |
 | `external` | `(string \| RegExp)[]` | `[]` | Additional modules to exclude from the bundle, appended to Node.js built-ins. |
 | `moduleTypes` | `Record<string, string>` | `{}` | Extra Rolldown module type overrides (e.g. `{ '.graphql': 'text' }`). |
 
@@ -46,21 +46,19 @@ handlerBundle('src/runtime/handlers', {
 
 ### Custom shims
 
-Pass a string to `shims` to replace the built-in banner with your own:
+Pass a `ConditionalShim[]` to replace the built-in shims with your own. Each shim is only injected when its needles are found in the rendered chunk:
 
 ```js
-handlerBundle('src/runtime/handlers', {
-    shims: 'const MY_VAR = "value";',
-});
-```
-
-To compose with the built-in shim, import `shimBanner` and concatenate:
-
-```js
-import { handlerBundle, shimBanner } from '@aligent/vite-plugin-handler';
+import { handlerBundle } from '@aligent/vite-plugin-handler';
+import type { ConditionalShim } from '@aligent/vite-plugin-handler';
 
 handlerBundle('src/runtime/handlers', {
-    shims: `${shimBanner}\nconst MY_VAR = "value";`,
+    shims: [
+        {
+            needles: ['myGlobal'],
+            statement: 'const myGlobal = {};',
+        },
+    ],
 });
 ```
 
@@ -87,6 +85,13 @@ handlerBundle('src/runtime/handlers', {
   | `vite:forward-console` | Forwards console to Vite overlay — dev server only |
   | `vite:terser` | Terser minifier — uses esbuild/oxc instead |
   | `vite:ssr-manifest` | SSR manifest generation — not doing SSR |
+- Conditionally injects shims via `renderChunk` only when the bundled output actually references the corresponding identifiers:
+
+  | Shim | Trigger | Purpose |
+  |---|---|---|
+  | `__dirname` / `__filename` | `__dirname` or `__filename` in chunk | ESM equivalents for bundled CJS dependencies |
+  | `node:http2` | `node_http2` in chunk | Works around a rolldown bug that drops externalised builtin imports |
+
 - Externalises all Node.js built-in modules.
 - Outputs ESM format with `index.mjs` entry file names.
 
