@@ -31,7 +31,7 @@
     "@nx/eslint": "22.7.6",
     "@nx/eslint-plugin": "22.7.6",
     "@nx/js": "22.7.6",
-    "@nx/plugin": "22.7.6",
+    "@nx/plugin": "23.0.1",
     "@nx/rollup": "22.7.6",
     "@nx/vitest": "22.7.6",
     "@nx/web": "22.7.6",
