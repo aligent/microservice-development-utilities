@@ -187,6 +187,62 @@ const description = await sfn.describeExecution({ executionArn });
 await sfn.stopExecution({ executionArn });
 ```
 
+## EventBridge Scheduler
+
+```ts
+import { SchedulerService } from '@aligent/aws-wrappers';
+
+const scheduler = new SchedulerService();
+
+// FlexibleTimeWindow is required — pass { Mode: 'OFF' } for a fixed-time
+// schedule. The wrapper bakes in no default.
+await scheduler.createSchedule({
+    Name: 'nightly-sync',
+    GroupName: 'default',
+    ScheduleExpression: 'rate(1 day)',
+    FlexibleTimeWindow: { Mode: 'OFF' },
+    Target: {
+        Arn: 'arn:aws:lambda:us-east-1:0:function:my-fn',
+        RoleArn: 'arn:aws:iam::0:role/scheduler-invoke',
+        Input: JSON.stringify({ job: 'sync' }),
+    },
+});
+
+const schedule = await scheduler.getSchedule({ Name: 'nightly-sync' });
+
+// UpdateSchedule is a FULL REPLACEMENT, not a patch. Any omitted field is
+// reset to its default, so resend the complete configuration and override
+// only what changes. GetSchedule types every field as optional, so the
+// required fields (Name, ScheduleExpression, FlexibleTimeWindow, Target) must
+// be re-asserted after the spread.
+await scheduler.updateSchedule({
+    ...schedule,
+    Name: 'nightly-sync',
+    ScheduleExpression: 'rate(12 hours)', // the change
+    FlexibleTimeWindow: schedule.FlexibleTimeWindow ?? { Mode: 'OFF' },
+    Target: schedule.Target ?? {
+        Arn: 'arn:aws:lambda:us-east-1:0:function:my-fn',
+        RoleArn: 'arn:aws:iam::0:role/scheduler-invoke',
+    },
+});
+
+// Auto-paginated — returns every summary across all pages.
+const schedules = await scheduler.listSchedules({ GroupName: 'default' });
+
+await scheduler.deleteSchedule({ Name: 'nightly-sync' });
+```
+
+`Target.Input` is the payload handed to the target and is omitted from INFO logs (it routinely carries PII); `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+
+```ts
+// Schedule groups. Groups have no update operation — only create, get,
+// delete, and list. Deleting a group deletes every schedule it contains.
+await scheduler.createScheduleGroup({ Name: 'integrations' });
+const group = await scheduler.getScheduleGroup({ Name: 'integrations' });
+const groups = await scheduler.listScheduleGroups();
+await scheduler.deleteScheduleGroup({ Name: 'integrations' });
+```
+
 ## SSM Parameter Store
 
 ```ts

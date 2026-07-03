@@ -6,7 +6,7 @@
 
 # Class: SNSService
 
-Defined in: [sns/sns.ts:20](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/sns/sns.ts#L20)
+Defined in: [sns/sns.ts:39](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L39)
 
 Wrapper around the AWS SNS client providing structured Powertools logging
 and X-Ray tracing by default.
@@ -19,7 +19,7 @@ and X-Ray tracing by default.
 
 > **new SNSService**(`opts?`): `SNSService`
 
-Defined in: [sns/sns.ts:30](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/sns/sns.ts#L30)
+Defined in: [sns/sns.ts:55](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L55)
 
 #### Parameters
 
@@ -34,10 +34,20 @@ the wrapper does not apply X-Ray instrumentation.
 
 ###### logger?
 
-`Logger`
+`LoggerInterface`
 
-Optional Powertools logger. Defaults to a logger with
-`serviceName: 'SNSService'`.
+Optional Powertools logger. Defaults to `new Logger()`,
+which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
+
+###### truncate?
+
+`boolean`
+
+When `true`, oversized `Message` / `Subject` are
+truncated (byte-safe / codepoint-safe) before sending instead of failing
+at the SDK. Defaults to `false` — the SDK throws on oversize, which is
+usually the right failure mode. Each `publish` call can override via
+its own `truncate` option.
 
 #### Returns
 
@@ -49,11 +59,15 @@ Optional Powertools logger. Defaults to a logger with
 
 ### publish()
 
-> **publish**(`input`): `Promise`\<`PublishCommandOutput`\>
+> **publish**(`input`, `opts?`): `Promise`\<`PublishCommandOutput`\>
 
-Defined in: [sns/sns.ts:39](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/sns/sns.ts#L39)
+Defined in: [sns/sns.ts:70](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L70)
 
 Publish a single message to an SNS topic.
+
+At INFO level the log line includes only routing / dedup metadata; see
+`PUBLISH_SAFE_FIELDS` for the list. Setting `POWERTOOLS_LOG_LEVEL=DEBUG`
+unlocks the full input.
 
 #### Parameters
 
@@ -62,6 +76,12 @@ Publish a single message to an SNS topic.
 `PublishCommandInput`
 
 PublishCommandInput including TopicArn and Message.
+
+##### opts?
+
+###### truncate?
+
+`boolean`
 
 #### Returns
 
@@ -75,7 +95,7 @@ PublishCommandInput including TopicArn and Message.
 
 > **publishBatch**(`input`): `Promise`\<`PublishBatchCommandOutput`[]\>
 
-Defined in: [sns/sns.ts:51](https://github.com/aligent/microservice-development-utilities/blob/30b581ee09ba114f98caadf97f423e40b9b4f410/packages/aws-wrappers/src/sns/sns.ts#L51)
+Defined in: [sns/sns.ts:107](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L107)
 
 Publish a batch of messages to an SNS topic. The SNS API caps
 PublishBatch at 10 entries per request, so this method auto-chunks
