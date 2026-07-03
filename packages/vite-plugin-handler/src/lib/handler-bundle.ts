@@ -2,8 +2,8 @@ import { globSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
 import type { BuildEnvironment, EnvironmentOptions, Plugin, ViteBuilder } from 'vite';
-import type { ConditionalShim } from './plugins.js';
-import { createConditionalShims, stripUnneededPlugins } from './plugins.js';
+import { type ConditionalShim, resolveShims } from './shim.js';
+import { stripUnneededPlugins } from './strip-unneeded-plugins.js';
 
 export interface HandlerBundleOptions {
     /** Max concurrent environment builds (default: Infinity) */
@@ -48,7 +48,7 @@ function buildHandlerEnvironments(
             build: {
                 license: false,
                 outDir: `dist/${entryName}`,
-                minify: mode === 'development' ? 'esbuild' : false,
+                minify: mode === 'development' ? 'oxc' : false,
                 sourcemap: mode !== 'production',
                 rolldownOptions: {
                     input: { index: handler },
@@ -57,6 +57,8 @@ function buildHandlerEnvironments(
                     output: {
                         entryFileNames: 'index.mjs',
                         format: 'esm',
+                        comments: { legal: false },
+                        codeSplitting: false,
                     },
                 },
             },
@@ -104,6 +106,8 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  * ```
  */
 export function handlerBundle(handlersPath: string, options: HandlerBundleOptions = {}): Plugin {
+    const activeShims = resolveShims(options.shims);
+
     return {
         name: 'handler-bundle',
         config(config) {
@@ -121,13 +125,18 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             const environments = buildHandlerEnvironments(handlersDir, config.mode, options);
 
             return {
-                plugins: [stripUnneededPlugins, createConditionalShims(options.shims)],
+                plugins: [stripUnneededPlugins],
                 environments,
                 builder: {
                     buildApp: (builder: ViteBuilder) =>
                         buildHandlersConcurrently(builder, concurrency),
                 },
             };
+        },
+        renderChunk(code) {
+            const matched = activeShims.filter(s => s.needles.some(n => code.includes(n)));
+            if (matched.length === 0) return null;
+            return { code: `${matched.map(s => s.statement).join('\n')}\n${code}` };
         },
     };
 }

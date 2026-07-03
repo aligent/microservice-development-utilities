@@ -123,14 +123,14 @@ describe('handlerBundle', () => {
         expect(build['minify']).toBe(false);
     });
 
-    it('enables esbuild minify in development mode', () => {
+    it('enables oxc minify in development mode', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin, 'development') as Record<string, unknown>;
 
         const environments = result['environments'] as Record<string, Record<string, unknown>>;
         const env = Object.values(environments)[0] as Record<string, unknown>;
         const build = env['build'] as Record<string, unknown>;
-        expect(build['minify']).toBe('esbuild');
+        expect(build['minify']).toBe('oxc');
     });
 
     it('disables sourcemap in production mode', () => {
@@ -215,26 +215,27 @@ describe('handlerBundle', () => {
         expect(moduleTypes['.graphql']).toBe('text');
     });
 
-    it('includes strip-unneeded-plugins and conditional-shims in returned config', () => {
+    it('includes strip-unneeded-plugins in returned config', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;
 
         const plugins = result['plugins'] as Array<{ name: string }>;
         expect(plugins.some(p => p.name === 'strip-unneeded-plugins')).toBe(true);
-        expect(plugins.some(p => p.name === 'conditional-shims')).toBe(true);
+    });
+
+    it('has renderChunk directly on the plugin object', () => {
+        const plugin = handlerBundle(HANDLERS_PATH);
+        expect(plugin.renderChunk).toBeTypeOf('function');
     });
 
     describe('conditional-shims', () => {
         function getRenderChunk(options?: Parameters<typeof handlerBundle>[1]) {
             const plugin = handlerBundle(HANDLERS_PATH, options);
-            const result = callConfigHook(plugin) as Record<string, unknown>;
-            const plugins = result['plugins'] as Array<{ name: string; renderChunk?: (code: string) => unknown }>;
-            const shimsPlugin = plugins.find(p => p.name === 'conditional-shims');
-            const renderChunk = shimsPlugin?.renderChunk;
+            const renderChunk = plugin.renderChunk;
             if (typeof renderChunk !== 'function') {
                 throw new Error('Expected renderChunk to be a function');
             }
-            return renderChunk;
+            return renderChunk as (code: string) => unknown;
         }
 
         it('prepends node_http2 import when chunk references it', () => {
