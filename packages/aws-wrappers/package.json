@@ -1,6 +1,6 @@
 {
   "name": "@aligent/aws-wrappers",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing",
   "main": "./cjs/index.cjs",
   "module": "./esm/index.mjs",
