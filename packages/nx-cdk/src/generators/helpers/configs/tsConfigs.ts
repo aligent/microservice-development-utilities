@@ -1,7 +1,6 @@
 interface TsConfig {
     extends: string;
     compilerOptions?: Record<string, unknown>;
-    files?: string[];
     include: string[];
     exclude?: string[];
     references: Array<Record<string, string>>;
@@ -9,21 +8,21 @@ interface TsConfig {
 
 const BASE_CONFIG = '@aligent/ts-code-standards/tsconfigs-extend';
 
+export const BASE_COMPILER_OPTIONS: Record<string, unknown> = {
+    outDir: 'out-tsc/lib',
+    tsBuildInfoFile: 'out-tsc/tsconfig.lib.tsbuildinfo',
+    types: ['node'],
+} as const;
+
 export const TS_CONFIG_JSON: TsConfig = {
     extends: BASE_CONFIG,
-    files: [],
-    include: [],
+    include: ['src/**/*.ts', 'tests/**/*.ts'],
     references: [],
 } as const;
 
 export const TS_CONFIG_LIB_JSON: TsConfig = {
     extends: './tsconfig.json',
-    compilerOptions: {
-        rootDir: 'src',
-        outDir: 'out-tsc/lib',
-        tsBuildInfoFile: 'out-tsc/tsconfig.lib.tsbuildinfo',
-        types: ['node'],
-    },
+    compilerOptions: { rootDir: 'src', ...BASE_COMPILER_OPTIONS },
     include: ['src/**/*.ts'],
     exclude: ['vitest.config.mjs', 'src/**/*.spec.ts', 'src/**/*.test.ts'],
     references: [],

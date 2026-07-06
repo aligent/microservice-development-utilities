@@ -3,6 +3,9 @@
   "type": "module",
   "main": "./bin/main.ts",
   "types": "./bin/main.ts",
+  "bundleDependencies": [
+    "@libs/infra"
+  ],
   "nx": {
     "projectType": "application",
     "tags": [

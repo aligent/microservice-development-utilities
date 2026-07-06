@@ -35,7 +35,12 @@ if (typeof stageName !== 'string' || !/^[a-z0-9]{3}$/.test(stageName)) {
     );
 }
 
-const stage = new ApplicationStage(app, stageName);
+const stage = new ApplicationStage(app, stageName, {
+    env: {
+        account: process.env.CDK_DEFAULT_ACCOUNT as string,
+        region: process.env.CDK_DEFAULT_REGION as string,
+    },
+});
 Tags.of(stage).add('APPLICATION', APPLICATION_CONTEXT.NAME);
 Tags.of(stage).add('OWNER', APPLICATION_CONTEXT.OWNER);
 Tags.of(stage).add('STAGE', stageName);

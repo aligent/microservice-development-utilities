@@ -24,7 +24,7 @@
       "build": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "vite build --mode {args.mode}",
+          "command": "vite build --mode ${BUNDLE_MODE:-development}",
           "color": true,
           "cwd": "{projectRoot}"
         }
