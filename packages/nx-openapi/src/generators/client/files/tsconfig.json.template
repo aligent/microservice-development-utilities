@@ -1,6 +1,12 @@
 {
     "extends": "@aligent/ts-code-standards/tsconfigs-extend",
-    "files": [],
-    "include": [],
+    "compilerOptions": {
+        "baseUrl": ".",
+        "rootDir": "src",
+        "outDir": "out-tsc",
+        "tsBuildInfoFile": "out-tsc/tsconfig.lib.tsbuildinfo",
+        "types": ["node"]
+    },
+    "include": ["src/**/*.ts"],
     "references": []
 }
