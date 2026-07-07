@@ -38,7 +38,11 @@ export const NX_JSON: NxJsonConfiguration = {
             dependsOn: ['^build'], // Stack tests may require lambda handlers to be built first
             configurations: { coverage: { coverage: true } },
         },
-        typecheck: { cache: true, inputs: ['default', '^production'] },
+        typecheck: {
+            cache: true,
+            inputs: ['default', '^production'],
+            outputs: ['{projectRoot}/out-tsc'],
+        },
         cdk: {
             dependsOn: [{ target: 'build', params: 'forward', projects: `${SERVICES_SCOPE}/*` }],
         },

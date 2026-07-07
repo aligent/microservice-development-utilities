@@ -58,6 +58,12 @@ Before committing this repository, review and update the following generated def
 
 For deployment instructions (synthesize, deploy, destroy), see the [CDK Application README](./application/README.md).
 
+### Environment Variables
+
+| Variable      | Default       | Description                                                                 |
+| ------------- | ------------- | --------------------------------------------------------------------------- |
+| `BUNDLE_MODE` | `development` | Vite build mode used by all service `build` targets. Set to `production` in CI/CD pipelines. |
+
 ## Contributing
 
 We follow [trunk-based development framework](https://trunkbaseddevelopment.com/) as a start and will evolve depending on our need.

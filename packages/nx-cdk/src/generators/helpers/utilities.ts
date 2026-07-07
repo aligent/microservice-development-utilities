@@ -3,7 +3,12 @@ import { readJsonFile, readProjectConfiguration, Tree, updateJson } from '@nx/de
 import { join } from 'path';
 import { InMemoryFileSystemHost, Project } from 'ts-morph';
 import { ProjectType, SERVICES_SCOPE } from '../constants';
-import { TS_CONFIG_JSON, TS_CONFIG_LIB_JSON, TS_CONFIG_SPEC_JSON } from './configs/tsConfigs';
+import {
+    BASE_COMPILER_OPTIONS,
+    TS_CONFIG_JSON,
+    TS_CONFIG_LIB_JSON,
+    TS_CONFIG_SPEC_JSON,
+} from './configs/tsConfigs';
 
 interface PackageJsonInput {
     name: string;
@@ -71,9 +76,19 @@ export function constructPackageJsonFile(input: PackageJsonInput) {
 }
 
 export function constructProjectTsConfigFiles(type: ProjectType) {
-    const tsConfig = { ...TS_CONFIG_JSON };
+    const tsConfig = { ...TS_CONFIG_JSON, compilerOptions: { ...TS_CONFIG_JSON.compilerOptions } };
+
+    if (type === 'application') {
+        tsConfig.compilerOptions = { ...BASE_COMPILER_OPTIONS };
+        tsConfig.include = ['bin/**/*.ts', 'lib/**/*.ts'];
+    }
+
     if (type === 'service') {
-        tsConfig.references = [{ path: './tsconfig.lib.json' }, { path: './tsconfig.spec.json' }];
+        tsConfig.references = [
+            { path: '../../libs/infra' },
+            { path: './tsconfig.lib.json' },
+            { path: './tsconfig.spec.json' },
+        ];
     }
 
     return {
