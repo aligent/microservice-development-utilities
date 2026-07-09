@@ -6,7 +6,7 @@
   "devDependencies": {
     "@aligent/ts-code-standards": "^4.2.0",
     "@nx/eslint": "^22.4.5",
-    "@nx/js": "^22.4.5",
+    "@nx/js": "^23.0.1",
     "@nx/vitest": "^22.4.5",
     "eslint": "^9.0.0",
     "nx": "^22.4.5",
