@@ -10,10 +10,12 @@
     "url": "https://github.com/aligent/microservice-development-utilities.git",
     "directory": "packages/vite-plugin-handler"
   },
+  "dependencies": {
+    "magic-string": "^0.30.21"
+  },
   "peerDependencies": {
     "vite": ">=8.0.14"
   },
-  "dependencies": {},
   "author": "Aligent",
   "license": "MIT"
 }

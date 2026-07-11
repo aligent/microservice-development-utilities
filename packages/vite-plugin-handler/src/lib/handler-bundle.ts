@@ -1,3 +1,4 @@
+import MagicString from 'magic-string';
 import { globSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
@@ -26,7 +27,6 @@ const ENV_PREFIX = 'handler';
  */
 function buildHandlerEnvironments(
     handlersDir: string,
-    mode: string | undefined,
     options: HandlerBundleOptions
 ): Record<string, EnvironmentOptions> {
     const external = [
@@ -48,8 +48,11 @@ function buildHandlerEnvironments(
             build: {
                 license: false,
                 outDir: `dist/${entryName}`,
-                minify: mode === 'development' ? 'oxc' : false,
-                sourcemap: mode !== 'production',
+                minify: false,
+                // Use NODE_ENV rather than Vite's mode so sourcemaps are
+                // controlled by the deploy-time environment, not the Vite
+                // CLI --mode flag (Lambda builds always use `vite build`).
+                sourcemap: process.env['NODE_ENV'] !== 'production',
                 rolldownOptions: {
                     input: { index: handler },
                     moduleTypes: { ...options.moduleTypes },
@@ -110,7 +113,7 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
 
     return {
         name: 'handler-bundle',
-        config(config) {
+        config() {
             // When running vitest, skip handler environments entirely
             if (process.env['VITEST'] === 'true') {
                 return null;
@@ -122,7 +125,7 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
 
             const concurrency = options.concurrency ?? Infinity;
             const handlersDir = resolve(process.cwd(), handlersPath);
-            const environments = buildHandlerEnvironments(handlersDir, config.mode, options);
+            const environments = buildHandlerEnvironments(handlersDir, options);
 
             return {
                 plugins: [stripUnneededPlugins],
@@ -136,7 +139,11 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
         renderChunk(code) {
             const matched = activeShims.filter(s => s.needles.some(n => code.includes(n)));
             if (matched.length === 0) return null;
-            return { code: `${matched.map(s => s.statement).join('\n')}\n${code}` };
+
+            const prefix = matched.map(s => s.statement).join('\n') + '\n';
+            const ms = new MagicString(code);
+            ms.prepend(prefix);
+            return { code: ms.toString(), map: ms.generateMap({ hires: true }) };
         },
     };
 }
