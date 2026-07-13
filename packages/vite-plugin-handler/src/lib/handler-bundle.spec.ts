@@ -123,17 +123,18 @@ describe('handlerBundle', () => {
         expect(build['minify']).toBe(false);
     });
 
-    it('enables oxc minify in development mode', () => {
+    it('disables minify in development mode', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin, 'development') as Record<string, unknown>;
 
         const environments = result['environments'] as Record<string, Record<string, unknown>>;
         const env = Object.values(environments)[0] as Record<string, unknown>;
         const build = env['build'] as Record<string, unknown>;
-        expect(build['minify']).toBe('oxc');
+        expect(build['minify']).toBe(false);
     });
 
-    it('disables sourcemap in production mode', () => {
+    it('disables sourcemap when NODE_ENV is production', () => {
+        vi.stubEnv('NODE_ENV', 'production');
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin, 'production') as Record<string, unknown>;
 
@@ -143,7 +144,8 @@ describe('handlerBundle', () => {
         expect(build['sourcemap']).toBe(false);
     });
 
-    it('enables sourcemap in development mode', () => {
+    it('enables sourcemap when NODE_ENV is not production', () => {
+        vi.stubEnv('NODE_ENV', 'development');
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin, 'development') as Record<string, unknown>;
 
@@ -240,8 +242,12 @@ describe('handlerBundle', () => {
 
         it('prepends node_http2 import when chunk references it', () => {
             const renderChunk = getRenderChunk();
-            const output = renderChunk('const x = node_http2.connect();') as { code: string };
+            const output = renderChunk('const x = node_http2.connect();') as {
+                code: string;
+                map: unknown;
+            };
             expect(output.code).toContain("import * as node_http2 from 'node:http2';");
+            expect(output.map).toBeDefined();
         });
 
         it('prepends __dirname/__filename shim when chunk references __dirname', () => {

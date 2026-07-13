@@ -83,7 +83,7 @@ handlerBundle('src/runtime/handlers', {
   | `vite:build-html` | HTML entry processing — no HTML |
   | `vite:client-inject` | HMR client injection — no HMR |
   | `vite:forward-console` | Forwards console to Vite overlay — dev server only |
-  | `vite:terser` | Terser minifier — uses esbuild/oxc instead |
+  | `vite:terser` | Terser minifier — minification is disabled |
   | `vite:ssr-manifest` | SSR manifest generation — not doing SSR |
 - Conditionally injects shims via `renderChunk` only when the bundled output actually references the corresponding identifiers:
 
@@ -92,6 +92,9 @@ handlerBundle('src/runtime/handlers', {
   | `__dirname` / `__filename` | `__dirname` or `__filename` in chunk | ESM equivalents for bundled CJS dependencies |
   | `node:http2` | `node_http2` in chunk | Works around a rolldown bug that drops externalised builtin imports |
 
+- **Minification is always disabled.** Lambda handler bundles prioritise debuggability (readable stack traces, easier CloudWatch inspection) over bundle size.
+- **Sourcemaps** are controlled by `NODE_ENV` rather than Vite's `--mode` flag — they are enabled unless `NODE_ENV=production`. This uses the deploy-time environment as the signal because Lambda builds always invoke `vite build` regardless of target stage.
+- Shim injection in `renderChunk` uses [MagicString](https://github.com/rich-harris/magic-string) to produce proper sourcemaps, so prepended shim code does not shift source positions in downstream tooling.
 - Externalises all Node.js built-in modules.
 - Outputs ESM format with `index.mjs` entry file names.
 
