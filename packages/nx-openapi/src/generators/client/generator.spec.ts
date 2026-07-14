@@ -1,4 +1,4 @@
-import { Tree, addProjectConfiguration, readProjectConfiguration } from '@nx/devkit';
+import { Tree, addProjectConfiguration, readJson, readProjectConfiguration } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { clientGenerator } from './generator';
 import { ClientGeneratorSchema } from './schema';
@@ -233,6 +233,100 @@ describe('client generator', () => {
         const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
         expect(clientContent).toContain('logMiddleware');
         expect(clientContent).toContain("logMiddleware('Test')");
+    });
+
+    it('should add clients to root package.json workspaces', async () => {
+        tree.write('package.json', JSON.stringify({ name: 'workspace', workspaces: ['libs/*'] }));
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        await clientGenerator(tree, options);
+
+        const packageJson = readJson(tree, 'package.json');
+        expect(packageJson.workspaces).toContain('clients');
+    });
+
+    it('should not duplicate clients in workspaces when already present', async () => {
+        tree.write(
+            'package.json',
+            JSON.stringify({ name: 'workspace', workspaces: ['libs/*', 'clients'] })
+        );
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        await clientGenerator(tree, options);
+
+        const packageJson = readJson(tree, 'package.json');
+        const clientsEntries = packageJson.workspaces.filter((w: string) => w === 'clients');
+        expect(clientsEntries).toHaveLength(1);
+    });
+
+    it('should add clients to existing service bundleDependencies', async () => {
+        addProjectConfiguration(tree, 'my-service', {
+            root: 'services/my-service',
+            projectType: 'library',
+            tags: ['scope:services'],
+            targets: {},
+        });
+        tree.write(
+            'services/my-service/package.json',
+            JSON.stringify({
+                name: '@services/my-service',
+                bundleDependencies: ['@libs/infra'],
+            })
+        );
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        await clientGenerator(tree, options);
+
+        const servicePackageJson = readJson(tree, 'services/my-service/package.json');
+        expect(servicePackageJson.bundleDependencies).toContain('clients');
+        expect(servicePackageJson.bundleDependencies).toContain('@libs/infra');
+    });
+
+    it('should not add clients to bundleDependencies of non-service projects', async () => {
+        addProjectConfiguration(tree, 'my-lib', {
+            root: 'libs/my-lib',
+            projectType: 'library',
+            tags: ['scope:libs'],
+            targets: {},
+        });
+        tree.write(
+            'libs/my-lib/package.json',
+            JSON.stringify({ name: '@libs/my-lib', bundleDependencies: [] })
+        );
+
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'api-key',
+        };
+
+        await clientGenerator(tree, options);
+
+        const libPackageJson = readJson(tree, 'libs/my-lib/package.json');
+        expect(libPackageJson.bundleDependencies).not.toContain('clients');
     });
 
     describe('authMethod option', () => {
