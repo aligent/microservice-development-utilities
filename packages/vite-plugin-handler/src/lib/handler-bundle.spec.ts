@@ -189,7 +189,7 @@ describe('handlerBundle', () => {
         expect(external).toContainEqual(/^@smithy\//);
     });
 
-    it('does not add extra externals when external is not provided', () => {
+    it('does not add extra externals when external is not provided', async () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;
 
@@ -202,7 +202,12 @@ describe('handlerBundle', () => {
         // Only built-in modules (bare + node: prefixed) and .node native addon pattern
         const strings = external.filter((e): e is string => typeof e === 'string');
         const regexps = external.filter((e): e is RegExp => e instanceof RegExp);
-        expect(strings.every(e => typeof e === 'string')).toBe(true);
+        const { builtinModules } = await import('node:module');
+        const builtins = new Set([
+            ...builtinModules,
+            ...builtinModules.map(m => `node:${m}`),
+        ]);
+        expect(strings.every(e => builtins.has(e))).toBe(true);
         expect(regexps).toEqual([/\.node$/]);
     });
 
