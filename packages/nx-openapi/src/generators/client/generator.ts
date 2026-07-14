@@ -6,6 +6,8 @@ import {
     validateSchema,
 } from '../../helpers/generate-openapi-types';
 import {
+    addToServiceBundleDependencies,
+    addToWorkspaces,
     addTsConfigPath,
     addTsConfigReference,
     appendToIndexFile,
@@ -94,6 +96,9 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
             const lookupPath = joinPathFragments(projectRoot, './src', 'index.ts');
             addTsConfigPath(tree, tsConfigFile, importPath, [lookupPath]);
         }
+
+        addToWorkspaces(tree, projectRoot);
+        addToServiceBundleDependencies(tree, PROJECT_NAME);
     }
 
     await copySchema(tree, schemaDest, schemaPath);

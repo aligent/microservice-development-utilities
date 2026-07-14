@@ -32,6 +32,7 @@ import type {
     ResponseObjectMap,
     SuccessResponse,
 } from 'openapi-typescript-helpers';
+export type { ClientOptions } from 'openapi-fetch';
 
 type InitParam<Init> =
     RequiredKeysOf<Init> extends never

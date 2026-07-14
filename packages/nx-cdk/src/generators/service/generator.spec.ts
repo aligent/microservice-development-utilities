@@ -8,6 +8,7 @@ const application = {
     type: 'module',
     main: './bin/main.ts',
     types: './bin/main.ts',
+    bundleDependencies: ['@libs/infra'],
     nx: { tags: ['scope:application'] },
 };
 
@@ -54,6 +55,17 @@ describe('service generator', () => {
         await expect(serviceGenerator(tree, options)).rejects.toThrow(
             'You already have a library using the import path'
         );
+    });
+
+    it('should add the service to application bundleDependencies', async () => {
+        const options: ServiceGeneratorSchema = { name: 'test' };
+
+        await serviceGenerator(tree, options);
+
+        const packageJson = JSON.parse(tree.read('application/package.json', 'utf-8') ?? '{}');
+
+        expect(packageJson.bundleDependencies).toContain('@services/test');
+        expect(packageJson.bundleDependencies).toContain('@libs/infra');
     });
 
     it('should not recreate the services folder if it already exists', async () => {

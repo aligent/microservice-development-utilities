@@ -2,6 +2,7 @@ import { formatFiles, generateFiles, Tree, updateJson, writeJson } from '@nx/dev
 import { join } from 'path';
 import { MAIN_APPLICATION_NAME, SERVICES_FOLDER } from '../constants';
 import {
+    addBundleDependency,
     addServiceStackToMainApplication,
     constructProjectTsConfigFiles,
     splitInputName,
@@ -62,6 +63,7 @@ export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSche
         { name: options.name, constant, stack },
         MAIN_APPLICATION_NAME
     );
+    addBundleDependency(tree, options.name, MAIN_APPLICATION_NAME);
 
     await formatFiles(tree);
 }

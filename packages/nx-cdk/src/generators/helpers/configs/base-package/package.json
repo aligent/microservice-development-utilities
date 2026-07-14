@@ -62,7 +62,6 @@
   },
   "workspaces": [
     "application",
-    "clients",
     "libs/*",
     "services/*"
   ],

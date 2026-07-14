@@ -96,6 +96,7 @@ handlerBundle('src/runtime/handlers', {
 - **Sourcemaps** are controlled by `NODE_ENV` rather than Vite's `--mode` flag — they are enabled unless `NODE_ENV=production`. This uses the deploy-time environment as the signal because Lambda builds always invoke `vite build` regardless of target stage.
 - Shim injection in `renderChunk` uses [MagicString](https://github.com/rich-harris/magic-string) to produce proper sourcemaps, so prepended shim code does not shift source positions in downstream tooling.
 - Externalises all Node.js built-in modules.
+- Externalises `.node` native addon files. Compiled C/C++ addons cannot be bundled into JavaScript, so they are automatically excluded. Common packages with native addons include `cpu-features` (used by `ssh2`), `sharp`, `bcrypt`, `better-sqlite3`, and `@parcel/watcher`.
 - Outputs ESM format with `index.mjs` entry file names.
 
 ## Development

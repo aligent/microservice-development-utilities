@@ -1,4 +1,11 @@
-import { logger, readProjectConfiguration, Tree, updateJson } from '@nx/devkit';
+import {
+    getProjects,
+    joinPathFragments,
+    logger,
+    readProjectConfiguration,
+    Tree,
+    updateJson,
+} from '@nx/devkit';
 
 /**
  * Get existing project by name.
@@ -132,4 +139,61 @@ export function toClassName(input: string): string {
         .split('-')
         .map(c => c.charAt(0).toUpperCase() + c.slice(1))
         .join('');
+}
+
+/**
+ * Adds the clients project to the root package.json workspaces array.
+ * No-op if the entry is already listed.
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param projectRoot - The root path of the clients project (e.g. "clients")
+ */
+export function addToWorkspaces(tree: Tree, projectRoot: string) {
+    const packageJsonPath = 'package.json';
+    if (!tree.exists(packageJsonPath)) {
+        return;
+    }
+
+    updateJson(tree, packageJsonPath, json => {
+        json.workspaces ??= [];
+
+        if (!json.workspaces.includes(projectRoot)) {
+            json.workspaces.push(projectRoot);
+        }
+
+        return json;
+    });
+}
+
+/**
+ * Adds a dependency to the bundleDependencies of every service package.json.
+ * Services are identified by the "scope:services" tag.
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param dependency - The dependency name to add (e.g. "clients")
+ */
+export function addToServiceBundleDependencies(tree: Tree, dependency: string) {
+    const projects = getProjects(tree);
+
+    for (const [, config] of projects) {
+        const tags = config.tags ?? [];
+        if (!tags.includes('scope:services')) {
+            continue;
+        }
+
+        const packageJsonPath = joinPathFragments(config.root, 'package.json');
+        if (!tree.exists(packageJsonPath)) {
+            continue;
+        }
+
+        updateJson(tree, packageJsonPath, json => {
+            json.bundleDependencies ??= [];
+
+            if (!json.bundleDependencies.includes(dependency)) {
+                json.bundleDependencies.push(dependency);
+            }
+
+            return json;
+        });
+    }
 }

@@ -20,6 +20,7 @@ import {
     retryMiddleware,
 } from './openapi-fetch-middlewares/retry';
 import {
+    ClientOptions,
     ErrorThrowingClient,
     createErrorThrowingClient,
 } from './openapi-fetch-middlewares/throwing-client';
@@ -34,6 +35,7 @@ import S3Dao from './s3/s3';
 export type {
     ApiKey,
     Basic,
+    ClientOptions,
     ErrorThrowingClient,
     LogLevel,
     Logger,
