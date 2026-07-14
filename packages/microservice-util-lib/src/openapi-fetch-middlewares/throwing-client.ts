@@ -22,6 +22,7 @@
  */
 
 import type { ClientOptions, MaybeOptionalInit, Middleware, ParseAsResponse } from 'openapi-fetch';
+export type { ClientOptions } from 'openapi-fetch';
 import createClient from 'openapi-fetch';
 import type {
     HttpMethod,
