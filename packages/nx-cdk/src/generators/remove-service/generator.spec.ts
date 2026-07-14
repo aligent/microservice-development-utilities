@@ -24,6 +24,7 @@ const application = {
     type: 'module',
     main: './bin/main.ts',
     types: './bin/main.ts',
+    bundleDependencies: ['@libs/infra'],
     nx: { tags: ['scope:application'] },
 };
 
@@ -98,6 +99,23 @@ describe('remove generator', () => {
 
         const stacksAfter = tree.read('application/lib/service-stacks.ts', 'utf-8');
         expect(stacksAfter).not.toContain('new CompaniesStack(');
+    });
+
+    it('should remove the service from application bundleDependencies', async () => {
+        await serviceGenerator(tree, { name: 'companies' });
+
+        const pkgBefore = JSON.parse(
+            tree.read('application/package.json', 'utf-8') ?? '{}'
+        );
+        expect(pkgBefore.bundleDependencies).toContain('@services/companies');
+
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
+
+        const pkgAfter = JSON.parse(
+            tree.read('application/package.json', 'utf-8') ?? '{}'
+        );
+        expect(pkgAfter.bundleDependencies).not.toContain('@services/companies');
+        expect(pkgAfter.bundleDependencies).toContain('@libs/infra');
     });
 
     it('should only remove the targeted service when multiple services exist', async () => {

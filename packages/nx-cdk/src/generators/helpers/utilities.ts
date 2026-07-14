@@ -1,5 +1,11 @@
 /* v8 ignore start */
-import { readJsonFile, readProjectConfiguration, Tree, updateJson } from '@nx/devkit';
+import {
+    joinPathFragments,
+    readJsonFile,
+    readProjectConfiguration,
+    Tree,
+    updateJson,
+} from '@nx/devkit';
 import { join } from 'path';
 import { InMemoryFileSystemHost, Project } from 'ts-morph';
 import { ProjectType, SERVICES_SCOPE } from '../constants';
@@ -142,7 +148,7 @@ export function addServiceStackToMainApplication(
         throw new Error('Invalid application root path');
     }
 
-    const stacksRelativePath = join(application.root, 'lib/service-stacks.ts');
+    const stacksRelativePath = joinPathFragments(application.root, 'lib/service-stacks.ts');
 
     if (!tree.exists(stacksRelativePath)) {
         console.log('Service Stacks does not exist, skipping service stacks registration.');
@@ -205,7 +211,7 @@ export function removeServiceFromMainApplication(
         throw new Error('Invalid application root path');
     }
 
-    const stacksRelativePath = join(application.root, 'lib/service-stacks.ts');
+    const stacksRelativePath = joinPathFragments(application.root, 'lib/service-stacks.ts');
 
     if (!tree.exists(stacksRelativePath)) {
         console.log('Service Stacks does not exist, skipping service stacks cleanup.');
@@ -248,6 +254,58 @@ export function removeServiceFromMainApplication(
     }
 
     tree.write(stacksRelativePath, stackSource.getFullText());
+}
+
+/**
+ * Adds a service to the main application's bundleDependencies in package.json.
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param serviceName - The name of the service (e.g., "companies")
+ * @param projectName - The name of the main application project
+ */
+export function addBundleDependency(tree: Tree, serviceName: string, projectName: string) {
+    const application = readProjectConfiguration(tree, projectName);
+    const packageJsonPath = joinPathFragments(application.root, 'package.json');
+
+    if (!tree.exists(packageJsonPath)) {
+        return;
+    }
+
+    updateJson(tree, packageJsonPath, json => {
+        json.bundleDependencies ??= [];
+
+        const dependency = `${SERVICES_SCOPE}/${serviceName}`;
+        if (!json.bundleDependencies.includes(dependency)) {
+            json.bundleDependencies.push(dependency);
+        }
+
+        return json;
+    });
+}
+
+/**
+ * Removes a service from the main application's bundleDependencies in package.json.
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param serviceName - The name of the service (e.g., "companies")
+ * @param projectName - The name of the main application project
+ */
+export function removeBundleDependency(tree: Tree, serviceName: string, projectName: string) {
+    const application = readProjectConfiguration(tree, projectName);
+    const packageJsonPath = joinPathFragments(application.root, 'package.json');
+
+    if (!tree.exists(packageJsonPath)) {
+        return;
+    }
+
+    updateJson(tree, packageJsonPath, json => {
+        if (Array.isArray(json.bundleDependencies)) {
+            json.bundleDependencies = json.bundleDependencies.filter(
+                (dep: string) => dep !== `${SERVICES_SCOPE}/${serviceName}`
+            );
+        }
+        return json;
+    });
 }
 
 /**
