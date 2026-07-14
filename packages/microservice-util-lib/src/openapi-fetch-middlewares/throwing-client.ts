@@ -22,7 +22,6 @@
  */
 
 import type { ClientOptions, MaybeOptionalInit, Middleware, ParseAsResponse } from 'openapi-fetch';
-export type { ClientOptions } from 'openapi-fetch';
 import createClient from 'openapi-fetch';
 import type {
     HttpMethod,
@@ -33,6 +32,7 @@ import type {
     ResponseObjectMap,
     SuccessResponse,
 } from 'openapi-typescript-helpers';
+export type { ClientOptions } from 'openapi-fetch';
 
 type InitParam<Init> =
     RequiredKeysOf<Init> extends never

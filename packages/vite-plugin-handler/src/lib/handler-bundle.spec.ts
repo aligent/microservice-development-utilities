@@ -203,10 +203,7 @@ describe('handlerBundle', () => {
         const strings = external.filter((e): e is string => typeof e === 'string');
         const regexps = external.filter((e): e is RegExp => e instanceof RegExp);
         const { builtinModules } = await import('node:module');
-        const builtins = new Set([
-            ...builtinModules,
-            ...builtinModules.map(m => `node:${m}`),
-        ]);
+        const builtins = new Set([...builtinModules, ...builtinModules.map(m => `node:${m}`)]);
         expect(strings.every(e => builtins.has(e))).toBe(true);
         expect(regexps).toEqual([/\.node$/]);
     });
@@ -375,9 +372,7 @@ describe('handlerBundle', () => {
         const result = callConfigHook(plugin);
 
         expect(result).toBeUndefined();
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('No handler files found in:')
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('No handler files found in:'));
         warnSpy.mockRestore();
     });
 });

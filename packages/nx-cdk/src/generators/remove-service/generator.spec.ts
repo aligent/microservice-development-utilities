@@ -104,16 +104,12 @@ describe('remove generator', () => {
     it('should remove the service from application bundleDependencies', async () => {
         await serviceGenerator(tree, { name: 'companies' });
 
-        const pkgBefore = JSON.parse(
-            tree.read('application/package.json', 'utf-8') ?? '{}'
-        );
+        const pkgBefore = JSON.parse(tree.read('application/package.json', 'utf-8') ?? '{}');
         expect(pkgBefore.bundleDependencies).toContain('@services/companies');
 
         await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
-        const pkgAfter = JSON.parse(
-            tree.read('application/package.json', 'utf-8') ?? '{}'
-        );
+        const pkgAfter = JSON.parse(tree.read('application/package.json', 'utf-8') ?? '{}');
         expect(pkgAfter.bundleDependencies).not.toContain('@services/companies');
         expect(pkgAfter.bundleDependencies).toContain('@libs/infra');
     });

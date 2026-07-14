@@ -62,9 +62,7 @@ describe('service generator', () => {
 
         await serviceGenerator(tree, options);
 
-        const packageJson = JSON.parse(
-            tree.read('application/package.json', 'utf-8') ?? '{}'
-        );
+        const packageJson = JSON.parse(tree.read('application/package.json', 'utf-8') ?? '{}');
 
         expect(packageJson.bundleDependencies).toContain('@services/test');
         expect(packageJson.bundleDependencies).toContain('@libs/infra');
