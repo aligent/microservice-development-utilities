@@ -77,7 +77,7 @@ describe('handlerBundle', () => {
         expect(output['format']).toBe('esm');
     });
 
-    it('externalises node built-in modules', () => {
+    it('externalises node built-in modules and native addons', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;
 
@@ -85,12 +85,13 @@ describe('handlerBundle', () => {
         const env = Object.values(environments)[0] as Record<string, unknown>;
         const build = env['build'] as Record<string, unknown>;
         const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
-        const external = rolldownOptions['external'] as string[];
+        const external = rolldownOptions['external'] as Array<string | RegExp>;
 
         expect(external).toContain('fs');
         expect(external).toContain('node:fs');
         expect(external).toContain('path');
         expect(external).toContain('node:path');
+        expect(external).toContainEqual(/\.node$/);
     });
 
     it('sets resolve.noExternal to true', () => {
@@ -196,10 +197,13 @@ describe('handlerBundle', () => {
         const env = Object.values(environments)[0] as Record<string, unknown>;
         const build = env['build'] as Record<string, unknown>;
         const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
-        const external = rolldownOptions['external'] as string[];
+        const external = rolldownOptions['external'] as Array<string | RegExp>;
 
-        // Only built-in modules (bare + node: prefixed)
-        expect(external.every(e => typeof e === 'string')).toBe(true);
+        // Only built-in modules (bare + node: prefixed) and .node native addon pattern
+        const strings = external.filter((e): e is string => typeof e === 'string');
+        const regexps = external.filter((e): e is RegExp => e instanceof RegExp);
+        expect(strings.every(e => typeof e === 'string')).toBe(true);
+        expect(regexps).toEqual([/\.node$/]);
     });
 
     it('merges moduleTypes into rolldown config', () => {
@@ -360,11 +364,15 @@ describe('handlerBundle', () => {
         });
     });
 
-    it('returns no environments when handler directory is empty', () => {
+    it('warns when handler directory is empty', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const plugin = handlerBundle('/project/src/empty');
-        const result = callConfigHook(plugin) as Record<string, unknown>;
+        const result = callConfigHook(plugin);
 
-        const environments = result['environments'] as Record<string, unknown>;
-        expect(Object.keys(environments)).toHaveLength(0);
+        expect(result).toBeUndefined();
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('No handler files found in:')
+        );
+        warnSpy.mockRestore();
     });
 });

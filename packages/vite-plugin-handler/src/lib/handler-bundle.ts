@@ -21,6 +21,9 @@ export interface HandlerBundleOptions {
 
 const ENV_PREFIX = 'handler';
 
+// Native .node addons (e.g. cpu-features, sharp) cannot be bundled
+const NATIVE_NODE_ADDONS = /\.node$/;
+
 /**
  * Creates a Vite environment configuration for each handler file, producing
  * an ESM bundle per handler under `dist/<entryName>/index.mjs`.
@@ -28,16 +31,20 @@ const ENV_PREFIX = 'handler';
 function buildHandlerEnvironments(
     handlersDir: string,
     options: HandlerBundleOptions
-): Record<string, EnvironmentOptions> {
-    const external = [
+): Record<string, EnvironmentOptions> | undefined {
+    const handlers = globSync(`${handlersDir}/**/*.ts`);
+    if (!handlers.length) {
+        return undefined;
+    }
+
+    const external: Array<string | RegExp> = [
+        NATIVE_NODE_ADDONS,
         ...builtinModules,
         ...builtinModules.map(m => `node:${m}`),
         ...(options.external ?? []),
     ];
 
     const environments: Record<string, EnvironmentOptions> = {};
-    const handlers = globSync(`${handlersDir}/**/*.ts`);
-
     for (const handler of handlers) {
         const bundledPath = handler.replace(`${handlersDir}/`, '');
         const entryName = bundledPath.replace(extname(bundledPath), '');
@@ -126,6 +133,11 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             const concurrency = options.concurrency ?? Infinity;
             const handlersDir = resolve(process.cwd(), handlersPath);
             const environments = buildHandlerEnvironments(handlersDir, options);
+
+            if (!environments) {
+                console.warn(`[handler-bundle] No handler files found in: ${handlersDir}`);
+                return;
+            }
 
             return {
                 plugins: [stripUnneededPlugins],
