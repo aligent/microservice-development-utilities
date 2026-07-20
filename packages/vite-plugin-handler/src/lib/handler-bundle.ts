@@ -101,7 +101,7 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  * Vite plugin that creates one build environment per handler file found under
  * the given subpath. Each handler is bundled as an ESM Node.js entry point.
  *
- * @param handlersPath - Path to the handler directory, resolved relative to `process.cwd()`.
+ * @param handlersPath - Path to the handler directory, resolved relative to Vite's `config.root` (falling back to `process.cwd()`).
  * @param options - Optional configuration for concurrency, shims, and module types.
  *
  * @example
@@ -120,7 +120,7 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
 
     return {
         name: 'handler-bundle',
-        config() {
+        config(config) {
             // When running vitest, skip handler environments entirely
             if (process.env['VITEST'] === 'true') {
                 return null;
@@ -131,7 +131,7 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             }
 
             const concurrency = options.concurrency ?? Infinity;
-            const handlersDir = resolve(process.cwd(), handlersPath);
+            const handlersDir = resolve(config.root || process.cwd(), handlersPath);
             const environments = buildHandlerEnvironments(handlersDir, options);
 
             if (!environments) {
