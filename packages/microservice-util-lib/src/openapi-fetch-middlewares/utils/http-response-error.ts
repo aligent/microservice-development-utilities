@@ -17,6 +17,9 @@ export interface HttpRequestData {
  * Serializable snapshot of an HTTP response.
  * Captures all meaningful data at creation time so it can be
  * logged, serialized, or inspected without stream-consumption issues.
+ *
+ * @typeParam TBody - The expected shape of the parsed response body.
+ *   Defaults to `unknown`; no runtime validation is performed.
  */
 export interface HttpResponseData<TBody = unknown> {
     readonly status: number;
@@ -32,6 +35,25 @@ export interface HttpResponseData<TBody = unknown> {
  * Stores pre-read, serializable snapshots of the request and response
  * rather than raw Request/Response objects, ensuring bodies are always
  * available for logging and debugging.
+ *
+ * @typeParam TBody - The expected shape of the parsed response body.
+ *   Defaults to `unknown`. The body is cast to this type at creation
+ *   time — no runtime validation is performed, so callers should only
+ *   supply a type parameter when they are confident of the response shape.
+ *
+ * @example
+ * ```ts
+ * interface ApiError { code: string; message: string }
+ *
+ * try {
+ *     await client.GET('/resource');
+ * } catch (err) {
+ *     if (isHttpResponseError<ApiError>(err)) {
+ *         // err.response.body is typed as ApiError
+ *         console.log(err.response.body.code);
+ *     }
+ * }
+ * ```
  */
 export class HttpResponseError<TBody = unknown> extends Error {
     override readonly name = 'HttpResponseError';
@@ -57,6 +79,11 @@ export class HttpResponseError<TBody = unknown> extends Error {
     /**
      * Creates an HttpResponseError with pre-read request and response bodies.
      * Bodies are read eagerly so they are available for logging/serialization.
+     *
+     * @typeParam TBody - The expected shape of the parsed response body.
+     *   The parsed body is cast to this type without runtime validation.
+     * @param response - The raw {@link Response} to snapshot.
+     * @param request - The raw {@link Request} to snapshot.
      */
     static async create<TBody = unknown>(
         response: Response,
@@ -106,13 +133,17 @@ export class HttpResponseError<TBody = unknown> extends Error {
 }
 
 /**
- * Type guard to check if an error is an HttpResponseError.
+ * Type guard to check if an error is an {@link HttpResponseError}.
  * Useful for narrowing error types in catch blocks.
  *
- * @param {unknown} error - The error to check.
- * @returns {boolean} True if the error is an HttpResponseError.
+ * @typeParam TBody - Optional type parameter to narrow the response body.
+ *   No runtime validation of the body shape is performed — this is purely
+ *   a compile-time convenience for callers who know the expected body type.
+ * @param error - The error to check.
+ * @returns `true` if the error is an HttpResponseError.
  *
  * @example
+ * ```ts
  * try {
  *     await fetchData();
  * } catch (error) {
@@ -121,6 +152,7 @@ export class HttpResponseError<TBody = unknown> extends Error {
  *         console.log(`URL: ${error.request.url}`);
  *     }
  * }
+ * ```
  */
 export function isHttpResponseError<TBody = unknown>(
     error: unknown
