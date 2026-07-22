@@ -18,11 +18,11 @@ export interface HttpRequestData {
  * Captures all meaningful data at creation time so it can be
  * logged, serialized, or inspected without stream-consumption issues.
  */
-export interface HttpResponseData {
+export interface HttpResponseData<TBody = unknown> {
     readonly status: number;
     readonly statusText: string;
     readonly headers: Record<string, string>;
-    readonly body: unknown;
+    readonly body: TBody;
 }
 
 /**
@@ -33,15 +33,15 @@ export interface HttpResponseData {
  * rather than raw Request/Response objects, ensuring bodies are always
  * available for logging and debugging.
  */
-export class HttpResponseError extends Error {
+export class HttpResponseError<TBody = unknown> extends Error {
     override readonly name = 'HttpResponseError';
     readonly status: number;
     readonly statusText: string;
-    readonly response: HttpResponseData;
+    readonly response: HttpResponseData<TBody>;
     readonly request: HttpRequestData;
     readonly isHttpResponseError = true;
 
-    private constructor(request: HttpRequestData, response: HttpResponseData) {
+    private constructor(request: HttpRequestData, response: HttpResponseData<TBody>) {
         super(`${response.status}: ${response.statusText}`);
         this.status = response.status;
         this.statusText = response.statusText;
@@ -58,16 +58,19 @@ export class HttpResponseError extends Error {
      * Creates an HttpResponseError with pre-read request and response bodies.
      * Bodies are read eagerly so they are available for logging/serialization.
      */
-    static async create(response: Response, request: Request): Promise<HttpResponseError> {
+    static async create<TBody = unknown>(
+        response: Response,
+        request: Request
+    ): Promise<HttpResponseError<TBody>> {
         const url = new URL(request.url);
 
         // If request.bodyUsed is true then it can't be cloned and will throw a type error
         const requestBody = request.bodyUsed
             ? null
-            : parseBody(request.clone(), request.headers.get('content-type'));
+            : await parseBody(request.clone(), request.headers.get('content-type'));
         const responseBody = response.bodyUsed
             ? null
-            : parseBody(response.clone(), response.headers.get('content-type'));
+            : await parseBody(response.clone(), response.headers.get('content-type'));
 
         const requestData: HttpRequestData = {
             method: request.method,
@@ -77,14 +80,14 @@ export class HttpResponseError extends Error {
             body: requestBody,
         };
 
-        const responseData: HttpResponseData = {
+        const responseData: HttpResponseData<TBody> = {
             status: response.status,
             statusText: response.statusText,
             headers: Object.fromEntries(response.headers.entries()),
-            body: responseBody,
+            body: responseBody as TBody,
         };
 
-        return new HttpResponseError(requestData, responseData);
+        return new HttpResponseError<TBody>(requestData, responseData);
     }
 
     /**
@@ -119,7 +122,9 @@ export class HttpResponseError extends Error {
  *     }
  * }
  */
-export function isHttpResponseError(error: unknown): error is HttpResponseError {
+export function isHttpResponseError<TBody = unknown>(
+    error: unknown
+): error is HttpResponseError<TBody> {
     return (
         error instanceof HttpResponseError ||
         (typeof error === 'object' &&
