@@ -6,12 +6,12 @@
 
 # Interface: ApiKey
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:11](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L11)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:28](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L28)
 
 Represents an API key authentication method.
 
 This interface is used for API key-based authentication, where the key is sent
-in a specific header. The value of the API key is retrieved asynchronously.
+in a specific header. The value can be a static string or a function that returns one.
 
  ApiKey
 
@@ -23,7 +23,7 @@ in a specific header. The value of the API key is retrieved asynchronously.
 
 > **header**: `string`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:12](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L12)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:29](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L29)
 
 The header name where the API key will be set.
 
@@ -31,14 +31,10 @@ The header name where the API key will be set.
 
 <a id="value"></a>
 
-### value()
+### value
 
-> **value**: () => `Promise`\<`string`\>
+> **value**: `Resolvable`\<`string`\>
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:13](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L13)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:30](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L30)
 
-A function that returns a promise resolving to the API key value.
-
-#### Returns
-
-`Promise`\<`string`\>
+The API key value, or a function returning it.

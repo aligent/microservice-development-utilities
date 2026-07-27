@@ -8,7 +8,7 @@
 
 > **oAuth10aAuthMiddleware**(`config`): `Middleware`
 
-Defined in: [openapi-fetch-middlewares/authentications.ts:71](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L71)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:105](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L105)
 
 Creates an openapi-fetch middleware for OAuth 1.0a authentication.
 This middleware generates OAuth 1.0a parameters and sets the `Authorization` header
@@ -28,16 +28,25 @@ The configuration for OAuth 1.0a authentication.
 
 The middleware for OAuth 1.0a authentication.
 
-## Example
+## Examples
 
 ```ts
+// Static credentials
 const middleware = oAuth10aAuthMiddleware({
     algorithm: 'HMAC-SHA256',
-    credentials: async () => ({
+    credentials: {
         consumerKey: 'key',
         consumerSecret: 'secret',
         token: 'token',
         tokenSecret: 'tokenSecret',
-    }),
+    },
+});
+```
+
+```ts
+// Dynamic credentials (async function)
+const middleware = oAuth10aAuthMiddleware({
+    algorithm: 'HMAC-SHA256',
+    credentials: async () => fetchOAuthCredentials(),
 });
 ```
