@@ -123,6 +123,17 @@ describe('SNSService', () => {
             expect(snsMock.commandCalls(PublishCommand)).toHaveLength(1);
         });
 
+        it('passes a within-limit input through unchanged when truncation is enabled', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}), truncate: true });
+            const input = { TopicArn: 'arn:aws:sns:us-east-1:0:topic', Message: 'hi' };
+
+            await service.publish(input);
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input;
+            expect(sent).toStrictEqual(input);
+        });
+
         it('truncates oversized Message when the instance opts in to truncation', async () => {
             snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
             const service = new SNSService({ client: new SNSClient({}), truncate: true });

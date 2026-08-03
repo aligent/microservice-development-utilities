@@ -82,22 +82,37 @@ export class SNSService {
         return this.client.send(new PublishCommand(effective));
     }
 
+    /**
+     * The truncation helpers return the input unchanged when it already fits, so
+     * a `!==` comparison against their result is what decides whether a field
+     * was modified. Don't reintroduce a size guard here: that would state each
+     * limit twice, encode the string to a `Buffer` twice, and let the two
+     * expressions drift into warning without truncating (or the reverse).
+     */
     private applyTruncation(input: PublishCommandInput): PublishCommandInput {
         const truncated: string[] = [];
-        let Message = input.Message;
-        if (Message !== undefined && Buffer.byteLength(Message, 'utf8') > SNS_MESSAGE_MAX_BYTES) {
-            Message = truncateUtf8(Message, SNS_MESSAGE_MAX_BYTES);
-            truncated.push('Message');
+        const out = { ...input };
+
+        if (out.Message !== undefined) {
+            const next = truncateUtf8(out.Message, SNS_MESSAGE_MAX_BYTES);
+            if (next !== out.Message) {
+                out.Message = next;
+                truncated.push('Message');
+            }
         }
-        let Subject = input.Subject;
-        if (Subject !== undefined && Array.from(Subject).length > SNS_SUBJECT_MAX_CHARS) {
-            Subject = truncateCodepoints(Subject, SNS_SUBJECT_MAX_CHARS);
-            truncated.push('Subject');
+
+        if (out.Subject !== undefined) {
+            const next = truncateCodepoints(out.Subject, SNS_SUBJECT_MAX_CHARS);
+            if (next !== out.Subject) {
+                out.Subject = next;
+                truncated.push('Subject');
+            }
         }
+
         if (truncated.length > 0) {
             this.logger.warn('Truncated SNS publish input', { fields: truncated });
         }
-        return { ...input, Message, Subject };
+        return out;
     }
 
     /**
