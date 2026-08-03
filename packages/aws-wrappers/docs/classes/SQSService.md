@@ -6,10 +6,13 @@
 
 # Class: SQSService
 
-Defined in: [sqs/sqs.ts:46](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L46)
+Defined in: [sqs/sqs.ts:48](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L48)
 
 Wrapper around the AWS SQS client providing structured Powertools logging
 and X-Ray tracing by default.
+
+At INFO the log lines omit payloads, secret material and PII; the verbose
+levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
 
 ## Constructors
 
@@ -19,7 +22,7 @@ and X-Ray tracing by default.
 
 > **new SQSService**(`opts?`): `SQSService`
 
-Defined in: [sqs/sqs.ts:61](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L61)
+Defined in: [sqs/sqs.ts:63](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L63)
 
 #### Parameters
 
@@ -60,7 +63,7 @@ option.
 
 > **deleteMessage**(`input`): `Promise`\<`DeleteMessageCommandOutput`\>
 
-Defined in: [sqs/sqs.ts:117](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L117)
+Defined in: [sqs/sqs.ts:118](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L118)
 
 Delete a single message from an SQS queue.
 
@@ -82,7 +85,7 @@ Delete a single message from an SQS queue.
 
 > **deleteMessageBatch**(`input`): `Promise`\<`DeleteMessageBatchCommandOutput`[]\>
 
-Defined in: [sqs/sqs.ts:153](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L153)
+Defined in: [sqs/sqs.ts:154](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L154)
 
 Delete a batch of messages from an SQS queue. The SQS API caps
 DeleteMessageBatch at 10 entries per request, so this method auto-chunks
@@ -106,7 +109,7 @@ the caller's entries and sends one request per chunk.
 
 > **receiveMessages**(`input`): `Promise`\<`Message`[]\>
 
-Defined in: [sqs/sqs.ts:108](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L108)
+Defined in: [sqs/sqs.ts:109](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L109)
 
 Receive messages from an SQS queue. Returns an empty array when no
 messages are available. No automatic deletion is performed — visibility
@@ -132,13 +135,12 @@ The `Messages` array from the response, or `[]` if absent.
 
 > **sendMessage**(`input`, `opts?`): `Promise`\<`SendMessageCommandOutput`\>
 
-Defined in: [sqs/sqs.ts:74](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L74)
+Defined in: [sqs/sqs.ts:75](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L75)
 
 Send a single message to an SQS queue.
 
 At INFO level the log line includes only queue routing / FIFO metadata;
-see `SEND_MESSAGE_SAFE_FIELDS`. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
-full input.
+see `SEND_MESSAGE_SAFE_FIELDS`.
 
 #### Parameters
 
@@ -164,7 +166,7 @@ full input.
 
 > **sendMessageBatch**(`input`): `Promise`\<`SendMessageBatchCommandOutput`[]\>
 
-Defined in: [sqs/sqs.ts:127](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sqs/sqs.ts#L127)
+Defined in: [sqs/sqs.ts:128](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/sqs/sqs.ts#L128)
 
 Send a batch of messages to an SQS queue. The SQS API caps
 SendMessageBatch at 10 entries per request, so this method auto-chunks

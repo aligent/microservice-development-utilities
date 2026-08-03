@@ -89,19 +89,23 @@ constructor(opts?: { logger?: LoggerInterface; client?: <ServiceClient> })
 
 ### Logging
 
-Every public method emits exactly one `logger.info('<verb> <noun>', { input })` line at the start. The shape of `input` is **level-driven**:
+Every public method emits exactly one `logger.info('<verb> <noun>', { input })` line at the start. The shape of `input` is **level-driven** — see the "Log redaction" section of the package `README.md` for the consumer-facing statement of which levels unlock.
 
-- At `DEBUG` (e.g. `POWERTOOLS_LOG_LEVEL=DEBUG`), the full SDK input is logged. Operators have explicitly opted into seeing payloads, secret material, and PII.
+- At the **verbose** levels (`TRACE` and `DEBUG`), the full SDK input is logged. Operators have explicitly opted into seeing payloads, secret material, and PII.
 - At any other level, only a per-method **safe-fields allowlist** is logged.
 
-The mechanism is `filterFieldsForLogLevel(logger, input, SAFE_FIELDS)` in `src/util/redact.ts`. Internal-only helper, not exported from `src/index.ts`.
+`shouldLogFullInput(logger)` in `src/util/redact.ts` is **the only place in the package that reads the log level** — never compare `logger.getLevelName()` yourself. Powertools orders `TRACE` (threshold 6) as *more* verbose than `DEBUG` (8), so the obvious `getLevelName() === 'DEBUG'` check silently redacts at the most verbose level available. That was a real bug (MI-332); the predicate exists so it can only be fixed once. Its TSDoc carries the rule for anyone reading the source without this file.
+
+The projection mechanism is `filterFieldsForLogLevel(logger, input, SAFE_FIELDS)` in the same file. Both are internal-only helpers, not exported from `src/index.ts`.
+
+Each service file states the unlock rule **once**, in its class-level TSDoc. Per-method and per-`SAFE_FIELDS` docs describe only *what* is omitted and *why* — don't restate the mechanism, or the next level-semantics change has to touch two dozen comments again.
 
 #### Conventions for the allowlist
 
 - **Module-level constant per method**, typed as `ReadonlyArray<keyof CommandInput>`, named `<METHOD>_SAFE_FIELDS`. TSDoc explains what's omitted and why.
 - **Targeted application** — only methods where there's an actual omission use the helper. Methods whose input is already a tight `Required<Pick<...>>` or contains no sensitive fields (e.g. `S3.getObject`, `SFN.listExecutions`) keep their current `{ input }` shape.
 - **Maximal safe set** — include every field *except* known payload, secret, or PII carriers. The level-based design provides the safety valve; the INFO log should still be operationally useful.
-- **Batch methods stay bespoke** — methods that already compute a derived field (e.g. `entryCount`, `keyCount`, `tables`) inline the DEBUG check directly rather than using `filterFieldsForLogLevel`, since the helper only picks input keys and can't synthesise computed fields. A comment explains why.
+- **Batch methods stay bespoke** — methods that already compute a derived field (e.g. `entryCount`, `keyCount`, `tables`) call `shouldLogFullInput(this.logger)` directly rather than using `filterFieldsForLogLevel`, since the helper only picks input keys and can't synthesise computed fields. A comment explains why.
 
 #### Currently redacted
 
@@ -113,7 +117,14 @@ The mechanism is `filterFieldsForLogLevel(logger, input, SAFE_FIELDS)` in `src/u
 - **SSM** — `putParameter` omits `Value`.
 - **SFN** — `startExecution` omits the execution `input` (often carries PII).
 
-Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc, wire `filterFieldsForLogLevel(this.logger, input, FIELDS)` into the `logger.info` call, and add a single `expect(loggedInput).not.toHaveProperty('<sensitive>')` test against an INFO-level logger to lock in the security property.
+Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc describing *what* is omitted and *why* (not the unlock mechanism — that's stated once in the class TSDoc), and wire `filterFieldsForLogLevel(this.logger, input, FIELDS)` into the `logger.info` call.
+
+Lock the behaviour with **two** tests, not one:
+
+- `expect(loggedInput).not.toHaveProperty('<sensitive>')` against an INFO-level logger — the security property.
+- `expect(loggedInput).toHaveProperty('<sensitive>')` against a TRACE-level logger — the unlock property.
+
+The second matters more than it looks. Without it, a method wired to a stale or hand-rolled level check still passes the whole suite, because the INFO assertion only pins the redacted direction. That's precisely how the pre-MI-332 bug survived in eight places.
 
 ### Patterns
 

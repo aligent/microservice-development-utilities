@@ -42,14 +42,12 @@ type PutJsonObjectInput<T> = {
 
 /**
  * Fields safe to log at INFO for `putObject`. Omits `Body` (object payload).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const PUT_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutObjectInput> = ['Bucket', 'Key'];
 
 /**
  * Fields safe to log at INFO for `putJsonObject`. Omits `Body` (the
  * unserialised JSON payload). `Metadata` is included (operational labels).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknown>> = [
     'Bucket',
@@ -60,6 +58,9 @@ const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknow
 /**
  * Wrapper around the AWS S3 client providing structured Powertools logging
  * and X-Ray tracing by default.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  *
  * Input shapes are intentionally tight (Bucket/Key/Body only). Callers
  * needing SDK-level options not exposed here (server-side encryption,

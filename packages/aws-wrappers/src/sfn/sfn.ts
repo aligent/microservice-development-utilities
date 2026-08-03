@@ -21,7 +21,7 @@ import { filterFieldsForLogLevel } from '../util/redact.js';
 /**
  * Fields safe to log at INFO for `startExecution`. Omits `input` — the SFN
  * execution payload, which routinely carries PII (customer IDs, addresses,
- * order contents, etc.). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ * order contents, etc.).
  */
 const START_EXECUTION_SAFE_FIELDS: ReadonlyArray<keyof StartExecutionCommandInput> = [
     'stateMachineArn',
@@ -32,6 +32,9 @@ const START_EXECUTION_SAFE_FIELDS: ReadonlyArray<keyof StartExecutionCommandInpu
 /**
  * Wrapper around the AWS Step Functions client providing structured
  * Powertools logging and X-Ray tracing by default.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  */
 export class StepFunctionsService {
     private readonly client: SFNClient;

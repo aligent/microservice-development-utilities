@@ -18,10 +18,9 @@ export function shouldLogFullInput(logger: LoggerInterface): boolean {
 /**
  * Return a log-safe projection of `input` based on the logger's configured level.
  *
- * At `DEBUG`, the full input is returned unchanged — operators who set
- * `POWERTOOLS_LOG_LEVEL=DEBUG` (or call `logger.setLogLevel('DEBUG')`) have
- * explicitly opted into seeing everything, including payloads, secret material
- * and PII.
+ * At the verbose levels — see {@link shouldLogFullInput} — the full input is
+ * returned unchanged: operators who asked for that verbosity have explicitly
+ * opted into seeing everything, including payloads, secret material and PII.
  *
  * At any other level, only the fields listed in `safeFields` are included.
  * Missing fields are silently skipped — the result type narrows to

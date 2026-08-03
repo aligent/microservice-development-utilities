@@ -16,8 +16,7 @@ import { filterFieldsForLogLevel } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO level for `putParameter`. Omits `Value` (the
- * parameter content itself). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full
- * input.
+ * parameter content itself).
  */
 const PUT_PARAMETER_SAFE_FIELDS: ReadonlyArray<keyof PutParameterCommandInput> = [
     'Name',
@@ -37,6 +36,9 @@ const PUT_PARAMETER_SAFE_FIELDS: ReadonlyArray<keyof PutParameterCommandInput> =
  * Powertools logging and X-Ray tracing by default. All read operations enable
  * `WithDecryption` — callers needing plaintext should use `SSMClient`
  * directly.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  *
  * Write operations (`putParameter`, `deleteParameter`) are exposed for
  * convenience but should be used with care: parameter lifecycle is usually

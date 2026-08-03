@@ -37,7 +37,6 @@ const BATCH_WRITE_BASE_DELAY_MS = 200;
 
 /**
  * Fields safe to log at INFO. Omits `Key` (may carry customer IDs / tenant IDs).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const GET_ITEM_SAFE_FIELDS: ReadonlyArray<keyof GetCommandInput> = [
     'TableName',
@@ -50,7 +49,6 @@ const GET_ITEM_SAFE_FIELDS: ReadonlyArray<keyof GetCommandInput> = [
 /**
  * Fields safe to log at INFO. Omits `Item` (the payload itself) and
  * `ExpressionAttributeValues` (values bound to ConditionExpression, often PII).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const PUT_ITEM_SAFE_FIELDS: ReadonlyArray<keyof PutCommandInput> = [
     'TableName',
@@ -64,7 +62,6 @@ const PUT_ITEM_SAFE_FIELDS: ReadonlyArray<keyof PutCommandInput> = [
 
 /**
  * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`.
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const UPDATE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof UpdateCommandInput> = [
     'TableName',
@@ -80,7 +77,6 @@ const UPDATE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof UpdateCommandInput> = [
 /**
  * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`
  * (the latter binds to ConditionExpression and may carry PII).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [
     'TableName',
@@ -95,8 +91,7 @@ const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [
 /**
  * Fields safe to log at INFO for `query` and `paginateItems`. Omits
  * `ExpressionAttributeValues` (values often carry PII) and `ExclusiveStartKey`
- * (pagination cursor includes Key shape). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks
- * the full input.
+ * (pagination cursor includes Key shape).
  */
 const QUERY_SAFE_FIELDS: ReadonlyArray<keyof QueryCommandInput> = [
     'TableName',
@@ -115,7 +110,6 @@ const QUERY_SAFE_FIELDS: ReadonlyArray<keyof QueryCommandInput> = [
 /**
  * Fields safe to log at INFO for `scan` and `paginateScan`. Omits
  * `ExpressionAttributeValues` and `ExclusiveStartKey`.
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const SCAN_SAFE_FIELDS: ReadonlyArray<keyof ScanCommandInput> = [
     'TableName',
@@ -148,6 +142,9 @@ type WithTypedKey<TInput, K extends Record<string, unknown>> = Omit<TInput, 'Key
 /**
  * Wrapper around the AWS DynamoDB Document client providing structured
  * Powertools logging and X-Ray tracing by default.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  *
  * Items are automatically marshalled / unmarshalled via the document client —
  * callers work with plain TypeScript objects in both directions.

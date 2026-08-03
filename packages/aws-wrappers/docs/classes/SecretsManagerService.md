@@ -6,10 +6,13 @@
 
 # Class: SecretsManagerService
 
-Defined in: [secrets-manager/secrets-manager.ts:72](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L72)
+Defined in: [secrets-manager/secrets-manager.ts:74](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L74)
 
 Wrapper around the AWS Secrets Manager client providing structured
 Powertools logging and X-Ray tracing by default.
+
+At INFO the log lines omit payloads, secret material and PII; the verbose
+levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
 
 Write operations (`createSecret`, `updateSecret`, `putSecretValue`,
 `deleteSecret`) are exposed for convenience but should be used with care:
@@ -26,7 +29,7 @@ mutable values.
 
 > **new SecretsManagerService**(`opts?`): `SecretsManagerService`
 
-Defined in: [secrets-manager/secrets-manager.ts:83](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L83)
+Defined in: [secrets-manager/secrets-manager.ts:85](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L85)
 
 #### Parameters
 
@@ -59,11 +62,10 @@ which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
 
 > **createSecret**(`input`): `Promise`\<`CreateSecretCommandOutput`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:121](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L121)
+Defined in: [secrets-manager/secrets-manager.ts:122](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L122)
 
 Create a new secret. At INFO level the log line includes only identity
-and non-secret metadata; `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full
-input (including `SecretString` / `SecretBinary`).
+and non-secret metadata.
 
 Prefer IaC (CDK / Terraform) for secret lifecycle — use this for
 dynamically-issued credentials only.
@@ -86,7 +88,7 @@ dynamically-issued credentials only.
 
 > **deleteSecret**(`input`): `Promise`\<`DeleteSecretCommandOutput`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:163](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L163)
+Defined in: [secrets-manager/secrets-manager.ts:162](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L162)
 
 Delete a secret. Pass `ForceDeleteWithoutRecovery: true` to bypass the
 default 7-30 day recovery window (irreversible).
@@ -111,7 +113,7 @@ Prefer IaC (CDK / Terraform) for secret lifecycle.
 
 > **getJsonSecret**\<`T`\>(`secretId`): `Promise`\<`T`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:107](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L107)
+Defined in: [secrets-manager/secrets-manager.ts:109](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L109)
 
 Fetch a secret and parse it as JSON.
 
@@ -149,7 +151,7 @@ If the secret has no `SecretString` or the value is not valid JSON.
 
 > **getSecret**(`secretId`): `Promise`\<`string`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:95](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L95)
+Defined in: [secrets-manager/secrets-manager.ts:97](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L97)
 
 Fetch a secret's string value from Secrets Manager.
 
@@ -180,11 +182,10 @@ stores binary data).
 
 > **putSecretValue**(`input`): `Promise`\<`PutSecretValueCommandOutput`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:150](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L150)
+Defined in: [secrets-manager/secrets-manager.ts:149](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L149)
 
 Store a new version of a secret's value. At INFO level the log line
-omits `SecretString` / `SecretBinary`; `POWERTOOLS_LOG_LEVEL=DEBUG`
-unlocks the full input.
+omits `SecretString` / `SecretBinary`.
 
 Typically used by rotation flows.
 
@@ -206,11 +207,10 @@ Typically used by rotation flows.
 
 > **updateSecret**(`input`): `Promise`\<`UpdateSecretCommandOutput`\>
 
-Defined in: [secrets-manager/secrets-manager.ts:136](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L136)
+Defined in: [secrets-manager/secrets-manager.ts:136](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/secrets-manager/secrets-manager.ts#L136)
 
 Update an existing secret's metadata or value. At INFO level the log
-line omits `SecretString` / `SecretBinary`; `POWERTOOLS_LOG_LEVEL=DEBUG`
-unlocks the full input.
+line omits `SecretString` / `SecretBinary`.
 
 Prefer IaC (CDK / Terraform) for secret lifecycle — use this for
 runtime metadata updates only.

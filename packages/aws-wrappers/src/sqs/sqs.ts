@@ -30,7 +30,6 @@ const SQS_MESSAGE_BODY_MAX_BYTES = 256 * 1024;
 /**
  * Fields safe to log at INFO level for `sendMessage`. Omits `MessageBody` and
  * `MessageAttributes` — both carry payload content.
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
     'QueueUrl',
@@ -42,6 +41,9 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
 /**
  * Wrapper around the AWS SQS client providing structured Powertools logging
  * and X-Ray tracing by default.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  */
 export class SQSService {
     private readonly client: SQSClient;
@@ -68,8 +70,7 @@ export class SQSService {
      * Send a single message to an SQS queue.
      *
      * At INFO level the log line includes only queue routing / FIFO metadata;
-     * see `SEND_MESSAGE_SAFE_FIELDS`. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
-     * full input.
+     * see `SEND_MESSAGE_SAFE_FIELDS`.
      */
     async sendMessage(
         input: SendMessageCommandInput,

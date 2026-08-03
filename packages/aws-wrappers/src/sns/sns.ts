@@ -22,7 +22,7 @@ const SNS_SUBJECT_MAX_CHARS = 100;
  * Fields safe to log at INFO level for `publish`. Omits `Message`, `Subject`,
  * `MessageAttributes`, and `PhoneNumber` — payloads, user-visible content
  * (subjects often carry order numbers / customer names), and PII recipient
- * identifiers. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ * identifiers.
  */
 const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
     'TopicArn',
@@ -35,6 +35,9 @@ const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
 /**
  * Wrapper around the AWS SNS client providing structured Powertools logging
  * and X-Ray tracing by default.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  */
 export class SNSService {
     private readonly client: SNSClient;
@@ -62,8 +65,7 @@ export class SNSService {
      * Publish a single message to an SNS topic.
      *
      * At INFO level the log line includes only routing / dedup metadata; see
-     * `PUBLISH_SAFE_FIELDS` for the list. Setting `POWERTOOLS_LOG_LEVEL=DEBUG`
-     * unlocks the full input.
+     * `PUBLISH_SAFE_FIELDS` for the list.
      *
      * @param input - PublishCommandInput including TopicArn and Message.
      */

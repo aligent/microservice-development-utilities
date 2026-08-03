@@ -6,10 +6,13 @@
 
 # Class: SchedulerService
 
-Defined in: scheduler/scheduler.ts:75
+Defined in: [scheduler/scheduler.ts:80](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L80)
 
 Wrapper around the AWS EventBridge Scheduler client providing structured
 Powertools logging and X-Ray tracing by default.
+
+At INFO the log lines omit payloads, secret material and PII; the verbose
+levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
 
 Covers CRUD on schedules and their groups. Named `SchedulerService` (not
 `EventBridgeSchedulerService`) so it doesn't collide with a future wrapper
@@ -27,7 +30,7 @@ intent (`{ Mode: 'OFF' }` for a fixed-time schedule).
 
 > **new SchedulerService**(`opts?`): `SchedulerService`
 
-Defined in: scheduler/scheduler.ts:85
+Defined in: [scheduler/scheduler.ts:90](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L90)
 
 #### Parameters
 
@@ -59,11 +62,10 @@ which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
 
 > **createSchedule**(`input`): `Promise`\<`CreateScheduleCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:95
+Defined in: [scheduler/scheduler.ts:99](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L99)
 
 Create a new schedule. At INFO the log line omits `Target.Input` (the
-target payload, a PII carrier); `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
-full input.
+target payload, a PII carrier).
 
 #### Parameters
 
@@ -83,7 +85,7 @@ full input.
 
 > **createScheduleGroup**(`input`): `Promise`\<`CreateScheduleGroupCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:154
+Defined in: [scheduler/scheduler.ts:157](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L157)
 
 Create a new schedule group. Groups are containers for schedules and are
 typically IaC-managed; use this for dynamically-provisioned groups only.
@@ -106,7 +108,7 @@ typically IaC-managed; use this for dynamically-provisioned groups only.
 
 > **deleteSchedule**(`input`): `Promise`\<`DeleteScheduleCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:130
+Defined in: [scheduler/scheduler.ts:133](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L133)
 
 Delete a schedule.
 
@@ -128,7 +130,7 @@ Delete a schedule.
 
 > **deleteScheduleGroup**(`input`): `Promise`\<`DeleteScheduleGroupCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:176
+Defined in: [scheduler/scheduler.ts:179](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L179)
 
 Delete a schedule group. Deleting a group also deletes every schedule it
 contains, asynchronously — the API has no `UpdateScheduleGroup`, so this
@@ -152,7 +154,7 @@ is the only mutating group operation besides create.
 
 > **getSchedule**(`input`): `Promise`\<`GetScheduleCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:103
+Defined in: [scheduler/scheduler.ts:107](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L107)
 
 Fetch a schedule's full configuration.
 
@@ -174,7 +176,7 @@ Fetch a schedule's full configuration.
 
 > **getScheduleGroup**(`input`): `Promise`\<`GetScheduleGroupCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:164
+Defined in: [scheduler/scheduler.ts:167](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L167)
 
 Fetch a schedule group's configuration.
 
@@ -196,7 +198,7 @@ Fetch a schedule group's configuration.
 
 > **listScheduleGroups**(`input?`): `Promise`\<`ScheduleGroupSummary`[]\>
 
-Defined in: scheduler/scheduler.ts:187
+Defined in: [scheduler/scheduler.ts:190](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L190)
 
 List schedule groups, auto-paginating across all pages. Bounded in
 practice by the account's group count and the `NamePrefix` filter.
@@ -219,7 +221,7 @@ practice by the account's group count and the `NamePrefix` filter.
 
 > **listSchedules**(`input?`): `Promise`\<`ScheduleSummary`[]\>
 
-Defined in: scheduler/scheduler.ts:140
+Defined in: [scheduler/scheduler.ts:143](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L143)
 
 List schedules, auto-paginating across all pages. Bounded in practice by
 the account's schedule count and the `GroupName` / `NamePrefix` / `State`
@@ -243,7 +245,7 @@ filters, so the flat-array shape is safe.
 
 > **updateSchedule**(`input`): `Promise`\<`UpdateScheduleCommandOutput`\>
 
-Defined in: scheduler/scheduler.ts:122
+Defined in: [scheduler/scheduler.ts:125](https://github.com/aligent/microservice-development-utilities/blob/0505887eb00467bf78adacde3766052acbbfb10a/packages/aws-wrappers/src/scheduler/scheduler.ts#L125)
 
 Update an existing schedule.
 
@@ -255,8 +257,7 @@ that attribute modified, or you will silently erase `ScheduleExpression`,
 your behalf: deep-merging a `Target` (with its mutually-exclusive
 target-type params) has no single correct semantics.
 
-At INFO the log line omits `Target.Input`; `POWERTOOLS_LOG_LEVEL=DEBUG`
-unlocks the full input.
+At INFO the log line omits `Target.Input`.
 
 #### Parameters
 

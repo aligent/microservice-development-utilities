@@ -48,8 +48,9 @@ import { shouldLogFullInput } from '../util/redact.js';
  * bespoke case: keep every top-level field and shallow-strip only
  * `Target.Input`.
  *
- * At `DEBUG` the input is returned unchanged — operators who set
- * `POWERTOOLS_LOG_LEVEL=DEBUG` have opted into seeing payloads and PII.
+ * At the verbose levels — see {@link shouldLogFullInput} — the input is
+ * returned unchanged: operators who asked for that verbosity have opted into
+ * seeing payloads and PII.
  */
 function redactTargetInput<T extends { Target?: Target | undefined }>(
     logger: LoggerInterface,
@@ -64,6 +65,9 @@ function redactTargetInput<T extends { Target?: Target | undefined }>(
 /**
  * Wrapper around the AWS EventBridge Scheduler client providing structured
  * Powertools logging and X-Ray tracing by default.
+ *
+ * At INFO the log lines omit payloads, secret material and PII; the verbose
+ * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
  *
  * Covers CRUD on schedules and their groups. Named `SchedulerService` (not
  * `EventBridgeSchedulerService`) so it doesn't collide with a future wrapper
@@ -90,8 +94,7 @@ export class SchedulerService {
 
     /**
      * Create a new schedule. At INFO the log line omits `Target.Input` (the
-     * target payload, a PII carrier); `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
-     * full input.
+     * target payload, a PII carrier).
      */
     async createSchedule(input: CreateScheduleCommandInput): Promise<CreateScheduleCommandOutput> {
         this.logger.info('Creating schedule', { input: redactTargetInput(this.logger, input) });
@@ -117,8 +120,7 @@ export class SchedulerService {
      * your behalf: deep-merging a `Target` (with its mutually-exclusive
      * target-type params) has no single correct semantics.
      *
-     * At INFO the log line omits `Target.Input`; `POWERTOOLS_LOG_LEVEL=DEBUG`
-     * unlocks the full input.
+     * At INFO the log line omits `Target.Input`.
      */
     async updateSchedule(input: UpdateScheduleCommandInput): Promise<UpdateScheduleCommandOutput> {
         this.logger.info('Updating schedule', { input: redactTargetInput(this.logger, input) });
