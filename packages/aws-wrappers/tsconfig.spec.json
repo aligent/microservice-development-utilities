@@ -2,6 +2,10 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "outDir": "./out-tsc/vitest",
+        // Mirrors `tsconfig.lib.json` — see the comment there. Overriding
+        // `module` drops the implied `target: es2022`, and a divergent target
+        // between lib and spec means a divergent `useDefineForClassFields`.
+        "target": "ES2022",
         "module": "ESNext",
         "moduleResolution": "Bundler",
         "types": ["vitest/globals", "vitest/importMeta", "vite/client", "node", "vitest"]
