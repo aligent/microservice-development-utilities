@@ -32,6 +32,7 @@ import {
     UpdateScheduleCommandOutput,
 } from '@aws-sdk/client-scheduler';
 import xray from 'aws-xray-sdk-core';
+import { shouldLogFullInput } from '../util/redact.js';
 
 /**
  * `CreateSchedule` / `UpdateSchedule` inputs carry the payload handed to the
@@ -54,7 +55,7 @@ function redactTargetInput<T extends { Target?: Target | undefined }>(
     logger: LoggerInterface,
     input: T
 ): T {
-    if (logger.getLevelName() === 'DEBUG') return input;
+    if (shouldLogFullInput(logger)) return input;
     if (input.Target?.Input === undefined) return input;
     const { Input: _input, ...safeTarget } = input.Target;
     return { ...input, Target: safeTarget as Target };

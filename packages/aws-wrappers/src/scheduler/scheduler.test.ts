@@ -134,6 +134,25 @@ describe('SchedulerService', () => {
             expect(loggedTarget).toHaveProperty('Input', 'payload');
         });
 
+        it('logs Target.Input at TRACE level', async () => {
+            schedulerMock.on(CreateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
+            const logger = new Logger();
+            logger.setLogLevel('TRACE');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SchedulerService({ client: new SchedulerClient({}), logger });
+
+            await service.createSchedule({
+                Name: 's1',
+                ScheduleExpression: 'rate(1 day)',
+                FlexibleTimeWindow: { Mode: 'OFF' },
+                Target: { ...target, Input: 'payload' },
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedTarget = (payload as { input: { Target: object } }).input.Target;
+            expect(loggedTarget).toHaveProperty('Input', 'payload');
+        });
+
         it('leaves the input untouched when the Target has no Input', async () => {
             schedulerMock.on(CreateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
             const logger = new Logger();

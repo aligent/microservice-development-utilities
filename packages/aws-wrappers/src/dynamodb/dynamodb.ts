@@ -30,7 +30,7 @@ import {
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
@@ -317,13 +317,13 @@ export class DynamoDBService {
      * Callers should narrow the result type at the call site.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because
         // `RequestItems` is a `Record<tableName, KeysAndAttributes>` — the
         // payload (`Keys[]`) lives inside the value, not as a top-level key
         // the helper could pick or drop.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Batch getting DynamoDB items', {
-            input: isDebug ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+            input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
         });
         return this.client.send(new BatchGetCommand(input));
     }
@@ -334,13 +334,13 @@ export class DynamoDBService {
      * items remain unprocessed after the final attempt.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because
         // `RequestItems` is a `Record<tableName, WriteRequest[]>` — the
         // payload (`PutRequest.Item` / `DeleteRequest.Key`) lives inside the
         // value, not as a top-level key the helper could pick or drop.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Batch writing DynamoDB items', {
-            input: isDebug ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+            input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
         });
         let current = input;
         for (let attempt = 0; attempt < BATCH_WRITE_MAX_ATTEMPTS; attempt++) {

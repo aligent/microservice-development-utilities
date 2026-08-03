@@ -21,7 +21,7 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
@@ -128,12 +128,12 @@ export class SQSService {
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `SendMessageBatchCommandInput`.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Sending SQS message batch', {
-            input: isDebug ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: SendMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
@@ -154,12 +154,12 @@ export class SQSService {
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `DeleteMessageBatchCommandInput`.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting SQS message batch', {
-            input: isDebug ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {

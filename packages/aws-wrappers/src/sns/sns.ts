@@ -11,7 +11,7 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
 const PUBLISH_BATCH_LIMIT = 10;
@@ -106,12 +106,12 @@ export class SNSService {
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
         const entries: PublishBatchRequestEntry[] = input.PublishBatchRequestEntries ?? [];
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `PublishBatchCommandInput`.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Publishing SNS message batch', {
-            input: isDebug ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
+            input: logFullInput ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
         });
         const results: PublishBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += PUBLISH_BATCH_LIMIT) {

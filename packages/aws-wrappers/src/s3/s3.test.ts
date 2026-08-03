@@ -136,6 +136,20 @@ describe('S3Service', () => {
             expect(loggedInput).not.toHaveProperty('keys');
             expect(loggedInput).toMatchObject({ bucket: Bucket, keyCount: 3 });
         });
+
+        it('logs the full key list at TRACE level', async () => {
+            s3Mock.on(DeleteObjectsCommand).resolves({});
+            const logger = new Logger();
+            logger.setLogLevel('TRACE');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new S3Service({ client: new S3Client({}), logger });
+
+            await service.deleteObjects(Bucket, ['k1', 'k2', 'k3']);
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).toEqual({ bucket: Bucket, keys: ['k1', 'k2', 'k3'] });
+        });
     });
 
     describe('emptyBucket', () => {

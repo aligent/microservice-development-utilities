@@ -23,7 +23,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
@@ -276,12 +276,12 @@ export class S3Service {
      * per chunk.
      */
     async deleteObjects(bucket: string, keys: string[]): Promise<DeleteObjectsCommandOutput[]> {
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `keyCount`, which isn't a key
         // on any SDK input type.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting S3 objects', {
-            input: isDebug ? { bucket, keys } : { bucket, keyCount: keys.length },
+            input: logFullInput ? { bucket, keys } : { bucket, keyCount: keys.length },
         });
         const results: DeleteObjectsCommandOutput[] = [];
         for (let i = 0; i < keys.length; i += DELETE_OBJECTS_BATCH_LIMIT) {

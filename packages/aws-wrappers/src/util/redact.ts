@@ -1,4 +1,19 @@
+import { LogLevelThreshold } from '@aws-lambda-powertools/logger';
 import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
+
+/**
+ * Whether the logger is verbose enough that full SDK inputs — payloads, secret
+ * material and PII — may be written to the log.
+ *
+ * **This is the only place in the package that reads the log level.** Never
+ * compare `logger.getLevelName()` yourself: Powertools orders `TRACE` as *more*
+ * verbose than `DEBUG` (thresholds 6 and 8), so the obvious
+ * `getLevelName() === 'DEBUG'` check silently redacts at the most verbose level
+ * available. Route every disclosure decision through this predicate instead.
+ */
+export function shouldLogFullInput(logger: LoggerInterface): boolean {
+    return LogLevelThreshold[logger.getLevelName()] <= LogLevelThreshold.DEBUG;
+}
 
 /**
  * Return a log-safe projection of `input` based on the logger's configured level.
@@ -21,7 +36,7 @@ export function filterFieldsForLogLevel<T extends object, K extends keyof T>(
     input: T,
     safeFields: readonly K[]
 ): T | Pick<T, K> {
-    if (logger.getLevelName() === 'DEBUG') return input;
+    if (shouldLogFullInput(logger)) return input;
     const out = {} as Pick<T, K>;
     for (const key of safeFields) {
         if (key in input) out[key] = input[key];
