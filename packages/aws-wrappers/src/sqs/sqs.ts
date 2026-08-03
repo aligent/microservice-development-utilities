@@ -42,8 +42,9 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
  * Wrapper around the AWS SQS client providing structured Powertools logging
  * and X-Ray tracing by default.
  *
- * At INFO the log lines omit payloads, secret material and PII; the verbose
- * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  */
 export class SQSService {
     private readonly client: SQSClient;

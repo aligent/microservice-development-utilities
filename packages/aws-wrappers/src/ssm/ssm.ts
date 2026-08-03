@@ -37,8 +37,9 @@ const PUT_PARAMETER_SAFE_FIELDS: ReadonlyArray<keyof PutParameterCommandInput> =
  * `WithDecryption` — callers needing plaintext should use `SSMClient`
  * directly.
  *
- * At INFO the log lines omit payloads, secret material and PII; the verbose
- * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  *
  * Write operations (`putParameter`, `deleteParameter`) are exposed for
  * convenience but should be used with care: parameter lifecycle is usually

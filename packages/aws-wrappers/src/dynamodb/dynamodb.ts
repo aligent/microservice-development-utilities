@@ -143,8 +143,9 @@ type WithTypedKey<TInput, K extends Record<string, unknown>> = Omit<TInput, 'Key
  * Wrapper around the AWS DynamoDB Document client providing structured
  * Powertools logging and X-Ray tracing by default.
  *
- * At INFO the log lines omit payloads, secret material and PII; the verbose
- * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  *
  * Items are automatically marshalled / unmarshalled via the document client —
  * callers work with plain TypeScript objects in both directions.

@@ -119,12 +119,9 @@ Each service file states the unlock rule **once**, in its class-level TSDoc. Per
 
 Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc describing *what* is omitted and *why* (not the unlock mechanism — that's stated once in the class TSDoc), and wire `filterFieldsForLogLevel(this.logger, input, FIELDS)` into the `logger.info` call.
 
-Lock the behaviour with **two** tests, not one:
+Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` against an INFO-level logger. For a method that routes through `filterFieldsForLogLevel`, that single test is enough — the unlock direction is covered centrally by `redact.test.ts`, so a per-method TRACE test would only re-prove `shouldLogFullInput`.
 
-- `expect(loggedInput).not.toHaveProperty('<sensitive>')` against an INFO-level logger — the security property.
-- `expect(loggedInput).toHaveProperty('<sensitive>')` against a TRACE-level logger — the unlock property.
-
-The second matters more than it looks. Without it, a method wired to a stale or hand-rolled level check still passes the whole suite, because the INFO assertion only pins the redacted direction. That's precisely how the pre-MI-332 bug survived in eight places.
+**A method with a bespoke inline check needs a second test**: `expect(loggedInput).toHaveProperty('<sensitive>')` against a TRACE-level logger. These are the batch methods that hand-roll `shouldLogFullInput(this.logger)` to synthesise a computed field, so nothing central covers their unlock branch. Without it a site wired to a stale or hand-rolled level check still passes the whole suite, because the INFO assertion only pins the redacted direction — that's precisely how the pre-MI-332 bug survived in eight places.
 
 ### Patterns
 

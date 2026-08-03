@@ -33,8 +33,9 @@ const START_EXECUTION_SAFE_FIELDS: ReadonlyArray<keyof StartExecutionCommandInpu
  * Wrapper around the AWS Step Functions client providing structured
  * Powertools logging and X-Ray tracing by default.
  *
- * At INFO the log lines omit payloads, secret material and PII; the verbose
- * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  */
 export class StepFunctionsService {
     private readonly client: SFNClient;

@@ -36,8 +36,9 @@ const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
  * Wrapper around the AWS SNS client providing structured Powertools logging
  * and X-Ray tracing by default.
  *
- * At INFO the log lines omit payloads, secret material and PII; the verbose
- * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  */
 export class SNSService {
     private readonly client: SNSClient;

@@ -61,8 +61,9 @@ const DELETE_SECRET_SAFE_FIELDS: ReadonlyArray<keyof DeleteSecretCommandInput> =
  * Wrapper around the AWS Secrets Manager client providing structured
  * Powertools logging and X-Ray tracing by default.
  *
- * At INFO the log lines omit payloads, secret material and PII; the verbose
- * levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or `TRACE`) log full SDK inputs.
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  *
  * Write operations (`createSecret`, `updateSecret`, `putSecretValue`,
  * `deleteSecret`) are exposed for convenience but should be used with care:
