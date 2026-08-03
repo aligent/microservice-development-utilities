@@ -357,6 +357,28 @@ export class DynamoDBService {
 
     /**
      * Paginate over Query results, yielding one unmarshalled item at a time.
+     *
+     * **`Limit` is a page size, not a total cap.** DynamoDB applies it per
+     * request, and this method walks every page until `LastEvaluatedKey` is
+     * exhausted — so `paginateItems({ Limit: 10 })` yields *every* matching
+     * item, in pages of 10, not the first 10 items.
+     *
+     * To bound the number of items, `break` out of the loop. This is an
+     * `AsyncGenerator`, so `break` calls its `return()`, which unwinds the
+     * pagination and issues no further requests:
+     *
+     * ```ts
+     * const firstTen: Item[] = [];
+     * for await (const item of ddb.paginateItems<Item>(input)) {
+     *     firstTen.push(item);
+     *     if (firstTen.length === 10) break;
+     * }
+     * ```
+     *
+     * `Limit` remains the right knob for tuning per-request consumed capacity
+     * and page memory — set it deliberately, just don't expect it to stop the
+     * walk.
+     *
      * @template T - Expected shape of each yielded item.
      */
     async *paginateItems<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -374,6 +396,11 @@ export class DynamoDBService {
 
     /**
      * Paginate over Scan results, yielding one unmarshalled item at a time.
+     *
+     * **`Limit` is a page size, not a total cap** — see `paginateItems` for the
+     * detail. `break` out of the loop to bound the number of items; `Limit`
+     * stays the right knob for per-request consumed capacity and page memory.
+     *
      * @template T - Expected shape of each yielded item.
      */
     async *paginateScan<T extends Record<string, unknown> = Record<string, unknown>>(

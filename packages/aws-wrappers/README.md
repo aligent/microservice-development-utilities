@@ -140,7 +140,22 @@ for await (const item of ddb.paginateItems<{ pk: string }>({
 for await (const item of ddb.paginateScan<{ pk: string }>({ TableName: 'my-table' })) {
     console.log(item.pk);
 }
+
+// `Limit` is a PAGE SIZE, not a total cap — this walks the whole result set
+// in pages of 10, it does not stop after 10 items. `break` to bound the read.
+const firstTen: Array<{ pk: string }> = [];
+for await (const item of ddb.paginateItems<{ pk: string }>({
+    TableName: 'my-table',
+    KeyConditionExpression: 'pk = :pk',
+    ExpressionAttributeValues: { ':pk': 'abc' },
+    Limit: 10,
+})) {
+    firstTen.push(item);
+    if (firstTen.length === 10) break; // stops immediately — no further requests
+}
 ```
+
+`Limit` on `paginateItems` / `paginateScan` is applied by DynamoDB per request, and both methods walk every page until `LastEvaluatedKey` is exhausted. Passing `Limit: 10` therefore yields *every* matching item in pages of 10, not the first 10. Because both return an `AsyncGenerator`, `break` calls its `return()`, which unwinds the pagination and issues no further requests — that is how you bound the number of items. `Limit` is still the right knob for tuning per-request consumed capacity and page memory; it just doesn't stop the walk.
 
 `batchGet` is **not** generic — its `Responses` field is a multi-table record whose item shapes can differ per table, so no single generic can soundly describe it. Callers should narrow the result type at the call site.
 

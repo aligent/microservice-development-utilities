@@ -400,6 +400,33 @@ describe('DynamoDBService', () => {
 
             expect(items.map(i => i.pk)).toEqual(['1', '2', '3']);
         });
+
+        // `break` is the documented way to bound a read — `Limit` is a page
+        // size, not a total cap. Lock in that breaking really does stop the
+        // walk rather than draining the remaining pages in the background.
+        it('stops requesting pages when the caller breaks out of the loop', async () => {
+            ddbMock
+                .on(QueryCommand)
+                .resolvesOnce({
+                    Items: [{ pk: '1' }, { pk: '2' }],
+                    LastEvaluatedKey: { pk: '2' },
+                })
+                .resolves({ Items: [{ pk: '3' }] });
+            const service = buildService();
+
+            const items: Array<{ pk: string }> = [];
+            for await (const item of service.paginateItems<{ pk: string }>({
+                TableName,
+                KeyConditionExpression: 'pk = :pk',
+                ExpressionAttributeValues: { ':pk': 'x' },
+            })) {
+                items.push(item);
+                break;
+            }
+
+            expect(items.map(i => i.pk)).toEqual(['1']);
+            expect(ddbMock.commandCalls(QueryCommand)).toHaveLength(1);
+        });
     });
 
     describe('paginateScan', () => {
