@@ -71,10 +71,12 @@ const uploadUrl = await s3.getPresignedUrl({
 
 await s3.deleteObject({ Bucket: 'my-bucket', Key: 'file.txt' });
 await s3.deleteObjects('my-bucket', ['key1', 'key2']); // auto-chunked to 1000 keys per request
-await s3.emptyBucket('my-bucket');                     // streams the listing + delegates each page to deleteObjects
+await s3.emptyBucket('my-bucket');                     // unversioned buckets only — see below
 ```
 
 Input shapes are intentionally tight (`Bucket`, `Key`, `Body` and similar). Callers needing SDK-specific options like server-side encryption or tagging should use `S3Client` directly.
+
+`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and leaves the bucket non-empty, because the deletes add delete markers rather than removing data. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
 
 ## DynamoDB
 

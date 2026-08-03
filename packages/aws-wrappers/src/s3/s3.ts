@@ -301,10 +301,20 @@ export class S3Service {
     }
 
     /**
-     * Delete every object in a bucket. Streams the listing page-by-page and
-     * delegates each page's deletion to `deleteObjects`, so peak memory stays
-     * bounded by one page (~1000 keys) regardless of bucket size.
-     * @returns The keys of every deleted object.
+     * Delete every object in an **unversioned** bucket. Streams the listing
+     * page-by-page and delegates each page's deletion to `deleteObjects`, so
+     * peak memory stays bounded by one page (~1000 keys) regardless of bucket
+     * size.
+     *
+     * **Versioned buckets are out of scope.** This paginates `ListObjectsV2`,
+     * which reports only current object versions — never noncurrent versions or
+     * delete markers. Against a versioned bucket the call therefore succeeds,
+     * reports the keys it deleted, and leaves the bucket non-empty: the deletes
+     * add delete markers rather than removing data. Emptying a versioned bucket
+     * requires `ListObjectVersions` and per-version deletes; use `S3Client`
+     * directly for that.
+     *
+     * @returns The keys this call issued deletes for.
      */
     async emptyBucket(bucket: string): Promise<string[]> {
         this.logger.info('Emptying S3 bucket', { input: { bucket } });
