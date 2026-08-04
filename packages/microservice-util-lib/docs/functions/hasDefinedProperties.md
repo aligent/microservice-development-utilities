@@ -8,7 +8,7 @@
 
 > **hasDefinedProperties**\<`T`, `K`\>(`obj`, ...`keys`): `obj is SimplifyIntersection<Required<Pick<T, K>> & Omit<T, K>>`
 
-Defined in: [has-properties-defined/has-properties-defined.ts:23](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/has-properties-defined/has-properties-defined.ts#L23)
+Defined in: [packages/microservice-util-lib/src/has-properties-defined/has-properties-defined.ts:23](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/has-properties-defined/has-properties-defined.ts#L23)
 
 Ensure that the given properties are defined on the object.
 
@@ -26,9 +26,9 @@ Ensure that the given properties are defined on the object.
 
 ### obj
 
-The object to check.
+`object` \| `T`
 
-`object` | `T`
+The object to check.
 
 ### keys
 

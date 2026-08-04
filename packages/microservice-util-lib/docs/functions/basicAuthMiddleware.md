@@ -8,7 +8,7 @@
 
 > **basicAuthMiddleware**(`config`): `Middleware`
 
-Defined in: [openapi-fetch-middlewares/authentications.ts:39](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L39)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:65](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L65)
 
 Creates an openapi-fetch middleware for Basic authentication.
 This middleware sets the `Authorization` header with the Basic authentication credentials
@@ -28,10 +28,18 @@ The configuration for Basic authentication.
 
 The middleware for Basic authentication.
 
-## Example
+## Examples
 
 ```ts
+// Static credentials
 const middleware = basicAuthMiddleware({
-    credentials: async () => ({ username: 'user', password: 'pass' }),
+    credentials: { username: 'user', password: 'pass' },
+});
+```
+
+```ts
+// Dynamic credentials (async function)
+const middleware = basicAuthMiddleware({
+    credentials: async () => fetchCredentials(),
 });
 ```
