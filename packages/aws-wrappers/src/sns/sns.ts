@@ -11,7 +11,7 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
 const PUBLISH_BATCH_LIMIT = 10;
@@ -22,7 +22,7 @@ const SNS_SUBJECT_MAX_CHARS = 100;
  * Fields safe to log at INFO level for `publish`. Omits `Message`, `Subject`,
  * `MessageAttributes`, and `PhoneNumber` — payloads, user-visible content
  * (subjects often carry order numbers / customer names), and PII recipient
- * identifiers. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+ * identifiers.
  */
 const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
     'TopicArn',
@@ -35,6 +35,10 @@ const PUBLISH_SAFE_FIELDS: ReadonlyArray<keyof PublishCommandInput> = [
 /**
  * Wrapper around the AWS SNS client providing structured Powertools logging
  * and X-Ray tracing by default.
+ *
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  */
 export class SNSService {
     private readonly client: SNSClient;
@@ -62,8 +66,7 @@ export class SNSService {
      * Publish a single message to an SNS topic.
      *
      * At INFO level the log line includes only routing / dedup metadata; see
-     * `PUBLISH_SAFE_FIELDS` for the list. Setting `POWERTOOLS_LOG_LEVEL=DEBUG`
-     * unlocks the full input.
+     * `PUBLISH_SAFE_FIELDS` for the list.
      *
      * @param input - PublishCommandInput including TopicArn and Message.
      */
@@ -106,12 +109,12 @@ export class SNSService {
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
         const entries: PublishBatchRequestEntry[] = input.PublishBatchRequestEntries ?? [];
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `PublishBatchCommandInput`.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Publishing SNS message batch', {
-            input: isDebug ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
+            input: logFullInput ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
         });
         const results: PublishBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += PUBLISH_BATCH_LIMIT) {

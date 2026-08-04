@@ -21,7 +21,7 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
@@ -30,7 +30,6 @@ const SQS_MESSAGE_BODY_MAX_BYTES = 256 * 1024;
 /**
  * Fields safe to log at INFO level for `sendMessage`. Omits `MessageBody` and
  * `MessageAttributes` — both carry payload content.
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
     'QueueUrl',
@@ -42,6 +41,10 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
 /**
  * Wrapper around the AWS SQS client providing structured Powertools logging
  * and X-Ray tracing by default.
+ *
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  */
 export class SQSService {
     private readonly client: SQSClient;
@@ -68,8 +71,7 @@ export class SQSService {
      * Send a single message to an SQS queue.
      *
      * At INFO level the log line includes only queue routing / FIFO metadata;
-     * see `SEND_MESSAGE_SAFE_FIELDS`. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the
-     * full input.
+     * see `SEND_MESSAGE_SAFE_FIELDS`.
      */
     async sendMessage(
         input: SendMessageCommandInput,
@@ -128,12 +130,12 @@ export class SQSService {
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `SendMessageBatchCommandInput`.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Sending SQS message batch', {
-            input: isDebug ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: SendMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
@@ -154,12 +156,12 @@ export class SQSService {
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `DeleteMessageBatchCommandInput`.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting SQS message batch', {
-            input: isDebug ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
         for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {

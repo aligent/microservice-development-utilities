@@ -21,8 +21,7 @@ import { filterFieldsForLogLevel } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO level. Omits `SecretString` and `SecretBinary` —
- * the secret material itself. `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full
- * input.
+ * the secret material itself.
  */
 const CREATE_SECRET_SAFE_FIELDS: ReadonlyArray<keyof CreateSecretCommandInput> = [
     'Name',
@@ -61,6 +60,10 @@ const DELETE_SECRET_SAFE_FIELDS: ReadonlyArray<keyof DeleteSecretCommandInput> =
 /**
  * Wrapper around the AWS Secrets Manager client providing structured
  * Powertools logging and X-Ray tracing by default.
+ *
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  *
  * Write operations (`createSecret`, `updateSecret`, `putSecretValue`,
  * `deleteSecret`) are exposed for convenience but should be used with care:
@@ -112,8 +115,7 @@ export class SecretsManagerService {
 
     /**
      * Create a new secret. At INFO level the log line includes only identity
-     * and non-secret metadata; `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full
-     * input (including `SecretString` / `SecretBinary`).
+     * and non-secret metadata.
      *
      * Prefer IaC (CDK / Terraform) for secret lifecycle — use this for
      * dynamically-issued credentials only.
@@ -127,8 +129,7 @@ export class SecretsManagerService {
 
     /**
      * Update an existing secret's metadata or value. At INFO level the log
-     * line omits `SecretString` / `SecretBinary`; `POWERTOOLS_LOG_LEVEL=DEBUG`
-     * unlocks the full input.
+     * line omits `SecretString` / `SecretBinary`.
      *
      * Prefer IaC (CDK / Terraform) for secret lifecycle — use this for
      * runtime metadata updates only.
@@ -142,8 +143,7 @@ export class SecretsManagerService {
 
     /**
      * Store a new version of a secret's value. At INFO level the log line
-     * omits `SecretString` / `SecretBinary`; `POWERTOOLS_LOG_LEVEL=DEBUG`
-     * unlocks the full input.
+     * omits `SecretString` / `SecretBinary`.
      *
      * Typically used by rotation flows.
      */

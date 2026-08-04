@@ -30,14 +30,13 @@ import {
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
 
 /**
  * Fields safe to log at INFO. Omits `Key` (may carry customer IDs / tenant IDs).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const GET_ITEM_SAFE_FIELDS: ReadonlyArray<keyof GetCommandInput> = [
     'TableName',
@@ -50,7 +49,6 @@ const GET_ITEM_SAFE_FIELDS: ReadonlyArray<keyof GetCommandInput> = [
 /**
  * Fields safe to log at INFO. Omits `Item` (the payload itself) and
  * `ExpressionAttributeValues` (values bound to ConditionExpression, often PII).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const PUT_ITEM_SAFE_FIELDS: ReadonlyArray<keyof PutCommandInput> = [
     'TableName',
@@ -64,7 +62,6 @@ const PUT_ITEM_SAFE_FIELDS: ReadonlyArray<keyof PutCommandInput> = [
 
 /**
  * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`.
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const UPDATE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof UpdateCommandInput> = [
     'TableName',
@@ -80,7 +77,6 @@ const UPDATE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof UpdateCommandInput> = [
 /**
  * Fields safe to log at INFO. Omits `Key` and `ExpressionAttributeValues`
  * (the latter binds to ConditionExpression and may carry PII).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [
     'TableName',
@@ -95,8 +91,7 @@ const DELETE_ITEM_SAFE_FIELDS: ReadonlyArray<keyof DeleteCommandInput> = [
 /**
  * Fields safe to log at INFO for `query` and `paginateItems`. Omits
  * `ExpressionAttributeValues` (values often carry PII) and `ExclusiveStartKey`
- * (pagination cursor includes Key shape). `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks
- * the full input.
+ * (pagination cursor includes Key shape).
  */
 const QUERY_SAFE_FIELDS: ReadonlyArray<keyof QueryCommandInput> = [
     'TableName',
@@ -115,7 +110,6 @@ const QUERY_SAFE_FIELDS: ReadonlyArray<keyof QueryCommandInput> = [
 /**
  * Fields safe to log at INFO for `scan` and `paginateScan`. Omits
  * `ExpressionAttributeValues` and `ExclusiveStartKey`.
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const SCAN_SAFE_FIELDS: ReadonlyArray<keyof ScanCommandInput> = [
     'TableName',
@@ -148,6 +142,10 @@ type WithTypedKey<TInput, K extends Record<string, unknown>> = Omit<TInput, 'Key
 /**
  * Wrapper around the AWS DynamoDB Document client providing structured
  * Powertools logging and X-Ray tracing by default.
+ *
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  *
  * Items are automatically marshalled / unmarshalled via the document client —
  * callers work with plain TypeScript objects in both directions.
@@ -317,13 +315,13 @@ export class DynamoDBService {
      * Callers should narrow the result type at the call site.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because
         // `RequestItems` is a `Record<tableName, KeysAndAttributes>` — the
         // payload (`Keys[]`) lives inside the value, not as a top-level key
         // the helper could pick or drop.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Batch getting DynamoDB items', {
-            input: isDebug ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+            input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
         });
         return this.client.send(new BatchGetCommand(input));
     }
@@ -334,13 +332,13 @@ export class DynamoDBService {
      * items remain unprocessed after the final attempt.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because
         // `RequestItems` is a `Record<tableName, WriteRequest[]>` — the
         // payload (`PutRequest.Item` / `DeleteRequest.Key`) lives inside the
         // value, not as a top-level key the helper could pick or drop.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Batch writing DynamoDB items', {
-            input: isDebug ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+            input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
         });
         let current = input;
         for (let attempt = 0; attempt < BATCH_WRITE_MAX_ATTEMPTS; attempt++) {

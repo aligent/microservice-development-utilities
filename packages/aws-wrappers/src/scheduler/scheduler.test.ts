@@ -22,6 +22,9 @@ const target = {
     RoleArn: 'arn:aws:iam::0:role/test',
 };
 
+/** Both levels unlock `Target.Input` — see `shouldLogFullInput` in `util/redact.ts`. */
+const VERBOSE_LEVELS = ['DEBUG', 'TRACE'] as const;
+
 describe('SchedulerService', () => {
     afterEach(() => {
         schedulerMock.reset();
@@ -115,10 +118,10 @@ describe('SchedulerService', () => {
             expect(loggedTarget).toHaveProperty('Arn', target.Arn);
         });
 
-        it('logs Target.Input at DEBUG level', async () => {
+        it.each(VERBOSE_LEVELS)('logs Target.Input at %s level', async level => {
             schedulerMock.on(CreateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
             const logger = new Logger();
-            logger.setLogLevel('DEBUG');
+            logger.setLogLevel(level);
             const infoSpy = vi.spyOn(logger, 'info');
             const service = new SchedulerService({ client: new SchedulerClient({}), logger });
 
@@ -178,10 +181,10 @@ describe('SchedulerService', () => {
             expect(loggedTarget).toHaveProperty('Arn', target.Arn);
         });
 
-        it('logs Target.Input at DEBUG level', async () => {
+        it.each(VERBOSE_LEVELS)('logs Target.Input at %s level', async level => {
             schedulerMock.on(UpdateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
             const logger = new Logger();
-            logger.setLogLevel('DEBUG');
+            logger.setLogLevel(level);
             const infoSpy = vi.spyOn(logger, 'info');
             const service = new SchedulerService({ client: new SchedulerClient({}), logger });
 

@@ -23,7 +23,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
@@ -42,14 +42,12 @@ type PutJsonObjectInput<T> = {
 
 /**
  * Fields safe to log at INFO for `putObject`. Omits `Body` (object payload).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const PUT_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutObjectInput> = ['Bucket', 'Key'];
 
 /**
  * Fields safe to log at INFO for `putJsonObject`. Omits `Body` (the
  * unserialised JSON payload). `Metadata` is included (operational labels).
- * `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
  */
 const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknown>> = [
     'Bucket',
@@ -60,6 +58,10 @@ const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknow
 /**
  * Wrapper around the AWS S3 client providing structured Powertools logging
  * and X-Ray tracing by default.
+ *
+ * Where a method's input carries payloads, secret material or PII, the INFO
+ * log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+ * `TRACE`) log full SDK inputs.
  *
  * Input shapes are intentionally tight (Bucket/Key/Body only). Callers
  * needing SDK-level options not exposed here (server-side encryption,
@@ -276,12 +278,12 @@ export class S3Service {
      * per chunk.
      */
     async deleteObjects(bucket: string, keys: string[]): Promise<DeleteObjectsCommandOutput[]> {
-        // Inline DEBUG check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
         // safe log shape includes the computed `keyCount`, which isn't a key
         // on any SDK input type.
-        const isDebug = this.logger.getLevelName() === 'DEBUG';
+        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting S3 objects', {
-            input: isDebug ? { bucket, keys } : { bucket, keyCount: keys.length },
+            input: logFullInput ? { bucket, keys } : { bucket, keyCount: keys.length },
         });
         const results: DeleteObjectsCommandOutput[] = [];
         for (let i = 0; i < keys.length; i += DELETE_OBJECTS_BATCH_LIMIT) {

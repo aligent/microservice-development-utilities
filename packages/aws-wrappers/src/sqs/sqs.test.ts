@@ -90,6 +90,23 @@ describe('SQSService', () => {
             expect(loggedInput).not.toHaveProperty('Entries');
             expect(loggedInput).toMatchObject({ entryCount: 1 });
         });
+
+        it('logs the full entries at TRACE level', async () => {
+            sqsMock.on(SendMessageBatchCommand).resolves({ Successful: [], Failed: [] });
+            const logger = new Logger();
+            logger.setLogLevel('TRACE');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SQSService({ client: new SQSClient({}), logger });
+
+            await service.sendMessageBatch({
+                QueueUrl,
+                Entries: [{ Id: '1', MessageBody: 'shh' }],
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).toHaveProperty('Entries', [{ Id: '1', MessageBody: 'shh' }]);
+        });
     });
 
     describe('pass-through commands', () => {
@@ -231,6 +248,23 @@ describe('SQSService', () => {
             const loggedInput = (payload as { input: object }).input;
             expect(loggedInput).not.toHaveProperty('Entries');
             expect(loggedInput).toMatchObject({ entryCount: 1 });
+        });
+
+        it('logs the full entries at TRACE level', async () => {
+            sqsMock.on(DeleteMessageBatchCommand).resolves({ Successful: [], Failed: [] });
+            const logger = new Logger();
+            logger.setLogLevel('TRACE');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SQSService({ client: new SQSClient({}), logger });
+
+            await service.deleteMessageBatch({
+                QueueUrl,
+                Entries: [{ Id: '1', ReceiptHandle: 'handle' }],
+            });
+
+            const [, payload] = infoSpy.mock.calls[0] ?? [];
+            const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).toHaveProperty('Entries', [{ Id: '1', ReceiptHandle: 'handle' }]);
         });
     });
 });

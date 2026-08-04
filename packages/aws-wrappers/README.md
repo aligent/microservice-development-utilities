@@ -21,7 +21,7 @@ new XService({ logger?, client? })
 
 ### Log redaction
 
-Every wrapper emits one `logger.info` line per SDK call with a per-method safe-field allowlist (omitting payloads, secret material, and PII recipient identifiers). Set `POWERTOOLS_LOG_LEVEL=DEBUG` to unlock the full SDK input in those log lines — useful for local development and incident triage. See `packages/aws-wrappers/CLAUDE.md` for the per-method allowlists currently in force.
+Every wrapper emits one `logger.info` line per SDK call with a per-method safe-field allowlist (omitting payloads, secret material, and PII recipient identifiers). Set `POWERTOOLS_LOG_LEVEL` to either `DEBUG` or `TRACE` to unlock the full SDK input in those log lines — useful for local development and incident triage. Both levels unlock because Powertools orders `TRACE` as more verbose than `DEBUG`; every level from `INFO` upwards redacts. See `packages/aws-wrappers/CLAUDE.md` for the per-method allowlists currently in force.
 
 ### X-Ray outside Lambda
 
@@ -232,7 +232,7 @@ const schedules = await scheduler.listSchedules({ GroupName: 'default' });
 await scheduler.deleteSchedule({ Name: 'nightly-sync' });
 ```
 
-`Target.Input` is the payload handed to the target and is omitted from INFO logs (it routinely carries PII); `POWERTOOLS_LOG_LEVEL=DEBUG` unlocks the full input.
+`Target.Input` is the payload handed to the target and is omitted from INFO logs (it routinely carries PII). See [Log redaction](#log-redaction) for how to unlock it.
 
 ```ts
 // Schedule groups. Groups have no update operation — only create, get,

@@ -6,10 +6,14 @@
 
 # Class: SNSService
 
-Defined in: [sns/sns.ts:39](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L39)
+Defined in: [sns/sns.ts:43](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/sns/sns.ts#L43)
 
 Wrapper around the AWS SNS client providing structured Powertools logging
 and X-Ray tracing by default.
+
+Where a method's input carries payloads, secret material or PII, the INFO
+log line omits them; the verbose levels (`POWERTOOLS_LOG_LEVEL=DEBUG` or
+`TRACE`) log full SDK inputs.
 
 ## Constructors
 
@@ -19,7 +23,7 @@ and X-Ray tracing by default.
 
 > **new SNSService**(`opts?`): `SNSService`
 
-Defined in: [sns/sns.ts:55](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L55)
+Defined in: [sns/sns.ts:59](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/sns/sns.ts#L59)
 
 #### Parameters
 
@@ -61,13 +65,12 @@ its own `truncate` option.
 
 > **publish**(`input`, `opts?`): `Promise`\<`PublishCommandOutput`\>
 
-Defined in: [sns/sns.ts:70](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L70)
+Defined in: [sns/sns.ts:73](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/sns/sns.ts#L73)
 
 Publish a single message to an SNS topic.
 
 At INFO level the log line includes only routing / dedup metadata; see
-`PUBLISH_SAFE_FIELDS` for the list. Setting `POWERTOOLS_LOG_LEVEL=DEBUG`
-unlocks the full input.
+`PUBLISH_SAFE_FIELDS` for the list.
 
 #### Parameters
 
@@ -95,7 +98,7 @@ PublishCommandInput including TopicArn and Message.
 
 > **publishBatch**(`input`): `Promise`\<`PublishBatchCommandOutput`[]\>
 
-Defined in: [sns/sns.ts:107](https://github.com/aligent/microservice-development-utilities/blob/1c8403742cbf82a4bd82725126d0860e0996e39d/packages/aws-wrappers/src/sns/sns.ts#L107)
+Defined in: [sns/sns.ts:110](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/sns/sns.ts#L110)
 
 Publish a batch of messages to an SNS topic. The SNS API caps
 PublishBatch at 10 entries per request, so this method auto-chunks
