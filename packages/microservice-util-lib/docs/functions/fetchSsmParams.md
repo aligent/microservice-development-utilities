@@ -4,9 +4,27 @@
 
 [@aligent/microservice-util-lib](../modules.md) / fetchSsmParams
 
-# Function: fetchSsmParams()
+# ~~Function: fetchSsmParams()~~
 
 Fetch SSM Parameters
+
+## Deprecated
+
+Superseded by `SSMService` in `@aligent/aws-wrappers`, which adds
+Powertools logging and X-Ray tracing, and returns values keyed by caller-chosen
+aliases rather than positionally.
+
+```ts
+// Before
+const [username, password] = await fetchSsmParams('/app/username', '/app/password');
+
+// After
+const ssm = new SSMService();
+const { username, password } = await ssm.getParameters({
+    username: '/app/username',
+    password: '/app/password',
+});
+```
 
 ## Param
 
@@ -14,9 +32,9 @@ the keys of the parameters to fetch
 
 ## Call Signature
 
-> **fetchSsmParams**(`param`): `Promise`\<`undefined` \| `Parameter`\>
+> **fetchSsmParams**(`param`): `Promise`\<`Parameter` \| `undefined`\>
 
-Defined in: [fetch-ssm-params/fetch-ssm-params.ts:14](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L14)
+Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:15](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L15)
 
 Fetch one SSM parameter
 
@@ -30,17 +48,17 @@ key of the parameter to fetch
 
 ### Returns
 
-`Promise`\<`undefined` \| `Parameter`\>
+`Promise`\<`Parameter` \| `undefined`\>
 
-### Param
+### Deprecated
 
-the keys of the parameters to fetch
+Use `SSMService#getParameter` from `@aligent/aws-wrappers` instead.
 
 ## Call Signature
 
-> **fetchSsmParams**(...`params`): `Promise`\<(`undefined` \| `Parameter`)[]\>
+> **fetchSsmParams**(...`params`): `Promise`\<(`Parameter` \| `undefined`)[]\>
 
-Defined in: [fetch-ssm-params/fetch-ssm-params.ts:20](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L20)
+Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:22](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L22)
 
 Fetch a list of SSM parameters
 
@@ -54,8 +72,8 @@ list of parameter keys to fetch
 
 ### Returns
 
-`Promise`\<(`undefined` \| `Parameter`)[]\>
+`Promise`\<(`Parameter` \| `undefined`)[]\>
 
-### Param
+### Deprecated
 
-the keys of the parameters to fetch
+Use `SSMService#getParameters` from `@aligent/aws-wrappers` instead.

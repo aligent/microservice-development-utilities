@@ -6,13 +6,13 @@
 
 # Interface: OAuth10a
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:44](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L44)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:61](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L61)
 
 Represents OAuth 1.0a authentication credentials.
 
 This interface is used for OAuth 1.0a authentication, where the consumer key, consumer secret,
-token, and token secret are retrieved asynchronously. It also supports optional parameters
-like body hash inclusion, realm, callback, and verifier.
+token, and token secret can be provided statically or retrieved dynamically via a function.
+It also supports optional parameters like body hash inclusion, realm, callback, and verifier.
 
  OAuth10a
 
@@ -24,7 +24,7 @@ like body hash inclusion, realm, callback, and verifier.
 
 > **algorithm**: `"HMAC-SHA1"` \| `"HMAC-SHA256"`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:45](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L45)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:62](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L62)
 
 The signing algorithm to use.
 
@@ -34,9 +34,9 @@ The signing algorithm to use.
 
 ### callback?
 
-> `optional` **callback**: `string`
+> `optional` **callback?**: `string`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:54](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L54)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:71](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L71)
 
 The callback URL for OAuth 1.0a.
 
@@ -44,17 +44,13 @@ The callback URL for OAuth 1.0a.
 
 <a id="credentials"></a>
 
-### credentials()
+### credentials
 
-> **credentials**: () => `Promise`\<\{ `consumerKey`: `string`; `consumerSecret`: `string`; `token`: `string`; `tokenSecret`: `string`; \}\>
+> **credentials**: `Resolvable`\<\{ `consumerKey`: `string`; `consumerSecret`: `string`; `token?`: `string`; `tokenSecret`: `string`; \}\>
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:46](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L46)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:63](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L63)
 
-A function that returns a promise resolving to the OAuth 1.0a credentials.
-
-#### Returns
-
-`Promise`\<\{ `consumerKey`: `string`; `consumerSecret`: `string`; `token`: `string`; `tokenSecret`: `string`; \}\>
+The OAuth 1.0a credentials, or a function returning them.
 
 ***
 
@@ -62,9 +58,9 @@ A function that returns a promise resolving to the OAuth 1.0a credentials.
 
 ### includeBodyHash?
 
-> `optional` **includeBodyHash**: `boolean` \| `"auto"`
+> `optional` **includeBodyHash?**: `boolean` \| `"auto"`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:52](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L52)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:69](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L69)
 
 Whether to include a body hash in the signature. Defaults to 'auto'.
 
@@ -74,9 +70,9 @@ Whether to include a body hash in the signature. Defaults to 'auto'.
 
 ### realm?
 
-> `optional` **realm**: `string`
+> `optional` **realm?**: `string`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:53](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L53)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:70](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L70)
 
 The realm parameter for the Authorization header.
 
@@ -86,8 +82,8 @@ The realm parameter for the Authorization header.
 
 ### verifier?
 
-> `optional` **verifier**: `string`
+> `optional` **verifier?**: `string`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:55](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L55)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:72](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L72)
 
 The verifier for OAuth 1.0a.

@@ -8,7 +8,7 @@
 
 > **oAuth20AuthMiddleware**(`options`): `Middleware`
 
-Defined in: [openapi-fetch-middlewares/authentications.ts:94](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L94)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:136](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L136)
 
 Creates an openapi-fetch middleware for OAuth 2.0 authentication.
 This middleware sets the `Authorization` header with the OAuth 2.0 token for each request.
@@ -27,11 +27,20 @@ The configuration for OAuth 2.0 authentication.
 
 The middleware for OAuth 2.0 authentication.
 
-## Example
+## Examples
 
 ```ts
+// Static token
 const middleware = oAuth20AuthMiddleware({
-    token: async () => 'your-access-token',
+    token: 'your-access-token',
+    tokenType: 'Bearer',
+});
+```
+
+```ts
+// Dynamic token (async function)
+const middleware = oAuth20AuthMiddleware({
+    token: async () => fetchAccessToken(),
     tokenType: 'Bearer',
 });
 ```

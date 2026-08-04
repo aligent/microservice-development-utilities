@@ -6,12 +6,13 @@
 
 # Interface: OAuth20
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:68](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L68)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:86](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L86)
 
 Represents OAuth 2.0 authentication credentials.
 
-This interface is used for OAuth 2.0 authentication, where an access token is retrieved
-asynchronously. It also supports an optional token type (e.g., 'Bearer').
+This interface is used for OAuth 2.0 authentication, where an access token can be
+provided statically or retrieved dynamically via a function.
+It also supports an optional token type (e.g., 'Bearer').
 
  OAuth20
 
@@ -19,17 +20,13 @@ asynchronously. It also supports an optional token type (e.g., 'Bearer').
 
 <a id="token"></a>
 
-### token()
+### token
 
-> **token**: () => `Promise`\<`string`\>
+> **token**: `Resolvable`\<`string`\>
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:69](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L69)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:87](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L87)
 
-A function that returns a promise resolving to the access token.
-
-#### Returns
-
-`Promise`\<`string`\>
+The access token, or a function returning it.
 
 ***
 
@@ -37,8 +34,8 @@ A function that returns a promise resolving to the access token.
 
 ### tokenType?
 
-> `optional` **tokenType**: `string`
+> `optional` **tokenType?**: `string`
 
-Defined in: [openapi-fetch-middlewares/types/authentications.ts:70](https://github.com/aligent/microservice-development-utilities/blob/e13483771966234032f5249dc36c2c31c71d7cf1/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L70)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:88](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L88)
 
 The type of the token (e.g., 'Bearer'). Defaults to 'Bearer' if not specified.
