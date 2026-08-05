@@ -1,11 +1,24 @@
-export type SidebarCategory = 'catalog' | 'sales' | 'customers' | 'content' | 'none';
+/**
+ * Commerce Admin parent-menu IDs accepted by `adminUi.menu.parentMenu`, plus
+ * `none` for a top-level menu item (the key is omitted entirely).
+ */
+export type ParentMenu =
+    | 'sales'
+    | 'catalog'
+    | 'customers'
+    | 'marketing'
+    | 'content'
+    | 'reports'
+    | 'stores'
+    | 'system'
+    | 'none';
 
 export interface AppGeneratorSchema {
     name: string;
     description?: string;
     displayName?: string;
     hasAdminUI?: boolean;
-    sidebarCategory?: SidebarCategory;
+    parentMenu?: ParentMenu;
     hasBusinessConfig?: boolean;
     hasCommerceWebhooks?: boolean;
     hasEvents?: boolean;
@@ -21,12 +34,8 @@ export interface NormalizedSchema extends Required<AppGeneratorSchema> {
     packageName: string;
     /** lower-camel-case identifier for runtime manifest packages */
     runtimePackageName: string;
-    /** snake_case slug used inside the registration menu item id (e.g. "my_app") */
+    /** snake_case slug used as `adminUi.menu.id` (e.g. "my_app") — hyphens are rejected there */
     appSlug: string;
-    /** camelCase identifier with "Extension" suffix used as the EXTENSION_ID constant */
-    extensionId: string;
-    /** Title-cased section title for the sidebar (e.g. "Content Apps") */
-    sidebarCategoryTitle: string;
     /** Full Node.js version read from the workspace's .nvmrc, e.g. "24.0.1" */
     nodeVersion: string;
 }

@@ -23,14 +23,24 @@
         },
         "hasAdminUI": {
             "type": "boolean",
-            "description": "Does the app need a Commerce admin UI (custom pages, sidebar menu items)?",
+            "description": "Does the app need a Commerce admin UI (custom pages, admin menu items)?",
             "default": false,
             "x-prompt": "Will the app add an admin UI in Commerce (custom pages or menu items)?"
         },
-        "sidebarCategory": {
+        "parentMenu": {
             "type": "string",
-            "description": "Commerce admin sidebar category for the menu item (only used when hasAdminUI=true). Prompted when hasAdminUI=true and the value isn't passed on the CLI.",
-            "enum": ["catalog", "sales", "customers", "content", "none"]
+            "description": "Commerce admin parent menu the app's menu item sits under (only used when hasAdminUI=true). Written to adminUi.menu.parentMenu in app.commerce.config.ts; 'none' omits the key, giving a top-level item. Prompted when hasAdminUI=true and the value isn't passed on the CLI.",
+            "enum": [
+                "sales",
+                "catalog",
+                "customers",
+                "marketing",
+                "content",
+                "reports",
+                "stores",
+                "system",
+                "none"
+            ]
         },
         "hasBusinessConfig": {
             "type": "boolean",

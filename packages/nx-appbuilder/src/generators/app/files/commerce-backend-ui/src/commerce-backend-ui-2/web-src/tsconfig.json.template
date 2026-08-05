@@ -1,0 +1,15 @@
+{
+    "extends": "@aligent/ts-code-standards/tsconfigs-react",
+    "compilerOptions": {
+        // Parcel bundles this source, so leave the module syntax alone and let
+        // the bundler resolve. `Bundler` is also what makes TypeScript honour
+        // the package.json `imports` field, which is how `#web/*` and
+        // `#app.commerce.config` resolve — no `paths` mapping needed.
+        "module": "Preserve",
+        "moduleResolution": "Bundler",
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+    "exclude": []
+}

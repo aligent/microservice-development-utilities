@@ -1,15 +1,8 @@
 import type { Tree } from '@nx/devkit';
-import type { AppGeneratorSchema, NormalizedSchema, SidebarCategory } from '../schema';
+import type { AppGeneratorSchema, NormalizedSchema, ParentMenu } from '../schema';
 
 const SEMVER = /^v?(\d+\.\d+\.\d+)\s*$/m;
 const DEFAULT_NODE_VERSION = '24.0.1';
-
-const SIDEBAR_TITLES: Record<Exclude<SidebarCategory, 'none'>, string> = {
-    catalog: 'Catalog Apps',
-    sales: 'Sales Apps',
-    customers: 'Customer Apps',
-    content: 'Content Apps',
-};
 
 export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): NormalizedSchema {
     // Name shape (kebab-case) is enforced by the schema's `pattern` field,
@@ -20,9 +13,7 @@ export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): Norma
 
     const hasAdminUI = options.hasAdminUI ?? false;
     const hasBusinessConfig = options.hasBusinessConfig ?? false;
-    const sidebarCategory: SidebarCategory = hasAdminUI
-        ? (options.sidebarCategory ?? 'none')
-        : 'none';
+    const parentMenu: ParentMenu = hasAdminUI ? (options.parentMenu ?? 'none') : 'none';
 
     const displayName = options.displayName ?? toTitleCase(options.name);
     const camel = toCamelCase(options.name);
@@ -32,7 +23,7 @@ export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): Norma
         description: options.description ?? '',
         displayName,
         hasAdminUI,
-        sidebarCategory,
+        parentMenu,
         hasBusinessConfig,
         hasCommerceWebhooks: options.hasCommerceWebhooks ?? false,
         hasEvents: options.hasEvents ?? false,
@@ -43,8 +34,6 @@ export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): Norma
         packageName: `@aligent/${options.name}`,
         runtimePackageName: camel,
         appSlug: options.name.replace(/-/g, '_'),
-        extensionId: `${camel}Extension`,
-        sidebarCategoryTitle: sidebarCategory === 'none' ? '' : SIDEBAR_TITLES[sidebarCategory],
         nodeVersion: readNodeVersion(tree),
     };
 }

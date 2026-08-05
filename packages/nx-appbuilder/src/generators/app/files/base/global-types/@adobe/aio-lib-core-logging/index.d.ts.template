@@ -5,6 +5,12 @@
 // we add the strict type here for app code that wants to constrain its config.
 //
 // https://developer.adobe.com/commerce/extensibility/app-development/best-practices/logging-troubleshooting/#set-the-log-level
+//
+// The leading `import` is load-bearing. Without a top-level import/export this
+// file is a global script, and `declare module` then declares an *ambient*
+// module that REPLACES the package's own types rather than merging with them —
+// which makes `Logger('name')` fail with "This expression is not callable".
+import '@adobe/aio-lib-core-logging';
 
 declare module '@adobe/aio-lib-core-logging' {
     export type LogLevel = 'error' | 'warn' | 'info' | 'verbose' | 'debug' | 'silly';

@@ -1,3 +1,18 @@
 import { prettierConfig } from '@aligent/ts-code-standards';
 
-export default prettierConfig;
+// `tabWidth` / `printWidth` are stated explicitly rather than left to Prettier's
+// defaults because two different consumers resolve this config, and only one of
+// them reads `.editorconfig`:
+//
+//   - `eslint-plugin-prettier` calls `resolveConfig(file, { editorconfig: true })`,
+//     so it picks up `indent_size = 4` / `max_line_length = 100` from .editorconfig.
+//   - Nx's `formatFiles()` (which formats this app when it is generated) does not,
+//     so it would fall back to 2-space / 80-column.
+//
+// Left implicit, a freshly generated app fails its own `npm run lint` on
+// formatting alone. Keep these in sync with `.editorconfig`.
+export default {
+    ...prettierConfig,
+    tabWidth: 4,
+    printWidth: 100,
+};

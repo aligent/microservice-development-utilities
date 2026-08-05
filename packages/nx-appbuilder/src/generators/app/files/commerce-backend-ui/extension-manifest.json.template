@@ -3,6 +3,6 @@
     "displayName": "<%= displayName %>",
     "description": "<%= description %>",
     "platform": "web",
-    "id": "<%= extensionId %>",
+    "id": "<%= name %>",
     "version": "1.0.0"
 }

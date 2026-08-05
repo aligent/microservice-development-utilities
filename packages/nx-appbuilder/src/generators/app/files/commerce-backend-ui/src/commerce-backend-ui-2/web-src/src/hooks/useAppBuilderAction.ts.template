@@ -1,0 +1,64 @@
+import { useIms } from '@adobe/aio-commerce-lib-admin-ui/web';
+import { useEffect, useRef } from 'react';
+
+import {
+    useLazyAppBuilderAction,
+    type UseLazyAppBuilderActionOptions,
+} from '#web/hooks/useLazyAppBuilderAction.ts';
+
+/**
+ * React hook that invokes an App Builder action once on mount, with the host's
+ * IMS credentials attached.
+ *
+ * `useIms()` reads the token and org from the context the host provides — the
+ * Commerce Admin over the UIX guest connection, or the Experience Cloud shell.
+ * Actions annotated `require-adobe-auth: true` reject the call without them, so
+ * the invocation is held until they arrive. An explicit `options.ims` still
+ * wins, so a caller can override.
+ *
+ * For manual invocation, use `useLazyAppBuilderAction` directly.
+ *
+ * @example
+ * ```tsx
+ * const { response, loading } = useAppBuilderAction<ConfigData>({
+ *     name: 'my-package/get-config',
+ *     method: 'GET',
+ * });
+ *
+ * if (loading) return <ProgressCircle isIndeterminate />;
+ * return <ConfigForm initialValues={response} />;
+ * ```
+ */
+export function useAppBuilderAction<T = unknown>(options: UseLazyAppBuilderActionOptions) {
+    const hasInvokedRef = useRef(false);
+    const { data: ims } = useIms();
+
+    const resolvedIms =
+        options.ims ?? (ims ? { token: ims.imsToken, org: ims.imsOrgId } : undefined);
+
+    const {
+        response,
+        loading: isInvoking,
+        error,
+        invoke,
+    } = useLazyAppBuilderAction<T>({
+        ...options,
+        // Spread conditionally rather than assigning `undefined`: `ims` is an
+        // optional property and the tsconfig sets `exactOptionalPropertyTypes`.
+        ...(resolvedIms ? { ims: resolvedIms } : {}),
+    });
+
+    const isReady = resolvedIms !== undefined;
+
+    useEffect(() => {
+        if (hasInvokedRef.current || !isReady) {
+            return;
+        }
+        hasInvokedRef.current = true;
+        void invoke();
+    }, [invoke, isReady]);
+
+    const loading = isInvoking || (!response && !error);
+
+    return { response, loading, error };
+}

@@ -164,6 +164,20 @@ describe('preset generator', () => {
             expect(ts.references).toEqual([]);
         });
 
+        it('writes a workspace prettier config with explicit tabWidth/printWidth', async () => {
+            // Load-bearing for the `app` generator: Nx's formatFiles() resolves
+            // Prettier config from the workspace root on disk, and would otherwise
+            // fall back to 2-space/80-col — which then fails the generated app's
+            // own lint, since eslint-plugin-prettier honours its .editorconfig
+            // (indent_size = 4, max_line_length = 100).
+            await presetGenerator(tree, { name: 'acme-apps' });
+
+            expect(tree.exists('prettier.config.mjs')).toBe(true);
+            const config = tree.read('prettier.config.mjs', 'utf-8');
+            expect(config).toContain('tabWidth: 4');
+            expect(config).toContain('printWidth: 100');
+        });
+
         it('substitutes the workspace name into the README', async () => {
             await presetGenerator(tree, { name: 'acme-apps' });
             const readme = tree.read('README.md', 'utf-8');

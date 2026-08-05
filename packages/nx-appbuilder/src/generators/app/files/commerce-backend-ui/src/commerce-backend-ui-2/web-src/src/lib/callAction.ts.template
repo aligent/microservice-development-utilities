@@ -1,0 +1,68 @@
+import { type ActionName } from '#web/types/ActionName.ts';
+
+// Relative rather than via `#web/*`: the registry is a JSON file whose only
+// type information comes from the sibling `.json.d.ts`, and a relative specifier
+// resolves identically in TypeScript and in Parcel.
+import ActionRegistry from '../action-urls.generated.json';
+
+/** IMS credentials from the Admin UI shared context (see `useIms()`). */
+export interface ImsCredentials {
+    token?: string | undefined;
+    org?: string | undefined;
+}
+
+export interface CallActionOptions {
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+    /** JSON request body (POST/PUT/PATCH). */
+    body?: object;
+    /** Query string params; nullish values are skipped. */
+    searchParams?: Record<string, string | number | boolean | undefined>;
+    /** Extra request headers, merged over the defaults. */
+    headers?: Record<string, string>;
+    ims?: ImsCredentials;
+}
+
+/**
+ * Imperatively invokes an App Builder action and returns its parsed JSON.
+ *
+ * The single fetch primitive — `useLazyAppBuilderAction` (and thus
+ * `useAppBuilderAction`) delegate to it, and sequential flows call it directly.
+ *
+ * URLs come from the registry written by `scripts/generate-action-registry.mjs`,
+ * which resolves every scope statically. The extension's own `config.json` only
+ * covers actions declared inside this extension, so it can't see the actions
+ * declared under `application.runtimeManifest` in app.config.yaml.
+ */
+export async function callAction<T>(name: ActionName, options: CallActionOptions = {}): Promise<T> {
+    const actionUrl = (ActionRegistry as Record<string, string>)[name];
+    if (!actionUrl) {
+        throw new Error(`Action "${name}" not found in the generated action registry`);
+    }
+
+    const url = new URL(actionUrl);
+    for (const [key, value] of Object.entries(options.searchParams ?? {})) {
+        if (value != null) {
+            url.searchParams.set(key, String(value));
+        }
+    }
+
+    const headers = new Headers({
+        'content-type': 'application/json',
+        ...(options.ims?.org && { 'x-gw-ims-org-id': options.ims.org }),
+        ...(options.ims?.token && { Authorization: `Bearer ${options.ims.token}` }),
+        ...options.headers,
+    });
+
+    const method = options.method ?? 'GET';
+    const init: RequestInit = { method, headers };
+    if (method !== 'GET' && options.body) {
+        init.body = JSON.stringify(options.body);
+    }
+
+    const response = await fetch(url.toString(), init);
+    if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+
+    return (await response.json()) as T;
+}

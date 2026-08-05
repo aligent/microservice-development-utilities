@@ -33,10 +33,44 @@ This app integrates with Adobe Commerce via App Management
 (`@adobe/aio-commerce-lib-app`). The merchant-facing config, eventing, webhook
 subscriptions, and custom install steps are all declared in
 `app.commerce.config.ts`; the lib provisions them at install time.
+
+Everything under `src/*/.generated/` is written by the lib during
+`pre-app-build` and is gitignored — treat it as disposable. That includes the
+target of the `#app.commerce.config` import alias, which the lib also adds to
+`package.json`.
+
+If you import `#app.commerce.config` from your own action code, add an ambient
+declaration under `global-types/` for the fields you read. The alias resolves to
+a gitignored file, so on a fresh clone (and in CI before a build) TypeScript
+would otherwise fail with `Cannot find module` — the `package.json` entry alone
+doesn't help, because the file it points at isn't there yet:
+
+```ts
+// global-types/app-commerce-config.d.ts — no top-level import/export, so the
+// `declare module` below stays global.
+declare module '#app.commerce.config' {
+    const config: { metadata: { id: string; displayName: string } };
+    export default config;
+}
+```
 <%_ if (hasAdminUI) { _%>
 
-The admin UI lives under `src/commerce-backend-ui-1/`. Add pages and
-components inside `web-src/src/components/`.
+The admin UI lives under `src/commerce-backend-ui-2/` (the
+`commerce/backend-ui/2` extension point). Its menu item is declared under
+`adminUi` in `app.commerce.config.ts`; the lib regenerates
+`src/commerce-backend-ui-2/ext.config.yaml` from that on every build, so don't
+edit it by hand.
+
+Add pages under `web-src/src/pages/` and wire them up in `web-src/src/app.tsx`.
+`createExtensionApp()` already handles registration with the Commerce Admin
+host, the shared context, routing and the Spectrum provider — use `useIms()`
+for IMS credentials rather than reaching for the guest connection.
+
+To call a backend action from the UI, add its `<package>/<action>` key to
+`web-src/src/types/ActionName.ts` and use `useAppBuilderAction` /
+`useLazyAppBuilderAction`. URLs come from `action-urls.generated.json`, which
+`scripts/generate-action-registry.mjs` writes during `pre-app-build` — select a
+workspace with `aio app use` first or that step fails.
 <%_ } _%>
 <%_ } else { _%>
 This is a standalone Adobe App Builder integration. Backend actions live under
