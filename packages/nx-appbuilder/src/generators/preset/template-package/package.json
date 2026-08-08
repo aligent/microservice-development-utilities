@@ -4,7 +4,7 @@
   "private": true,
   "description": "Version pins for the deps that the preset generator injects into a generated workspace's package.json. Tracked by Dependabot so version bumps land via PR; consumed at runtime by preset.ts.",
   "devDependencies": {
-    "@aligent/ts-code-standards": "^4.2.0",
+    "@aligent/ts-code-standards": "^5.0.0",
     "@nx/eslint": "^22.4.5",
     "@nx/js": "^22.4.5",
     "@nx/vitest": "^22.4.5",
