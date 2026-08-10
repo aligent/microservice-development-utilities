@@ -8,6 +8,8 @@ Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing baked in.
 npm install @aligent/aws-wrappers
 ```
 
+Requires **Node 18 or later**. The package is compiled to ES2022 and ships native `class` declarations, so older runtimes fail at import time with a syntax error rather than degrading gracefully.
+
 ## Conventions
 
 Every wrapper takes the same optional constructor options:
