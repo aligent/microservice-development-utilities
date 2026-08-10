@@ -52,9 +52,10 @@ const BASE_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
     'esbuild-loader',
     // `eslint` is also pinned at the workspace root; declaring it here keeps
     // the app's `lint` script resolvable independent of npm workspace hoisting.
-    // Both must agree on a major — `@aligent/ts-code-standards` bundles
-    // `eslint-plugin-react@7`, which throws on ESLint 10 (`getFilename is not a
-    // function`) as soon as an app uses the `react` preset.
+    // The two must agree on a major, since npm workspaces hoists one copy — and
+    // that major is bounded by `@aligent/ts-code-standards`, whose bundled
+    // `eslint-plugin-react@7` only runs on ESLint 10 because v5.0.1 wraps it in
+    // `fixupPluginRules`.
     'eslint',
     // `prettier` is required as a peer dep of `eslint-plugin-prettier`, which
     // is wired in via `@aligent/ts-code-standards`. Without an explicit

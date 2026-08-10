@@ -229,6 +229,12 @@ Each generator reads the npm version specs it injects into generated files from 
 
 Both files are tracked by Dependabot (see `.github/dependabot.yml`) so version bumps land via PR. To add a new pin, add it to the relevant template-package and reference it from `pickVersions()` in `preset.ts` / `compose-package-json.ts`. The shared helper at `src/generators/helpers/template-package.ts` enforces that every requested key exists in the template file, so missing pins fail loudly at runtime.
 
+Three pins are coupled and should move together:
+
+- **`eslint` must match across both files**, since npm workspaces hoists a single copy. The ceiling is set by `@aligent/ts-code-standards`, whose bundled `eslint-plugin-react@7` calls the `context.getFilename()` API that ESLint 10 removed. `ts-code-standards@5.0.1` wraps the plugin in `fixupPluginRules` from `@eslint/compat`, which is what makes ESLint 10 viable — on 5.0.0 or earlier, any app using the `react` preset (i.e. `hasAdminUI`) dies with `contextOrFilename.getFilename is not a function`.
+- **`typescript` is floored by `@adobe/aio-commerce-lib-app`**, which since 1.10.0 optionally peers `typescript ^6.0.3`; pairing it with a `^5` pin fails `npm install` with `ERESOLVE`. It's also ceilinged by `typescript-eslint@8` (`>=4.8.4 <6.1.0`), so TypeScript 7 is not yet reachable even though it has shipped.
+- **`baseUrl` must stay out of the generated tsconfigs.** TypeScript 6 reports it as deprecated (TS5101) and 7 drops it, so `paths` entries carry their prefix explicitly and resolve relative to the config that declares them.
+
 ### Running tests / lint / type-check
 
 ```bash

@@ -4,9 +4,11 @@
     "compilerOptions": {
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "baseUrl": "./src",
+        // No `baseUrl`: TypeScript 6 deprecates it (TS5101) and TypeScript 7
+        // drops it. `paths` entries resolve relative to the config that declares
+        // them, which is this file, so they carry the `./src` prefix explicitly.
         "paths": {
-            "@/*": ["*"]
+            "@/*": ["./src/*"]
         }
     },
     "exclude": ["tests", "**/*.mjs", "**/*.cjs", "node_modules"],

@@ -133,6 +133,19 @@ describe('app generator', () => {
             expect(tree.exists('my-app/hooks/check-action-types.sh')).toBe(true);
         });
 
+        it('maps the @/* alias without baseUrl', () => {
+            // `baseUrl` is deprecated in TypeScript 6 (TS5101) and removed in 7,
+            // so `paths` carry their prefix explicitly and resolve relative to
+            // the config that declares them.
+            const base = readJson(tree, 'my-app/tsconfig.base.json');
+            expect(base.compilerOptions.baseUrl).toBeUndefined();
+            expect(base.compilerOptions.paths['@/*']).toEqual(['./src/*']);
+
+            const tests = readJson(tree, 'my-app/tests/tsconfig.json');
+            expect(tests.compilerOptions.baseUrl).toBeUndefined();
+            expect(tests.compilerOptions.paths['@/*']).toEqual(['../src/*']);
+        });
+
         it('states tabWidth/printWidth explicitly so the app passes its own lint', () => {
             // eslint-plugin-prettier resolves config with `editorconfig: true` and
             // so honours .editorconfig (4 / 100); Nx's formatFiles() does not.

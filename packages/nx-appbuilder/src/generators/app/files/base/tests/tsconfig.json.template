@@ -3,9 +3,10 @@
     "compilerOptions": {
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "baseUrl": "..",
+        // No `baseUrl` — deprecated in TypeScript 6, removed in 7. `paths` are
+        // relative to this file, which sits one level below the app root.
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["../src/*"]
         }
     },
     "include": ["**/*.test.ts", "../global-types"],

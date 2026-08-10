@@ -15,16 +15,16 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@aligent/ts-code-standards": "^4.2.0",
+    "@aligent/ts-code-standards": "^5.0.1",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "esbuild-loader": "^4.3.0",
-    "eslint": "^9.0.0",
+    "eslint": "^10.0.0",
     "prettier": "^3.8.1",
     "ts-loader": "^9.5.2",
     "type-fest": "^4.39.1",
-    "typescript": "^5.8.3",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }
 }
