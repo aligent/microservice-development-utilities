@@ -76,7 +76,7 @@ await s3.emptyBucket('my-bucket');                     // unversioned buckets on
 
 Input shapes are intentionally tight (`Bucket`, `Key`, `Body` and similar). Callers needing SDK-specific options like server-side encryption or tagging should use `S3Client` directly.
 
-`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and leaves the bucket non-empty, because the deletes add delete markers rather than removing data. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
+`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
 
 ## DynamoDB
 
