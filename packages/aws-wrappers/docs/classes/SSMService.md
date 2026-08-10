@@ -6,7 +6,7 @@
 
 # Class: SSMService
 
-Defined in: [ssm/ssm.ts:50](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L50)
+Defined in: [ssm/ssm.ts:50](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L50)
 
 Wrapper around the AWS SSM Parameter Store client providing structured
 Powertools logging and X-Ray tracing by default. All read operations enable
@@ -31,7 +31,7 @@ mutate within the application.
 
 > **new SSMService**(`opts?`): `SSMService`
 
-Defined in: [ssm/ssm.ts:60](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L60)
+Defined in: [ssm/ssm.ts:60](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L60)
 
 #### Parameters
 
@@ -63,7 +63,7 @@ which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
 
 > **deleteParameter**(`name`): `Promise`\<`void`\>
 
-Defined in: [ssm/ssm.ts:139](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L139)
+Defined in: [ssm/ssm.ts:139](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L139)
 
 Delete an SSM parameter by name.
 
@@ -88,7 +88,7 @@ runtime cleanup only.
 
 > **getParameter**(`name`): `Promise`\<`string` \| `undefined`\>
 
-Defined in: [ssm/ssm.ts:71](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L71)
+Defined in: [ssm/ssm.ts:71](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L71)
 
 Fetch a single SSM parameter's value.
 
@@ -115,7 +115,7 @@ value set.
 
 > **getParameters**\<`K`\>(`aliases`): `Promise`\<`Record`\<`K`, `string` \| `undefined`\>\>
 
-Defined in: [ssm/ssm.ts:98](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L98)
+Defined in: [ssm/ssm.ts:98](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L98)
 
 Fetch multiple SSM parameters in a single request. Callers supply an
 alias-to-path record, and the returned record is keyed by the same
@@ -160,7 +160,7 @@ no value.
 
 > **getParametersByPath**(`path`, `opts?`): `Promise`\<`Parameter`[]\>
 
-Defined in: [ssm/ssm.ts:155](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L155)
+Defined in: [ssm/ssm.ts:155](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L155)
 
 Fetch all parameters under an SSM hierarchy path, auto-paginating across
 all pages. `Recursive` defaults to `true` (overriding the AWS SDK
@@ -199,7 +199,7 @@ The full `Parameter` objects (including `Version`,
 
 > **putParameter**(`input`): `Promise`\<`PutParameterCommandOutput`\>
 
-Defined in: [ssm/ssm.ts:126](https://github.com/aligent/microservice-development-utilities/blob/a2bb34fea27b6af8b52791a3302aefd2b6af331f/packages/aws-wrappers/src/ssm/ssm.ts#L126)
+Defined in: [ssm/ssm.ts:126](https://github.com/aligent/microservice-development-utilities/blob/fd6cf9d0c7112a3e2feb0c83a6bedebeddcf46ed/packages/aws-wrappers/src/ssm/ssm.ts#L126)
 
 Create or update an SSM parameter. The log line omits `Value` to avoid
 leaking secret material.
