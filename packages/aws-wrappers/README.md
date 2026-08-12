@@ -8,6 +8,8 @@ Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing baked in.
 npm install @aligent/aws-wrappers
 ```
 
+Requires **Node 18 or later**. The package is compiled to ES2022 and ships native `class` declarations, so older runtimes fail at import time with a syntax error rather than degrading gracefully.
+
 ## Conventions
 
 Every wrapper takes the same optional constructor options:
@@ -71,10 +73,12 @@ const uploadUrl = await s3.getPresignedUrl({
 
 await s3.deleteObject({ Bucket: 'my-bucket', Key: 'file.txt' });
 await s3.deleteObjects('my-bucket', ['key1', 'key2']); // auto-chunked to 1000 keys per request
-await s3.emptyBucket('my-bucket');                     // streams the listing + delegates each page to deleteObjects
+await s3.emptyBucket('my-bucket');                     // unversioned buckets only — see below
 ```
 
 Input shapes are intentionally tight (`Bucket`, `Key`, `Body` and similar). Callers needing SDK-specific options like server-side encryption or tagging should use `S3Client` directly.
+
+`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
 
 ## DynamoDB
 
@@ -138,7 +142,22 @@ for await (const item of ddb.paginateItems<{ pk: string }>({
 for await (const item of ddb.paginateScan<{ pk: string }>({ TableName: 'my-table' })) {
     console.log(item.pk);
 }
+
+// `Limit` is a PAGE SIZE, not a total cap — this walks the whole result set
+// in pages of 10, it does not stop after 10 items. `break` to bound the read.
+const firstTen: Array<{ pk: string }> = [];
+for await (const item of ddb.paginateItems<{ pk: string }>({
+    TableName: 'my-table',
+    KeyConditionExpression: 'pk = :pk',
+    ExpressionAttributeValues: { ':pk': 'abc' },
+    Limit: 10,
+})) {
+    firstTen.push(item);
+    if (firstTen.length === 10) break; // stops immediately — no further requests
+}
 ```
+
+`Limit` on `paginateItems` / `paginateScan` is applied by DynamoDB per request, and both methods walk every page until `LastEvaluatedKey` is exhausted. Passing `Limit: 10` therefore yields *every* matching item in pages of 10, not the first 10. Because both return an `AsyncGenerator`, `break` calls its `return()`, which unwinds the pagination and issues no further requests — that is how you bound the number of items. `Limit` is still the right knob for tuning per-request consumed capacity and page memory; it just doesn't stop the walk.
 
 `batchGet` is **not** generic — its `Responses` field is a multi-table record whose item shapes can differ per table, so no single generic can soundly describe it. Callers should narrow the result type at the call site.
 

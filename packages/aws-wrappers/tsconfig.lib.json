@@ -6,6 +6,12 @@
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
         "types": ["node"],
+        // `target` must be explicit here. The base config sets `module: Node16`,
+        // which implies `target: es2022`; overriding `module` below drops that
+        // implication, and TypeScript falls back to its ES5 default. ES5 emits
+        // classes as IIFEs, which bundlers cannot prove pure — so consumers
+        // retain every service class and every AWS SDK client it imports.
+        "target": "ES2022",
         "module": "ESNext",
         "moduleResolution": "Bundler",
         "checkJs": false

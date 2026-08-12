@@ -119,6 +119,24 @@ describe('SQSService', () => {
             expect(sqsMock.commandCalls(SendMessageCommand)).toHaveLength(1);
         });
 
+        it('leaves a MessageBody at exactly the limit untruncated and unwarned', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new SQSService({
+                client: new SQSClient({}),
+                logger,
+                truncate: true,
+            });
+            const input = { QueueUrl, MessageBody: 'x'.repeat(262_144) };
+
+            await service.sendMessage(input);
+
+            const sent = sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input;
+            expect(sent).toStrictEqual(input);
+            expect(warnSpy).not.toHaveBeenCalled();
+        });
+
         it('truncates oversized MessageBody when the instance opts in to truncation', async () => {
             sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
             const service = new SQSService({ client: new SQSClient({}), truncate: true });

@@ -85,20 +85,29 @@ export class SQSService {
         return this.client.send(new SendMessageCommand(effective));
     }
 
+    /**
+     * `truncateUtf8` returns the input unchanged when it already fits, so a
+     * `!==` comparison against its result is what decides whether the body was
+     * modified. Don't reintroduce a size guard here: that would state the limit
+     * twice, encode the string to a `Buffer` twice, and let the two expressions
+     * drift into warning without truncating (or the reverse).
+     */
     private applyTruncation(input: SendMessageCommandInput): SendMessageCommandInput {
         const truncated: string[] = [];
-        let MessageBody = input.MessageBody;
-        if (
-            MessageBody !== undefined &&
-            Buffer.byteLength(MessageBody, 'utf8') > SQS_MESSAGE_BODY_MAX_BYTES
-        ) {
-            MessageBody = truncateUtf8(MessageBody, SQS_MESSAGE_BODY_MAX_BYTES);
-            truncated.push('MessageBody');
+        const out = { ...input };
+
+        if (out.MessageBody !== undefined) {
+            const next = truncateUtf8(out.MessageBody, SQS_MESSAGE_BODY_MAX_BYTES);
+            if (next !== out.MessageBody) {
+                out.MessageBody = next;
+                truncated.push('MessageBody');
+            }
         }
+
         if (truncated.length > 0) {
             this.logger.warn('Truncated SQS sendMessage input', { fields: truncated });
         }
-        return { ...input, MessageBody };
+        return out;
     }
 
     /**
