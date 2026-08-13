@@ -1024,6 +1024,100 @@ describe('retry middleware', () => {
         });
     });
 
+    describe('fetch resolution', () => {
+        it('should retry using the client fetch when no fetch is configured', async () => {
+            mockFetch
+                .mockResolvedValueOnce(
+                    new Response(JSON.stringify({ error: 'Server Error' }), {
+                        status: 500,
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    new Response(JSON.stringify({ message: 'success' }), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                );
+            // Rejects rather than calling through, so a regression fails the assertion
+            // below instead of escaping to the network.
+            const globalFetch = vi
+                .spyOn(globalThis, 'fetch')
+                .mockRejectedValue(new Error('global fetch must not be used for retries'));
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(retryMiddleware({ retries: 2, baseDelay: 10 }));
+
+            const { data } = await client.GET('/test');
+
+            expect(data).toEqual({ message: 'success' });
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(globalFetch).not.toHaveBeenCalled();
+        });
+
+        it('should prefer an explicitly configured fetch over the client fetch', async () => {
+            const retryFetch = vi.fn().mockResolvedValue(
+                new Response(JSON.stringify({ message: 'from retry fetch' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+            mockFetch.mockResolvedValue(
+                new Response(JSON.stringify({ error: 'Server Error' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(
+                retryMiddleware({
+                    retries: 2,
+                    baseDelay: 10,
+                    fetch: retryFetch as typeof fetch,
+                })
+            );
+
+            const { data } = await client.GET('/test');
+
+            expect(data).toEqual({ message: 'from retry fetch' });
+            expect(retryFetch).toHaveBeenCalledTimes(1);
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+        });
+
+        it('should retry network errors using the client fetch when no fetch is configured', async () => {
+            mockFetch.mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'success' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                })
+            );
+            // Rejects rather than calling through, so a regression fails the assertion
+            // below instead of escaping to the network.
+            const globalFetch = vi
+                .spyOn(globalThis, 'fetch')
+                .mockRejectedValue(new Error('global fetch must not be used for retries'));
+
+            const client = createClient<paths>({
+                baseUrl: 'https://api.example.com',
+                fetch: mockFetch as typeof fetch,
+            });
+            client.use(retryMiddleware({ retries: 2, baseDelay: 10 }));
+
+            const { data } = await client.GET('/test');
+
+            expect(data).toEqual({ message: 'success' });
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(globalFetch).not.toHaveBeenCalled();
+        });
+    });
+
     it('should throw error when final response is not ok after exhausting retries', async () => {
         mockFetch.mockResolvedValue(
             new Response(JSON.stringify({ error: 'Internal Server Error' }), {

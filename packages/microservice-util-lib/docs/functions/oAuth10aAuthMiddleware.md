@@ -8,7 +8,7 @@
 
 > **oAuth10aAuthMiddleware**(`config`): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:105](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L105)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:105](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L105)
 
 Creates an openapi-fetch middleware for OAuth 1.0a authentication.
 This middleware generates OAuth 1.0a parameters and sets the `Authorization` header

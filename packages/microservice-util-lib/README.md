@@ -7,6 +7,34 @@ MicroServices tasks.
 
 Documentation on each function can be found [here](docs/modules.md)
 
+## `retryMiddleware` and middleware ordering
+
+`retryMiddleware` performs its retries inside its own `onResponse`/`onError` hook, so retried responses re-enter the middleware chain at that point rather than at the start. openapi-fetch runs `onResponse` once per request, in reverse registration order.
+
+**Any middleware registered after `retryMiddleware` has its `onResponse` run before the retry happens, and is therefore skipped for retried responses.** Response-transforming middleware is the dangerous case: the first attempt is transformed, a retried attempt is not, and the caller receives a body in the wrong shape rather than an error. The failure only appears on the retry path, which is the least exercised in development.
+
+```ts
+// Broken: xmlToJsonMiddleware transforms the first response, but never a retried one
+client.use(retryMiddleware(), xmlToJsonMiddleware());
+```
+
+Reordering alone does not fully solve this. Registering the transform *before* `retryMiddleware` makes it run *after* retry, which leaves `throwOnNotOk` reading untransformed error bodies when it builds an `HttpResponseError`. If you need both, apply the transform in the fetch you hand to the client so every attempt passes through it:
+
+```ts
+// xmlToJson here is a plain (response: Response) => Promise<Response> transform,
+// not a middleware
+const fetchWithXml: typeof fetch = async (...args) => xmlToJson(await fetch(...args));
+
+const client = createClient({ baseUrl, fetch: fetchWithXml });
+client.use(retryMiddleware());
+```
+
+Retries use the client's configured `fetch` by default, so a fetch injected via `ClientOptions.fetch` applies to every attempt. Pass `fetch` in the retry config only when retries must use a different transport.
+
+Note that this covers the fetch function itself, not `ClientOptions.requestInitExt`. openapi-fetch passes `requestInitExt` as the second argument to the initial fetch only, and does not expose it to middleware, so per-attempt options carried there — an undici `dispatcher` for a proxy or mTLS agent, for example — do not apply to retries. Configure those on the fetch you pass to the client instead.
+
+Retried requests do not re-enter `onRequest`. The original request is cloned, so headers already applied survive, but anything that must be recomputed per attempt — OAuth 1.0a signatures, HMAC-over-body, short-lived bearer tokens — needs the `onRetry` callback, which can return a replacement `Request`.
+
 ## Deprecations
 
 `fetchSsmParams` and `S3Dao` are deprecated in favour of `SSMService` and

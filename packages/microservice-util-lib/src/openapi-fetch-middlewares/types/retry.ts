@@ -90,8 +90,13 @@ export type OnRetryFn = (context: RetryContext) => Request | void | Promise<Requ
  * - Set to `false` to return the response as-is, which allows downstream middlewares
  *   (e.g. logging middleware) to inspect the response before the caller handles the error.
  * @property {typeof fetch} [fetch]
- * - Custom fetch function to use for retries. Defaults to the global fetch function.
- * - Useful for testing or using a custom fetch implementation.
+ * - Custom fetch function to use for retries.
+ * - Defaults to the fetch the client was created with (`ClientOptions.fetch`), falling back to
+ *   the global fetch when the client does not configure one. Only set this when retries must use
+ *   a different transport to the initial request.
+ * - Note this covers the fetch function only. `ClientOptions.requestInitExt` is passed by
+ *   openapi-fetch to the initial fetch alone and is not exposed to middleware, so options
+ *   carried there do not apply to retries.
  */
 export interface RetryConfig {
     retries?: number;

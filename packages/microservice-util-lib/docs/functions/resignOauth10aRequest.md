@@ -8,7 +8,7 @@
 
 > **resignOauth10aRequest**(`request`, `config`): `Promise`\<`Request`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts:292](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts#L292)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts:292](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts#L292)
 
 Standalone function that re-signs a `Request` with fresh OAuth 1.0a credentials.
 This function derives all information (URL, method, query params, body)
