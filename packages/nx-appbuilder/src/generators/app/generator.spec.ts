@@ -26,25 +26,22 @@ describe('app generator', () => {
         promptMock.mockReset();
     });
 
-    describe('conditional sidebarCategory prompt', () => {
-        it('prompts for sidebarCategory when hasAdminUI is true and the value is omitted', async () => {
-            promptMock.mockResolvedValueOnce({ sidebarCategory: 'content' });
+    describe('conditional parentMenu prompt', () => {
+        it('prompts for parentMenu when hasAdminUI is true and the value is omitted', async () => {
+            promptMock.mockResolvedValueOnce({ parentMenu: 'content' });
 
             await generate(tree, { name: 'my-app', hasAdminUI: true });
 
             expect(promptMock).toHaveBeenCalledOnce();
-            const reg = readText(
-                tree,
-                'my-app/src/commerce-backend-ui-1/actions/registration/index.ts'
-            );
-            expect(reg).toContain('Content Apps');
+            const cfg = readText(tree, 'my-app/app.commerce.config.ts');
+            expect(cfg).toContain("parentMenu: 'content'");
         });
 
-        it('does not prompt when sidebarCategory is provided', async () => {
+        it('does not prompt when parentMenu is provided', async () => {
             await generate(tree, {
                 name: 'my-app',
                 hasAdminUI: true,
-                sidebarCategory: 'sales',
+                parentMenu: 'sales',
             });
             expect(promptMock).not.toHaveBeenCalled();
         });
@@ -119,8 +116,59 @@ describe('app generator', () => {
             expect(tree.exists('my-app/src/actions/webpack-config.cjs')).toBe(true);
         });
 
+        it('writes the app-root webpack config that disables the TS experiment', () => {
+            // webpack >= 5.109 defaults `experiments.typescript` to "auto", which
+            // activates built-in TS on Node >= 22.6 for any scope without a TS
+            // loader — breaking the SDK's plain-JS `.generated` extension builds.
+            const cfg = readText(tree, 'my-app/webpack-config.cjs');
+            expect(cfg).toContain('typescript: false');
+        });
+
+        it('ignores the SDK-generated .generated directories', () => {
+            const gitignore = readText(tree, 'my-app/.gitignore');
+            expect(gitignore).toContain('src/*/.generated/');
+        });
+
         it('writes the pre-build action type-check hook', () => {
             expect(tree.exists('my-app/hooks/check-action-types.sh')).toBe(true);
+        });
+
+        it('maps the @/* alias without baseUrl', () => {
+            // `baseUrl` is deprecated in TypeScript 6 (TS5101) and removed in 7,
+            // so `paths` carry their prefix explicitly and resolve relative to
+            // the config that declares them.
+            const base = readJson(tree, 'my-app/tsconfig.base.json');
+            expect(base.compilerOptions.baseUrl).toBeUndefined();
+            expect(base.compilerOptions.paths['@/*']).toEqual(['./src/*']);
+
+            const tests = readJson(tree, 'my-app/tests/tsconfig.json');
+            expect(tests.compilerOptions.baseUrl).toBeUndefined();
+            expect(tests.compilerOptions.paths['@/*']).toEqual(['../src/*']);
+        });
+
+        it('states tabWidth/printWidth explicitly so the app passes its own lint', () => {
+            // eslint-plugin-prettier resolves config with `editorconfig: true` and
+            // so honours .editorconfig (4 / 100); Nx's formatFiles() does not.
+            // Left implicit, the two disagree and a fresh app fails `npm run lint`.
+            const config = readText(tree, 'my-app/prettier.config.mjs');
+            expect(config).toContain('tabWidth: 4');
+            expect(config).toContain('printWidth: 100');
+
+            const editorconfig = readText(tree, 'my-app/.editorconfig');
+            expect(editorconfig).toContain('indent_size = 4');
+            expect(editorconfig).toContain('max_line_length = 100');
+        });
+
+        it('augments the logging lib types rather than replacing them', () => {
+            // Without the leading import this is an ambient module declaration,
+            // which shadows the package's own types and makes `Logger(...)`
+            // uncallable — `check-types` then fails on the sample actions.
+            const shim = readText(
+                tree,
+                'my-app/global-types/@adobe/aio-lib-core-logging/index.d.ts'
+            );
+            expect(shim).toContain("import '@adobe/aio-lib-core-logging';");
+            expect(shim).toContain("declare module '@adobe/aio-lib-core-logging'");
         });
 
         it('writes the targeted Adobe lib type augmentation (LogLevel), not an umbrella shim', () => {
@@ -138,11 +186,16 @@ describe('app generator', () => {
             expect(tree.exists('my-app/.gitignore')).toBe(true);
         });
 
+        it('omits app.commerce.config.ts from the root tsconfig when no commerce flag is set', () => {
+            const ts = readJson(tree, 'my-app/tsconfig.json');
+            expect(ts.include).toEqual(['global-types', 'vitest.config.ts', 'src/lib/**/*.ts']);
+        });
+
         it('does NOT write any commerce-specific files when no commerce flag is set', () => {
             expect(tree.exists('my-app/app.commerce.config.ts')).toBe(false);
             expect(tree.exists('my-app/install.yaml')).toBe(false);
             expect(tree.exists('my-app/src/commerce-extensibility-1')).toBe(false);
-            expect(tree.exists('my-app/src/commerce-backend-ui-1')).toBe(false);
+            expect(tree.exists('my-app/src/commerce-backend-ui-2')).toBe(false);
             expect(tree.exists('my-app/src/commerce-configuration-1')).toBe(false);
         });
     });
@@ -165,12 +218,19 @@ describe('app generator', () => {
             await generate(tree, {
                 name: 'my-app',
                 hasAdminUI: true,
-                sidebarCategory: 'none',
+                parentMenu: 'none',
             });
             const pkg = readJson(tree, 'my-app/package.json');
 
             expect(pkg.dependencies['@adobe/aio-commerce-lib-app']).toBeDefined();
             expect(pkg.dependencies['react']).toBeDefined();
+            expect(pkg.dependencies['@adobe/aio-commerce-lib-admin-ui']).toBeDefined();
+        });
+
+        it('is ESM, since the SDK generates ESM into .generated', async () => {
+            await generate(tree, { name: 'my-app' });
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.type).toBe('module');
         });
     });
 
@@ -283,20 +343,34 @@ describe('app generator', () => {
             await generate(tree, {
                 name: 'my-app',
                 hasAdminUI: true,
-                sidebarCategory: 'sales',
+                parentMenu: 'sales',
             });
         });
 
-        it('renders the commerce-backend-ui-1 subtree', () => {
-            expect(tree.exists('my-app/src/commerce-backend-ui-1/ext.config.yaml')).toBe(true);
+        it('renders the commerce-backend-ui-2 subtree', () => {
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/ext.config.yaml')).toBe(true);
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/web-src/src/app.tsx')).toBe(true);
             expect(
-                tree.exists('my-app/src/commerce-backend-ui-1/web-src/src/components/App.tsx')
+                tree.exists('my-app/src/commerce-backend-ui-2/web-src/src/pages/main-page.tsx')
             ).toBe(true);
-            expect(
-                tree.exists(
-                    'my-app/src/commerce-backend-ui-1/web-src/src/components/ExtensionRegistration.tsx'
-                )
-            ).toBe(true);
+            expect(tree.exists('my-app/extension-manifest.json')).toBe(true);
+        });
+
+        it('ships web-src/index.html, which is what stops the SDK scaffolding over our tsconfig', () => {
+            // aio-commerce-lib-app's generateWebSrc() returns early when this
+            // file exists. Without it the lib overwrites web-src/tsconfig.json
+            // on the first build and we lose the @aligent preset.
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/web-src/index.html')).toBe(true);
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/web-src/tsconfig.json')).toBe(
+                true
+            );
+        });
+
+        it('bootstraps through createExtensionApp rather than hand-rolled UIX registration', () => {
+            const app = readText(tree, 'my-app/src/commerce-backend-ui-2/web-src/src/app.tsx');
+            expect(app).toContain("from '@adobe/aio-commerce-lib-admin-ui/web'");
+            expect(app).toContain('createExtensionApp(');
+            expect(app).toContain('extensionId: config.metadata.id');
         });
 
         it('also renders commerce-extensibility (admin UI implies commerce lib)', () => {
@@ -305,17 +379,29 @@ describe('app generator', () => {
             expect(tree.exists('my-app/src/commerce-extensibility-1/ext.config.yaml')).toBe(true);
         });
 
-        it('declares the backend-UI extension in app.config.yaml', () => {
-            const yaml = readText(tree, 'my-app/app.config.yaml');
-            expect(yaml).toContain('commerce/backend-ui/1');
+        it('type-checks app.commerce.config.ts via the root project', () => {
+            // `adminUi` there drives the whole backend-ui/2 extension, so a typo
+            // must fail check-types rather than surfacing at build time.
+            const ts = readJson(tree, 'my-app/tsconfig.json');
+            expect(ts.include).toContain('app.commerce.config.ts');
+
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.scripts['check-types']).toContain('--project tsconfig.json');
         });
 
-        it('substitutes the sidebarCategory title into the registration', () => {
-            const reg = readText(
-                tree,
-                'my-app/src/commerce-backend-ui-1/actions/registration/index.ts'
-            );
-            expect(reg).toContain('Sales Apps');
+        it('declares the backend-UI extension in app.config.yaml', () => {
+            const yaml = readText(tree, 'my-app/app.config.yaml');
+            expect(yaml).toContain('commerce/backend-ui/2');
+            expect(yaml).toContain('src/commerce-backend-ui-2/ext.config.yaml');
+        });
+
+        it('declares the menu through adminUi in app.commerce.config.ts', () => {
+            const cfg = readText(tree, 'my-app/app.commerce.config.ts');
+            expect(cfg).toContain('adminUi:');
+            expect(cfg).toContain('menu:');
+            expect(cfg).toContain("parentMenu: 'sales'");
+            // adminUi.menu.id rejects hyphens, so the underscored slug is used.
+            expect(cfg).toContain("id: 'my_app'");
         });
 
         it('uses the react eslint preset when hasAdminUI is true', () => {
@@ -324,18 +410,36 @@ describe('app generator', () => {
         });
 
         it('sets module=Preserve + moduleResolution=Bundler on the web tsconfig', () => {
-            // Required so the webpack bundle preserves ESM-style imports and
-            // resolves them like a bundler would, matching what aio's web
-            // build expects.
-            const ts = readJson(tree, 'my-app/src/commerce-backend-ui-1/web-src/tsconfig.json');
+            // Bundler resolution is also what lets TypeScript resolve the
+            // `#web/*` and `#app.commerce.config` package.json import aliases,
+            // which is why there is no `paths` mapping.
+            const ts = readJson(tree, 'my-app/src/commerce-backend-ui-2/web-src/tsconfig.json');
             expect(ts.compilerOptions.module).toBe('Preserve');
             expect(ts.compilerOptions.moduleResolution).toBe('Bundler');
+            expect(ts.extends).toBe('@aligent/ts-code-standards/tsconfigs-react');
         });
 
-        it('adds the check-types:web pre-build hook', () => {
+        it('adds the check-types:web and action-registry pre-build hooks', () => {
             expect(tree.exists('my-app/hooks/check-web-types.sh')).toBe(true);
+            expect(tree.exists('my-app/hooks/generate-action-registry.sh')).toBe(true);
+            expect(tree.exists('my-app/scripts/generate-action-registry.mjs')).toBe(true);
+
             const yaml = readText(tree, 'my-app/app.config.yaml');
             expect(yaml).toContain('./hooks/check-web-types.sh');
+            expect(yaml).toContain('./hooks/generate-action-registry.sh');
+        });
+
+        it('ships the ambient declarations that keep check-types green before a build', () => {
+            // `.generated/` and the action registry are both gitignored build
+            // outputs, so a fresh clone has neither.
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/web-src/src/web-env.d.ts')).toBe(
+                true
+            );
+            expect(
+                tree.exists(
+                    'my-app/src/commerce-backend-ui-2/web-src/src/action-urls.generated.json.d.ts'
+                )
+            ).toBe(true);
         });
     });
 
@@ -353,6 +457,23 @@ describe('app generator', () => {
         it('does not emit a babel.actions.config.js', async () => {
             await generate(tree, { name: 'my-app' });
             expect(tree.exists('my-app/babel.actions.config.js')).toBe(false);
+        });
+
+        it('does not emit per-extension webpack configs', async () => {
+            await generate(tree, {
+                name: 'my-app',
+                hasAdminUI: true,
+                parentMenu: 'none',
+                hasBusinessConfig: true,
+            });
+
+            expect(tree.exists('my-app/src/commerce-configuration-1/my-webpack-config.cjs')).toBe(
+                false
+            );
+            expect(tree.exists('my-app/src/commerce-extensibility-1/my-webpack-config.cjs')).toBe(
+                false
+            );
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/webpack-config.cjs')).toBe(false);
         });
     });
 
@@ -388,7 +509,7 @@ describe('app generator', () => {
 
         it('renders the commerce-extensibility subtree but no extra dir', () => {
             expect(tree.exists('my-app/app.commerce.config.ts')).toBe(true);
-            expect(tree.exists('my-app/src/commerce-backend-ui-1')).toBe(false);
+            expect(tree.exists('my-app/src/commerce-backend-ui-2')).toBe(false);
             expect(tree.exists('my-app/src/commerce-configuration-1')).toBe(false);
         });
 
@@ -513,7 +634,7 @@ describe('app generator', () => {
                 description: 'Kitchen sink',
                 displayName: 'Kitchen Sink',
                 hasAdminUI: true,
-                sidebarCategory: 'customers',
+                parentMenu: 'customers',
                 hasBusinessConfig: true,
                 hasCommerceWebhooks: true,
                 hasEvents: true,
@@ -524,7 +645,7 @@ describe('app generator', () => {
         });
 
         it('renders every feature subtree', () => {
-            expect(tree.exists('my-app/src/commerce-backend-ui-1/ext.config.yaml')).toBe(true);
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/ext.config.yaml')).toBe(true);
             expect(tree.exists('my-app/src/commerce-configuration-1/ext.config.yaml')).toBe(true);
             expect(tree.exists('my-app/src/commerce-extensibility-1/ext.config.yaml')).toBe(true);
             expect(tree.exists('my-app/src/actions/rest-sample.ts')).toBe(true);
@@ -543,17 +664,21 @@ describe('app generator', () => {
 
         it('declares all extensions in install.yaml', () => {
             const yaml = readText(tree, 'my-app/install.yaml');
-            expect(yaml).toContain('commerce/backend-ui/1');
+            expect(yaml).toContain('commerce/backend-ui/2');
             expect(yaml).toContain('commerce/configuration/1');
             expect(yaml).toContain('commerce/extensibility/1');
         });
 
-        it('uses the explicit displayName in the registration', () => {
-            const reg = readText(
+        it('uses the explicit displayName in the admin UI menu and page', () => {
+            const cfg = readText(tree, 'my-app/app.commerce.config.ts');
+            expect(cfg).toContain("label: 'Kitchen Sink'");
+            expect(cfg).toContain("parentMenu: 'customers'");
+
+            const page = readText(
                 tree,
-                'my-app/src/commerce-backend-ui-1/actions/registration/index.ts'
+                'my-app/src/commerce-backend-ui-2/web-src/src/pages/main-page.tsx'
             );
-            expect(reg).toContain('Customer Apps');
+            expect(page).toContain('Kitchen Sink');
         });
     });
 });

@@ -1,0 +1,26 @@
+// Project-level webpack config fallback (aio searches upward from each action to
+// the project root; the closest config wins).
+//
+// Purpose: disable webpack's built-in TypeScript experiment. webpack 5.109.0
+// changed `experiments.typescript` to default to "auto", which activates
+// built-in TS handling on Node >= 22.6 whenever NO TypeScript loader is
+// registered. Built-in TS then discovers a tsconfig per module — including for
+// plain-JS node_modules dependencies that ship their own tsconfig (e.g.
+// `hasown`, `es-set-tostringtag`, whose tsconfig `extends "@ljharb/tsconfig"`) —
+// and fails to resolve those `extends` targets, breaking the SDK-generated
+// `commerce/*` extension builds.
+//
+// The `application` extension is unaffected either way: it has its own
+// `src/actions/webpack-config.cjs` that registers esbuild-loader (a TS loader),
+// so "auto" built-in TS never activated for it. This fallback covers the
+// `commerce/*` extensions, whose `.generated` actions are plain JS and need no
+// TS processing at all.
+//
+// aio merges most webpack options with replacement semantics, so this replaces
+// the default `experiments` (which only carried `typescript: "auto"`).
+
+module.exports = {
+    experiments: {
+        typescript: false,
+    },
+};

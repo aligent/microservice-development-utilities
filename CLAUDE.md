@@ -69,6 +69,21 @@ npx nx g @tools/generators:package
 
 - **Don't read `process.env` inside action handlers.** App Builder routes runtime configuration through OpenWhisk `params` (declared as `inputs:` in `app.config.yaml`); `process.env` is not reliably propagated between activations. The generated app's eslint config flags `process.env.*` reads under `src/**/actions/**`.
 
+- **App Builder apps are ESM (`"type": "module"`).** `@adobe/aio-commerce-lib-app` emits ESM into each extension's `.generated/` directory (including JSON import attributes), which cannot load under CommonJS. Custom installation-step scripts must therefore use `export default`, not `module.exports`.
+
+- **Admin UI is `commerce/backend-ui/2`, driven by `adminUi`.** `@adobe/aio-commerce-lib-app` 1.8.0 removed `commerce/backend-ui/1` and the `adminUiSdk` config key. Declare menu items, grid columns, mass actions and order view buttons under `adminUi` in `app.commerce.config.ts`; the lib generates `src/commerce-backend-ui-2/ext.config.yaml` and the registration action from it during `pre-app-build`. Don't hand-write either. (The public Admin UI SDK docs still describe `backend-ui/1` — that's the pre-SDK path.)
+
+- **A `.d.ts` that augments a package must import it first.** Without a top-level `import`/`export` the file is a global script, so `declare module 'pkg'` declares an *ambient* module that replaces the package's real types instead of merging with them — e.g. `Logger('name')` then fails with "This expression is not callable".
+
+  ```ts
+  // Good — a module augmentation
+  import '@adobe/aio-lib-core-logging';
+
+  declare module '@adobe/aio-lib-core-logging' {
+      export type LogLevel = 'error' | 'warn' | 'info';
+  }
+  ```
+
 ## Workflow
 
 - Whenever the user says "No" or corrects an approach, update this file with the relevant rule so the same mistake is not repeated.

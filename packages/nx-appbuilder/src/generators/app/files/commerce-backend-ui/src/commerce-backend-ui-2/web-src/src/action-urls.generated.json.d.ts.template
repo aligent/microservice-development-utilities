@@ -1,0 +1,6 @@
+// action-urls.generated.json is (re)generated at build time by
+// scripts/generate-action-registry.mjs. This declaration provides a stable type
+// (and lets TypeScript resolve the import when the file is absent, e.g. in CI
+// type checks before a build has run).
+declare const actionUrls: Record<string, string>;
+export default actionUrls;

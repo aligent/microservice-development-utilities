@@ -7,6 +7,8 @@ operations:
   workerProcess:
     - type: action
       impl: app-management/app-config
+    - type: action
+      impl: app-management/association
 
 runtimeManifest:
   packages:
@@ -17,7 +19,16 @@ runtimeManifest:
         app-config:
           function: .generated/actions/app-management/app-config.js
           web: yes
-          runtime: nodejs:22
+          runtime: nodejs:<%= nodeMajor %>
+          inputs:
+            LOG_LEVEL: $LOG_LEVEL
+          annotations:
+            require-adobe-auth: true
+            final: true
+        association:
+          function: .generated/actions/app-management/association.js
+          web: yes
+          runtime: nodejs:<%= nodeMajor %>
           inputs:
             LOG_LEVEL: $LOG_LEVEL
           annotations:

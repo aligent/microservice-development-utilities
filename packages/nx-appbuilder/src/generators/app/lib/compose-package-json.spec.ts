@@ -10,7 +10,7 @@ function makeOptions(overrides: Partial<NormalizedSchema> = {}): NormalizedSchem
         description: 'Test app',
         displayName: 'My App',
         hasAdminUI: false,
-        sidebarCategory: 'none',
+        parentMenu: 'none',
         hasBusinessConfig: false,
         hasCommerceWebhooks: false,
         hasEvents: false,
@@ -21,8 +21,6 @@ function makeOptions(overrides: Partial<NormalizedSchema> = {}): NormalizedSchem
         packageName: '@aligent/my-app',
         runtimePackageName: 'myApp',
         appSlug: 'my_app',
-        extensionId: 'myAppExtension',
-        sidebarCategoryTitle: '',
         nodeVersion: '24.0.1',
         ...overrides,
     };
@@ -62,7 +60,9 @@ describe('writePackageJson', () => {
             expect(pkg.description).toBe('hello');
             expect(pkg['version']).toBe('0.0.1');
             expect(pkg['private']).toBe(true);
-            expect(pkg['type']).toBe('commonjs');
+            // ESM: aio-commerce-lib-app emits ESM into each extension's
+            // `.generated/`, which cannot parse under "commonjs".
+            expect(pkg['type']).toBe('module');
             expect(pkg['engines']).toEqual({ node: '>=24' });
         });
 
@@ -103,13 +103,14 @@ describe('writePackageJson', () => {
                 'lint',
                 'lint:fix',
                 'check-types',
+                'check-types:app',
                 'check-types:actions',
                 'check-types:tests',
                 'test',
             ]);
         });
 
-        it('inserts check-types:web between actions and tests when hasAdminUI', () => {
+        it('inserts check-types:web and the registry script when hasAdminUI', () => {
             writePackageJson(tree, makeOptions({ hasAdminUI: true }));
             const keys = Object.keys(readPackageJson(tree).scripts);
 
@@ -117,10 +118,13 @@ describe('writePackageJson', () => {
                 'lint',
                 'lint:fix',
                 'check-types',
+                'check-types:app',
                 'check-types:actions',
                 'check-types:web',
                 'check-types:tests',
                 'test',
+                'generate:action-registry',
+                'postinstall',
             ]);
         });
 
@@ -128,7 +132,7 @@ describe('writePackageJson', () => {
             const optsBare = makeOptions();
             writePackageJson(tree, optsBare);
             expect(readPackageJson(tree).scripts['check-types']).toBe(
-                'tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
+                'tsc --noEmit --project tsconfig.json && tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
             );
 
             const treeUI = createTreeWithEmptyWorkspace();
@@ -136,8 +140,22 @@ describe('writePackageJson', () => {
             const raw = treeUI.read('my-app/package.json', 'utf-8');
             const json = JSON.parse(raw ?? '{}');
             expect(json.scripts['check-types']).toBe(
-                'tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project src/commerce-backend-ui-1/web-src/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
+                'tsc --noEmit --project tsconfig.json && tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project src/commerce-backend-ui-2/web-src/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
             );
+        });
+
+        it('adds the SDK postinstall hook, guarded on .env, only for commerce apps', () => {
+            // `aio-commerce-lib-app init` writes this itself, but nothing else in
+            // the lib does — and this generator never goes through `init`.
+            writePackageJson(tree, makeOptions({ hasBusinessConfig: true }));
+            expect(readPackageJson(tree).scripts['postinstall']).toBe(
+                '[ -f .env ] && npx aio-commerce-lib-app hooks postinstall || true'
+            );
+
+            const treeBare = createTreeWithEmptyWorkspace();
+            writePackageJson(treeBare, makeOptions({ hasRestActions: true }));
+            const json = JSON.parse(treeBare.read('my-app/package.json', 'utf-8') ?? '{}');
+            expect(json.scripts['postinstall']).toBeUndefined();
         });
 
         it('uses direct binaries (eslint, tsc, vitest) so scripts are package-manager agnostic', () => {
@@ -195,10 +213,8 @@ describe('writePackageJson', () => {
             expect(pkg.dependencies).toMatchObject({
                 react: expect.any(String),
                 'react-dom': expect.any(String),
-                'react-router': expect.any(String),
-                '@adobe/react-spectrum': expect.any(String),
-                '@adobe/uix-guest': expect.any(String),
-                '@adobe/exc-app': expect.any(String),
+                '@react-spectrum/s2': expect.any(String),
+                '@adobe/aio-commerce-lib-admin-ui': expect.any(String),
             });
             expect(pkg.devDependencies).toMatchObject({
                 '@types/react': expect.any(String),
@@ -214,6 +230,41 @@ describe('writePackageJson', () => {
         });
     });
 
+    describe('admin-UI web-src package fields', () => {
+        // aio-commerce-lib-app normally writes these while scaffolding web-src,
+        // but that step short-circuits because we ship our own index.html.
+        it('declares the #web/* subpath alias and Parcel config when hasAdminUI', () => {
+            writePackageJson(tree, makeOptions({ hasAdminUI: true }));
+            const pkg = readPackageJson(tree);
+
+            expect(pkg['imports']).toEqual({
+                '#web/*': './src/commerce-backend-ui-2/web-src/src/*',
+            });
+            expect(pkg['@parcel/resolver-default']).toEqual({ packageExports: true });
+            expect(pkg['@parcel/bundler-default']).toEqual({
+                manualSharedBundles: [
+                    {
+                        name: 's2-styles',
+                        assets: [
+                            '**/@react-spectrum/s2/**',
+                            'src/commerce-backend-ui-2/web-src/*.{js,jsx,ts,tsx}',
+                        ],
+                        types: ['css'],
+                    },
+                ],
+            });
+        });
+
+        it('omits them when hasAdminUI is false', () => {
+            writePackageJson(tree, makeOptions({ hasAdminUI: false }));
+            const pkg = readPackageJson(tree);
+
+            expect(pkg['imports']).toBeUndefined();
+            expect(pkg['@parcel/bundler-default']).toBeUndefined();
+            expect(pkg['@parcel/resolver-default']).toBeUndefined();
+        });
+    });
+
     describe('nx targets block', () => {
         it('declares check-types and deploy under nx.targets without npm run', () => {
             writePackageJson(tree, makeOptions());
@@ -226,7 +277,7 @@ describe('writePackageJson', () => {
             };
 
             expect(nx.targets['check-types'].options.command).toBe(
-                'tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
+                'tsc --noEmit --project tsconfig.json && tsc --noEmit --project src/actions/tsconfig.json && tsc --noEmit --project tests/tsconfig.json'
             );
             expect(nx.targets.deploy).toEqual({
                 executor: 'nx:run-commands',

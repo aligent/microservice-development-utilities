@@ -9,6 +9,14 @@ export default [
         // App-Builder-specific guardrails. Each rule below was added to prevent
         // a pattern that has repeatedly bitten apps in the wild.
         files: ['src/**/*.ts', 'src/**/*.tsx'],
+        // `prefer-nullish-coalescing` below is a type-aware rule, so the parser
+        // needs type information for these files.
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
         rules: {
             // The umbrella `@adobe/aio-sdk` re-exports every sub-SDK (Files,
             // State, Events, Target, Analytics, CampaignStandard, ...), so

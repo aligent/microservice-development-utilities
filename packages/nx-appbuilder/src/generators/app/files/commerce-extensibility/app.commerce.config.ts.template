@@ -7,6 +7,31 @@ export default defineConfig({
         description: '<%= description %>',
         version: '0.0.1',
     },
+<%_ if (hasAdminUI) { _%>
+    // Drives the `commerce/backend-ui/2` extension. The lib regenerates
+    // src/commerce-backend-ui-2/ext.config.yaml from this on every pre-app-build,
+    // so the extension manifest is never hand-maintained.
+    //
+    // `menu.id` may only contain letters, digits, `/`, `:` and `_` — hyphens are
+    // rejected, hence the underscored slug.
+    //
+    // Beyond `menu`, this section also accepts `order`, `product` and `customer`
+    // keys for grid columns, mass actions and order view buttons. See
+    // https://github.com/adobe/aio-commerce-sdk/blob/main/packages/aio-commerce-lib-app/docs/usage.md
+    adminUi: {
+        menu: {
+            id: '<%= appSlug %>',
+            label: '<%= displayName %>',
+            description: '<%= description %>',
+            pageTitle: '<%= displayName %>',
+<%_ if (parentMenu !== 'none') { _%>
+            parentMenu: '<%= parentMenu %>',
+<%_ } else { _%>
+            // parentMenu: 'sales', // omit for a top-level item
+<%_ } _%>
+        },
+    },
+<%_ } _%>
 <%_ if (hasBusinessConfig) { _%>
     businessConfig: {
         schema: [

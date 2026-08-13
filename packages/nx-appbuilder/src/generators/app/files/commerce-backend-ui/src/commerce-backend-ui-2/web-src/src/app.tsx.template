@@ -1,0 +1,19 @@
+import { createExtensionApp } from '@adobe/aio-commerce-lib-admin-ui/web';
+import '@react-spectrum/s2/page.css';
+
+import config from '#app.commerce.config';
+import { MainPage } from '#web/pages/main-page.tsx';
+
+// `createExtensionApp` is the whole bootstrap: it mounts the app, registers with
+// the Commerce UIX host, attaches the shared context (IMS token / org), and sets
+// up routing and the Spectrum provider. Read IMS credentials with `useIms()`
+// rather than reaching for the guest connection yourself.
+//
+// `extensionId` must match `metadata.id` in app.commerce.config.ts — that is what
+// Commerce registers the extension under.
+createExtensionApp({
+    menu: <MainPage />,
+    metadata: {
+        extensionId: config.metadata.id,
+    },
+});

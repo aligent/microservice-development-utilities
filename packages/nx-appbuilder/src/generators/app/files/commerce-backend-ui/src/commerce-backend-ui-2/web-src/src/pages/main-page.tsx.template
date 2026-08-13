@@ -1,0 +1,21 @@
+import { Heading } from '@react-spectrum/s2';
+
+/**
+ * The page opened from the Commerce Admin menu item declared under
+ * `adminUi.menu` in app.commerce.config.ts.
+ *
+ * Invoke backend actions from here with `useAppBuilderAction` /
+ * `useLazyAppBuilderAction` — both resolve their URL from the generated action
+ * registry, so actions declared under `application.runtimeManifest` in
+ * app.config.yaml are reachable without any runtime lookup.
+ */
+export function MainPage() {
+    return (
+        <main>
+            <Heading level={1}><%= displayName %></Heading>
+<%_ if (description) { _%>
+            <p><%= description %></p>
+<%_ } _%>
+        </main>
+    );
+}

@@ -19,7 +19,7 @@ runtimeManifest:
         config:
           function: .generated/actions/app-management/config.js
           web: yes
-          runtime: nodejs:22
+          runtime: nodejs:<%= nodeMajor %>
           inputs:
             LOG_LEVEL: $LOG_LEVEL
             AIO_COMMERCE_CONFIG_ENCRYPTION_KEY: $AIO_COMMERCE_CONFIG_ENCRYPTION_KEY
@@ -29,7 +29,7 @@ runtimeManifest:
         scope-tree:
           function: .generated/actions/app-management/scope-tree.js
           web: yes
-          runtime: nodejs:22
+          runtime: nodejs:<%= nodeMajor %>
           inputs:
             LOG_LEVEL: $LOG_LEVEL
           annotations:

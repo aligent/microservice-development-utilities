@@ -1,0 +1,81 @@
+import { useCallback, useState } from 'react';
+
+import { callAction } from '#web/lib/callAction.ts';
+import { type ActionName } from '#web/types/ActionName.ts';
+
+/**
+ * Payload options that can be passed when invoking an action.
+ * These values merge with and override the options set during hook initialization.
+ */
+export interface ActionPayload {
+    /** URL search parameters to append to the action URL */
+    searchParams?: Record<string, string>;
+
+    /** Request body for non-GET/HEAD requests */
+    body?: object;
+
+    /** Custom headers to include in the request */
+    headers?: Record<string, string>;
+}
+
+/**
+ * Configuration options for the useLazyAppBuilderAction hook.
+ */
+export type UseLazyAppBuilderActionOptions = ActionPayload & {
+    /** The name of the action to invoke. Must be a key from the generated action registry. */
+    name: ActionName;
+
+    /**
+     * HTTP method to use for the request.
+     * @default 'GET'
+     */
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+    /** Adobe IMS authentication credentials */
+    ims?: {
+        token?: string | undefined;
+        org?: string | undefined;
+    };
+};
+
+/**
+ * React hook for invoking App Builder actions with built-in state management.
+ *
+ * Returns `{ invoke, response, loading, error }`. Call `invoke()` to fire the
+ * request manually. For auto-fetching on mount with IMS credentials injected
+ * from the Admin UI host, use `useAppBuilderAction`.
+ *
+ * The fetch itself is delegated to `callAction` (the single fetch primitive).
+ */
+export function useLazyAppBuilderAction<T = unknown>(options: UseLazyAppBuilderActionOptions) {
+    const [response, setResponse] = useState<T | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const invoke = useCallback(
+        async (invokeOptions?: ActionPayload) => {
+            setLoading(true);
+            setError(null);
+            setResponse(null);
+
+            const body = invokeOptions?.body ?? options.body;
+            try {
+                const data = await callAction<T>(options.name, {
+                    ...(options.method ? { method: options.method } : {}),
+                    searchParams: { ...options.searchParams, ...invokeOptions?.searchParams },
+                    headers: { ...options.headers, ...invokeOptions?.headers },
+                    ...(body !== undefined ? { body } : {}),
+                    ...(options.ims ? { ims: options.ims } : {}),
+                });
+                setResponse(data);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+            } finally {
+                setLoading(false);
+            }
+        },
+        [options]
+    );
+
+    return { response, loading, error, invoke };
+}

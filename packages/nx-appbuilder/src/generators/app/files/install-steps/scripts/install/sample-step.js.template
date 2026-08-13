@@ -6,9 +6,12 @@
  *
  * The script receives the runtime context as its argument and should return
  * `{ success: true }` to proceed, or throw to halt installation.
+ *
+ * ESM, because the app is `"type": "module"` — the SDK generates its extension
+ * actions as ESM and statically imports the steps declared here.
  */
 
-module.exports = async function sampleStep(_context) {
+export default async function sampleStep(_context) {
     // TODO: implement the install step.
     return { success: true };
-};
+}

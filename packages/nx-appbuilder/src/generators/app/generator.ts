@@ -5,7 +5,7 @@ import { writePackageJson } from './lib/compose-package-json';
 import { normalizeOptions } from './lib/normalize-options';
 import { updateRootPackageJson } from './lib/update-root-package';
 import { addTsConfigReference } from './lib/update-root-tsconfig';
-import type { AppGeneratorSchema, SidebarCategory } from './schema';
+import type { AppGeneratorSchema, ParentMenu } from './schema';
 
 export default async function appGenerator(tree: Tree, rawOptions: AppGeneratorSchema) {
     await promptForConditionalInputs(rawOptions);
@@ -26,17 +26,27 @@ export default async function appGenerator(tree: Tree, rawOptions: AppGeneratorS
 
 /**
  * Prompts that depend on the value of other prompts can't be expressed in
- * Nx's schema.json, so they're driven from here. Currently only one:
- * sidebar category is asked iff hasAdminUI=true and the user didn't pass it.
+ * Nx's schema.json, so they're driven from here. Currently only one: the
+ * parent menu is asked iff hasAdminUI=true and the user didn't pass it.
  */
 async function promptForConditionalInputs(opts: AppGeneratorSchema): Promise<void> {
-    if (opts.hasAdminUI && opts.sidebarCategory === undefined) {
-        const answer = await prompt<{ sidebarCategory: SidebarCategory }>({
+    if (opts.hasAdminUI && opts.parentMenu === undefined) {
+        const answer = await prompt<{ parentMenu: ParentMenu }>({
             type: 'select',
-            name: 'sidebarCategory',
-            message: 'Which sidebar category does the menu item belong under?',
-            choices: ['catalog', 'sales', 'customers', 'content', 'none'],
+            name: 'parentMenu',
+            message: 'Which Commerce admin menu does the menu item belong under?',
+            choices: [
+                'sales',
+                'catalog',
+                'customers',
+                'marketing',
+                'content',
+                'reports',
+                'stores',
+                'system',
+                'none',
+            ],
         });
-        opts.sidebarCategory = answer.sidebarCategory;
+        opts.parentMenu = answer.parentMenu;
     }
 }

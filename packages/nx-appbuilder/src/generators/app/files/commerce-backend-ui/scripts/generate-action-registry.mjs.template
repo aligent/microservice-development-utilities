@@ -1,0 +1,77 @@
+/**
+ * Generates the Admin UI action registry consumed by the useAppBuilderAction hooks.
+ *
+ * Why this exists:
+ *   `aio app build` writes a `config.json` into each extension's web-src, but it
+ *   only contains the action URLs for that *one* extension. Our custom actions
+ *   are declared in `app.config.yaml` under the `application` scope (so they all
+ *   live in one place), which means they never appear in the backend-ui
+ *   extension's `config.json` — and under `commerce/backend-ui/2` that extension
+ *   has no web actions of its own at all.
+ *
+ *   `aio app get-url` resolves URLs across *every* scope (all extensions plus the
+ *   standalone application) and does so entirely statically — it derives each URL
+ *   from the namespace + package/action name with no network call. We capture that
+ *   merged map here and write it to a file the UI imports directly.
+ *
+ * This keeps action-URL resolution static (no runtime lookups) while letting all
+ * custom actions be declared in a single location.
+ */
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const appRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const outFile = join(
+    appRoot,
+    'src/commerce-backend-ui-2/web-src/src/action-urls.generated.json'
+);
+
+// `--json` prints `{ "runtime": { "<pkg>/<action>": "<url>", ... } }`.
+// The `runtime` map is the correct host for actions in the (frontend-less)
+// application scope; the `cdn` host is only emitted for actions that belong to
+// an extension that ships a frontend.
+const raw = execFileSync('aio', ['app', 'get-url', '--json'], {
+    cwd: appRoot,
+    encoding: 'utf-8',
+});
+
+// Guard against any non-JSON preamble (update notices, etc.) on stdout.
+const parsed = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+const urls = parsed.runtime ?? {};
+
+// Fail loudly rather than writing a broken registry. URLs are derived from local
+// config (the action declarations) plus the workspace namespace from .aio/.env —
+// no deploy required. But if no workspace is selected, the namespace is missing
+// and get-url emits malformed hosts (e.g. https://undefined.adobeioruntime.net/...)
+// or nothing at all, which would silently ship an unusable registry.
+const keys = Object.keys(urls);
+if (keys.length === 0) {
+    throw new Error(
+        'aio app get-url returned no actions. Check that actions are declared in ' +
+            'app.config.yaml and that the app config is valid.'
+    );
+}
+const unresolved = keys.filter((key) => {
+    const { hostname } = new URL(urls[key]);
+    // A resolved host looks like "<namespace>.adobeioruntime.net"; a missing
+    // namespace collapses to "undefined.*" or a leading-dot host.
+    return hostname.startsWith('undefined.') || hostname.startsWith('.');
+});
+if (unresolved.length > 0) {
+    throw new Error(
+        'Action URLs have an unresolved namespace — select a workspace first ' +
+            `(e.g. \`aio app use\`). Affected: ${unresolved.join(', ')}`
+    );
+}
+
+// Sort keys so regeneration produces stable, review-friendly diffs.
+const registry = Object.fromEntries(
+    Object.keys(urls)
+        .sort()
+        .map((key) => [key, urls[key]])
+);
+
+writeFileSync(outFile, `${JSON.stringify(registry, null, 4)}\n`, 'utf-8');
+console.log(`Wrote ${Object.keys(registry).length} action URL(s) to ${outFile}`);

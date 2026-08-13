@@ -1,0 +1,10 @@
+/**
+ * Keys mirror the `<package>/<action>` entries in the generated action registry
+ * (action-urls.generated.json). Update this type when UI-invoked actions are
+ * added or removed in app.config.yaml's `application.runtimeManifest` — it
+ * keeps `callAction` and the `useAppBuilderAction` hooks type-safe.
+ *
+ * @example
+ * export type ActionName = 'my-package/my-action' | 'my-package/another-action';
+ */
+export type ActionName = never;

@@ -1,0 +1,17 @@
+import { prettierConfig } from '@aligent/ts-code-standards';
+
+// Workspace-level formatting defaults, mirroring what each generated app ships
+// in its own `prettier.config.mjs`.
+//
+// This file is load-bearing for the `app` generator: Nx's `formatFiles()` resolves
+// Prettier config from the workspace root on disk, and the app's own config does
+// not exist there yet while the app is being generated. Without this, every
+// generated app would be written at Prettier's 2-space / 80-column defaults and
+// then fail its own `npm run lint`, because `eslint-plugin-prettier` resolves
+// config with `editorconfig: true` and so honours the app's `.editorconfig`
+// (`indent_size = 4`, `max_line_length = 100`).
+export default {
+    ...prettierConfig,
+    tabWidth: 4,
+    printWidth: 100,
+};

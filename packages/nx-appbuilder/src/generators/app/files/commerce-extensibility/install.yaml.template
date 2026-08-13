@@ -9,7 +9,7 @@ categories:
 
 extensions:
 <%_ if (hasAdminUI) { _%>
-    - extensionPointId: commerce/backend-ui/1
+    - extensionPointId: commerce/backend-ui/2
 <%_ } _%>
 <%_ if (hasBusinessConfig) { _%>
     - extensionPointId: commerce/configuration/1

@@ -2,7 +2,7 @@
 const usesCommerceExtensions = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks;
 const hasAnyAction = hasRestActions || hasEvents || hasScheduledActions;
 const preBuildSteps = ['./hooks/check-action-types.sh'];
-if (hasAdminUI) preBuildSteps.push('./hooks/check-web-types.sh');
+if (hasAdminUI) preBuildSteps.push('./hooks/check-web-types.sh', './hooks/generate-action-registry.sh');
 const preAppBuild = preBuildSteps.join(' && ');
 _%>
 application:
@@ -65,8 +65,8 @@ application:
 
 extensions:
 <%_ if (hasAdminUI) { _%>
-    commerce/backend-ui/1:
-        $include: src/commerce-backend-ui-1/ext.config.yaml
+    commerce/backend-ui/2:
+        $include: src/commerce-backend-ui-2/ext.config.yaml
 <%_ } _%>
 <%_ if (hasBusinessConfig) { _%>
     commerce/configuration/1:

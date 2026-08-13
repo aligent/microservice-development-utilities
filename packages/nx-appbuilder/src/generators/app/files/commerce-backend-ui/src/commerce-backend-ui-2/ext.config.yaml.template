@@ -1,0 +1,13 @@
+# Seed only. `@adobe/aio-commerce-lib-app` rewrites this file from the `adminUi`
+# section of app.commerce.config.ts during its pre-app-build hook — but
+# app.config.yaml's `$include` is resolved before any hook runs, so the file has
+# to exist on disk first.
+hooks:
+    pre-app-build: EXTENSION=backend-ui/2 npx aio-commerce-lib-app hooks pre-app-build
+
+operations:
+    view:
+        - type: web
+          impl: index.html
+
+web: web-src

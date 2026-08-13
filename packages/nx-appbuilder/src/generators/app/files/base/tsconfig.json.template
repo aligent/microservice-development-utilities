@@ -1,3 +1,15 @@
+<%_
+// The root project is the catch-all: actions, web-src and tests each have their
+// own tsconfig, so anything outside those three would otherwise be type-checked
+// by nothing. `src/lib/**/*.ts` is the conventional home for code shared between
+// actions; it may not exist yet, which is fine — `include` only errors when
+// nothing at all matches.
+const usesCommerceLib = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks;
+const includes = ['global-types'];
+if (usesCommerceLib) includes.push('app.commerce.config.ts');
+includes.push('vitest.config.ts', 'src/lib/**/*.ts');
+_%>
 {
-    "extends": "./tsconfig.base.json"
+    "extends": "./tsconfig.base.json",
+    "include": [<%- includes.map(entry => `"${entry}"`).join(', ') %>]
 }

@@ -1,0 +1,25 @@
+// Ambient declarations for imports that only resolve after a build.
+//
+// This file must stay free of top-level `import` / `export` statements —
+// otherwise TypeScript treats it as a module and the `declare module` blocks
+// below stop being global.
+
+// `#app.commerce.config` is a package.json import alias that
+// `@adobe/aio-commerce-lib-app` points at a file under `.generated/` during
+// pre-app-build. That directory is gitignored, so on a fresh clone (and in CI
+// before a build) the target does not exist — declare the slice of the shape we
+// consume so `check-types` still passes. Adobe ships the same declaration in its
+// own web-src scaffold.
+declare module '#app.commerce.config' {
+    const config: {
+        metadata: {
+            id: string;
+            displayName: string;
+        };
+    };
+
+    export default config;
+}
+
+// Spectrum S2 ships its page styles as a plain CSS import (`@react-spectrum/s2/page.css`).
+declare module '*.css';

@@ -18,13 +18,13 @@ describe('normalizeOptions', () => {
     });
 
     describe('derived fields', () => {
-        it('derives packageName, runtimePackageName, appSlug, extensionId', () => {
+        it('derives packageName, runtimePackageName, appSlug', () => {
             const result = normalizeOptions(tree, { name: 'my-cool-app' });
 
             expect(result.packageName).toBe('@aligent/my-cool-app');
             expect(result.runtimePackageName).toBe('myCoolApp');
+            // adminUi.menu.id rejects hyphens, so the slug underscores them.
             expect(result.appSlug).toBe('my_cool_app');
-            expect(result.extensionId).toBe('myCoolAppExtension');
             expect(result.appRoot).toBe('my-cool-app');
         });
 
@@ -47,48 +47,49 @@ describe('normalizeOptions', () => {
         });
     });
 
-    describe('sidebarCategory handling', () => {
-        it('forces sidebarCategory to "none" when hasAdminUI is false', () => {
+    describe('parentMenu handling', () => {
+        it('forces parentMenu to "none" when hasAdminUI is false', () => {
             const result = normalizeOptions(tree, {
                 name: 'my-app',
                 hasAdminUI: false,
-                sidebarCategory: 'sales',
+                parentMenu: 'sales',
             });
-            expect(result.sidebarCategory).toBe('none');
-            expect(result.sidebarCategoryTitle).toBe('');
+            expect(result.parentMenu).toBe('none');
         });
 
-        it('preserves sidebarCategory when hasAdminUI is true', () => {
+        it('preserves parentMenu when hasAdminUI is true', () => {
             const result = normalizeOptions(tree, {
                 name: 'my-app',
                 hasAdminUI: true,
-                sidebarCategory: 'sales',
+                parentMenu: 'sales',
             });
-            expect(result.sidebarCategory).toBe('sales');
-            expect(result.sidebarCategoryTitle).toBe('Sales Apps');
+            expect(result.parentMenu).toBe('sales');
         });
 
-        it('defaults sidebarCategory to "none" when hasAdminUI is true but unset', () => {
+        it('defaults parentMenu to "none" when hasAdminUI is true but unset', () => {
             const result = normalizeOptions(tree, {
                 name: 'my-app',
                 hasAdminUI: true,
             });
-            expect(result.sidebarCategory).toBe('none');
-            expect(result.sidebarCategoryTitle).toBe('');
+            expect(result.parentMenu).toBe('none');
         });
 
         it.each([
-            ['catalog', 'Catalog Apps'],
-            ['sales', 'Sales Apps'],
-            ['customers', 'Customer Apps'],
-            ['content', 'Content Apps'],
-        ] as const)('maps sidebarCategory %s to title "%s"', (category, title) => {
+            'sales',
+            'catalog',
+            'customers',
+            'marketing',
+            'content',
+            'reports',
+            'stores',
+            'system',
+        ] as const)('passes the Commerce parent menu %s through untouched', parentMenu => {
             const result = normalizeOptions(tree, {
                 name: 'my-app',
                 hasAdminUI: true,
-                sidebarCategory: category,
+                parentMenu,
             });
-            expect(result.sidebarCategoryTitle).toBe(title);
+            expect(result.parentMenu).toBe(parentMenu);
         });
     });
 
