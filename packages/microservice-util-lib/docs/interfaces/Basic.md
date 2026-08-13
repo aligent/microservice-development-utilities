@@ -6,7 +6,7 @@
 
 # Interface: Basic
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:42](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L42)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:42](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L42)
 
 Represents basic authentication credentials.
 
@@ -23,6 +23,6 @@ can be provided statically or retrieved dynamically via a function.
 
 > **credentials**: `Resolvable`\<\{ `password`: `string`; `username`: `string`; \}\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:43](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L43)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:43](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L43)
 
 The credentials, or a function returning them.

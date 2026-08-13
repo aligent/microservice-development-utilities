@@ -8,7 +8,7 @@
 
 > **isHttpResponseError**\<`TBody`\>(`error`): `error is HttpResponseError<TBody>`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:157](https://github.com/aligent/microservice-development-utilities/blob/abc9d337f3d99af75f0aee53a8dae4dfd3173b99/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L157)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:157](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L157)
 
 Type guard to check if an error is an [HttpResponseError](../classes/HttpResponseError.md).
 Useful for narrowing error types in catch blocks.

@@ -184,52 +184,55 @@ async function throwErrorIfNotOkResponse(
  * });
  */
 function retryMiddleware(config?: RetryConfig): Middleware {
-    const normalisedConfig: NormalisedConfig = {
+    const normalisedConfig: Omit<NormalisedConfig, 'fetch'> = {
         ...config,
         retries: config?.retries ?? 3,
         retryCondition: config?.retryCondition ?? defaultRetryCondition,
         retryDelay: getRetryDelayFn(config),
         idempotentOnly: config?.idempotentOnly ?? true,
-        fetch: config?.fetch ?? fetch,
         throwOnNotOk: config?.throwOnNotOk ?? true,
     };
 
+    // Resolved per request so retries reuse the client's transport rather than the global
+    // fetch, which would otherwise bypass any fetch injected via `ClientOptions.fetch`.
+    const withFetch = (clientFetch: typeof fetch): NormalisedConfig => ({
+        ...normalisedConfig,
+        fetch: config?.fetch ?? clientFetch,
+    });
+
     return {
-        async onResponse({ request, response }) {
+        async onResponse({ request, response, options }) {
+            const resolvedConfig = withFetch(options.fetch);
             const context = { attempt: 1, request, response, error: null };
 
             // If retryOn is specified, only use that list
             if (config?.retryOn && config.retryOn.length > 0) {
                 if (!shouldRetryOnStatus(response.status, config.retryOn)) {
-                    await throwErrorIfNotOkResponse(
-                        response,
-                        request,
-                        normalisedConfig.throwOnNotOk
-                    );
+                    await throwErrorIfNotOkResponse(response, request, resolvedConfig.throwOnNotOk);
                     return response;
                 }
 
-                return await performRetries(normalisedConfig, context);
+                return await performRetries(resolvedConfig, context);
             }
 
             // Otherwise, check if we should retry based on retry condition
-            const shouldRetry = await normalisedConfig.retryCondition(
+            const shouldRetry = await resolvedConfig.retryCondition(
                 context,
-                normalisedConfig.idempotentOnly
+                resolvedConfig.idempotentOnly
             );
             if (!shouldRetry) {
-                await throwErrorIfNotOkResponse(response, request, normalisedConfig.throwOnNotOk);
+                await throwErrorIfNotOkResponse(response, request, resolvedConfig.throwOnNotOk);
                 return response;
             }
 
-            return await performRetries(normalisedConfig, context);
+            return await performRetries(resolvedConfig, context);
         },
-        async onError({ request, error }) {
+        async onError({ request, error, options }) {
             if (!isNetworkError(error)) {
                 throw error;
             }
 
-            return await performRetries(normalisedConfig, {
+            return await performRetries(withFetch(options.fetch), {
                 attempt: 1,
                 request,
                 response: null,
