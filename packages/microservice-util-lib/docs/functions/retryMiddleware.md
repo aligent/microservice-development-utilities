@@ -4,11 +4,11 @@
 
 [@aligent/microservice-util-lib](../modules.md) / retryMiddleware
 
-# Function: retryMiddleware()
+# ~~Function: retryMiddleware()~~
 
 > **retryMiddleware**(`config?`): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts:186](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts#L186)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts:192](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts#L192)
 
 This middleware implements retry logic with support for:
 - Configurable number of retry attempts
@@ -30,6 +30,14 @@ The retry configuration.
 `Middleware`
 
 The middleware for retry functionality.
+
+## Deprecated
+
+Use [retryFetch](retryFetch.md) with `ClientOptions.fetch`, plus `throwOnNotOk()` if you
+relied on `throwOnNotOk: true`. Retrying inside `onResponse` means retried responses re-enter
+the middleware chain past any middleware registered after this one, so response-transforming
+middleware silently skips them. `retryFetch` retries beneath the chain, so every attempt flows
+through it. See the package README for the migration.
 
 ## Examples
 

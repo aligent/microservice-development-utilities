@@ -6,11 +6,11 @@
 
 # Interface: ErrorThrowingClient\<Paths, Media\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:88](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L88)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:88](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L88)
 
 A Client whose HTTP methods return only the success branch
 ({ data: D; response: Response }), reflecting the runtime contract
-when retryMiddleware is registered with throwOnNotOk: true (the default).
+when the throwOnNotOk() middleware is registered.
 
 Errors are thrown as HttpResponseError, never returned in the union.
 
@@ -32,7 +32,7 @@ Errors are thrown as HttpResponseError, never returned in the union.
 
 > **DELETE**: `ThrowingClientMethod`\<`Paths`, `"delete"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:92](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L92)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:92](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L92)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **GET**: `ThrowingClientMethod`\<`Paths`, `"get"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:89](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L89)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:89](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L89)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **HEAD**: `ThrowingClientMethod`\<`Paths`, `"head"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:94](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L94)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:94](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L94)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **OPTIONS**: `ThrowingClientMethod`\<`Paths`, `"options"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:93](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L93)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:93](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L93)
 
 ***
 
@@ -72,7 +72,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **PATCH**: `ThrowingClientMethod`\<`Paths`, `"patch"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:95](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L95)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:95](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L95)
 
 ***
 
@@ -82,7 +82,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **POST**: `ThrowingClientMethod`\<`Paths`, `"post"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:91](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L91)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:91](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L91)
 
 ***
 
@@ -92,7 +92,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **PUT**: `ThrowingClientMethod`\<`Paths`, `"put"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:90](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L90)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:90](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L90)
 
 ***
 
@@ -102,7 +102,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **TRACE**: `ThrowingClientMethod`\<`Paths`, `"trace"`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:96](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L96)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:96](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L96)
 
 ## Methods
 
@@ -112,7 +112,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **eject**(...`middleware`): `void`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:98](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L98)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:98](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L98)
 
 #### Parameters
 
@@ -132,7 +132,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwi
 
 > **use**(...`middleware`): `void`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:97](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L97)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:97](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L97)
 
 #### Parameters
 

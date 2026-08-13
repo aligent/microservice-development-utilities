@@ -7,33 +7,66 @@ MicroServices tasks.
 
 Documentation on each function can be found [here](docs/modules.md)
 
-## `retryMiddleware` and middleware ordering
+## Retries
 
-`retryMiddleware` performs its retries inside its own `onResponse`/`onError` hook, so retried responses re-enter the middleware chain at that point rather than at the start. openapi-fetch runs `onResponse` once per request, in reverse registration order.
-
-**Any middleware registered after `retryMiddleware` has its `onResponse` run before the retry happens, and is therefore skipped for retried responses.** Response-transforming middleware is the dangerous case: the first attempt is transformed, a retried attempt is not, and the caller receives a body in the wrong shape rather than an error. The failure only appears on the retry path, which is the least exercised in development.
+Use `retryFetch` as the client's `fetch`. Retries then happen beneath the middleware chain, so every attempt's response flows through the full chain:
 
 ```ts
-// Broken: xmlToJsonMiddleware transforms the first response, but never a retried one
-client.use(retryMiddleware(), xmlToJsonMiddleware());
+const client = createClient<paths>({
+  baseUrl,
+  fetch: retryFetch({ retries: 3, retryDelay: 'exponential' }),
+});
+client.use(throwOnNotOk(), logMiddleware('MyApi'));
 ```
 
-Reordering alone does not fully solve this. Registering the transform *before* `retryMiddleware` makes it run *after* retry, which leaves `throwOnNotOk` reading untransformed error bodies when it builds an `HttpResponseError`. If you need both, apply the transform in the fetch you hand to the client so every attempt passes through it:
+The fetch implementation is optional and defaults to the global `fetch`. Pass one when the client needs a specific transport:
 
 ```ts
-// xmlToJson here is a plain (response: Response) => Promise<Response> transform,
-// not a middleware
-const fetchWithXml: typeof fetch = async (...args) => xmlToJson(await fetch(...args));
-
-const client = createClient({ baseUrl, fetch: fetchWithXml });
-client.use(retryMiddleware());
+fetch: retryFetch(myFetch, { retries: 3 });
 ```
 
-Retries use the client's configured `fetch` by default, so a fetch injected via `ClientOptions.fetch` applies to every attempt. Pass `fetch` in the retry config only when retries must use a different transport.
+It is resolved on each attempt rather than captured when you call `retryFetch`, so a fetch replaced later, such as a test double, still applies.
 
-Note that this covers the fetch function itself, not `ClientOptions.requestInitExt`. openapi-fetch passes `requestInitExt` as the second argument to the initial fetch only, and does not expose it to middleware, so per-attempt options carried there — an undici `dispatcher` for a proxy or mTLS agent, for example — do not apply to retries. Configure those on the fetch you pass to the client instead.
+`retryFetch` returns non-OK responses rather than throwing. Register `throwOnNotOk()` when the caller should handle failures as exceptions — `createErrorThrowingClient`'s type guarantee depends on it.
 
-Retried requests do not re-enter `onRequest`. The original request is cloned, so headers already applied survive, but anything that must be recomputed per attempt — OAuth 1.0a signatures, HMAC-over-body, short-lived bearer tokens — needs the `onRetry` callback, which can return a replacement `Request`.
+**Ordering matters here.** openapi-fetch runs `onResponse` in *reverse* registration order, so middleware registered after `throwOnNotOk()` runs before it and still observes the failing response:
+
+```ts
+client.use(throwOnNotOk(), logMiddleware('MyApi')); // logs the 500, then throws
+client.use(logMiddleware('MyApi'), throwOnNotOk()); // throws first; the 500 is never logged
+```
+
+Retried requests do not re-enter `onRequest`. The request is cloned per attempt, so headers already applied survive and a body-bearing request can be sent more than once, but anything that must be recomputed per attempt — OAuth 1.0a signatures, HMAC-over-body, short-lived bearer tokens — needs the `onRetry` callback, which can return a replacement `Request`.
+
+### `retryFetch` vs `retryWrapper`
+
+`retryFetch` is HTTP-specific: it inspects status codes and distinguishes network errors from application failures. `retryWrapper` retries *any* async function and triggers only on a thrown error. Reach for `retryWrapper` when retrying something that is not a fetch, such as an SDK call.
+
+### Migrating from `retryMiddleware`
+
+`retryMiddleware` is deprecated. It retried inside its own `onResponse` hook, so retried responses re-entered the chain past any middleware registered after it — response-transforming middleware silently skipped them, returning a body in the wrong shape rather than an error.
+
+```ts
+// Before — xmlToJsonMiddleware never sees a retried response
+const client = createClient<paths>({ baseUrl });
+client.use(retryMiddleware({ throwOnNotOk: true }), xmlToJsonMiddleware());
+
+// After — every attempt flows through the whole chain
+const client = createClient<paths>({ baseUrl, fetch: retryFetch() });
+client.use(throwOnNotOk(), xmlToJsonMiddleware());
+```
+
+Config mapping:
+
+| `retryMiddleware` | `retryFetch` |
+| --- | --- |
+| `fetch` | optional first argument to `retryFetch`, defaulting to the global fetch |
+| `throwOnNotOk` | the separate `throwOnNotOk()` middleware |
+| `shouldResetTimeout` | no equivalent — the caller's `AbortSignal` is honoured throughout, including during backoff |
+| `retryOn` | same, but see below |
+| everything else | unchanged |
+
+One behavioural difference to check when migrating: under `retryMiddleware`, supplying `retryOn` replaced the status check *and* left network errors retrying through a separate path. Under `retryFetch`, `retryOn` is an allow-list of statuses only — network errors continue to go through `retryCondition`, and `idempotentOnly` applies to the `retryOn` path too. A `POST` returning a listed status is therefore no longer retried unless you set `idempotentOnly: false`.
 
 ## Deprecations
 

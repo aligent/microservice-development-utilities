@@ -8,7 +8,7 @@
 
 > **logMiddleware**(`clientName`, `logLevel?`, `logger?`): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:57](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L57)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:57](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L57)
 
 Creates a logging middleware for openapi-fetch clients.
 

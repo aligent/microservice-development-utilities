@@ -17,15 +17,21 @@
 - [Logger](interfaces/Logger.md)
 - [OAuth10a](interfaces/OAuth10a.md)
 - [OAuth20](interfaces/OAuth20.md)
-- [RetryConfig](interfaces/RetryConfig.md)
+- [RetryContext](interfaces/RetryContext.md)
+- [RetryFetchConfig](interfaces/RetryFetchConfig.md)
 - [RetryMiddlewareConfig](interfaces/RetryMiddlewareConfig.md)
+- [RetryWrapperConfig](interfaces/RetryWrapperConfig.md)
 - [~~S3Dao~~](interfaces/S3Dao.md)
 
 ## Type Aliases
 
 - [LogLevel](type-aliases/LogLevel.md)
 - [ObjectMap](type-aliases/ObjectMap.md)
+- [OnRetryFn](type-aliases/OnRetryFn.md)
 - [Remap](type-aliases/Remap.md)
+- [RetryConditionFn](type-aliases/RetryConditionFn.md)
+- [~~RetryConfig~~](type-aliases/RetryConfig.md)
+- [RetryDelayFn](type-aliases/RetryDelayFn.md)
 
 ## Functions
 
@@ -42,5 +48,7 @@
 - [oAuth20AuthMiddleware](functions/oAuth20AuthMiddleware.md)
 - [remap](functions/remap.md)
 - [resignOauth10aRequest](functions/resignOauth10aRequest.md)
-- [retryMiddleware](functions/retryMiddleware.md)
+- [retryFetch](functions/retryFetch.md)
+- [~~retryMiddleware~~](functions/retryMiddleware.md)
 - [retryWrapper](functions/retryWrapper.md)
+- [throwOnNotOk](functions/throwOnNotOk.md)

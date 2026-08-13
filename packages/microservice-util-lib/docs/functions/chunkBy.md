@@ -8,7 +8,7 @@
 
 > **chunkBy**\<`ArrayItem`\>(`source`, `chunkSize`): `ArrayItem`[][]
 
-Defined in: [packages/microservice-util-lib/src/chunk-by/chunk-by.ts:10](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/chunk-by/chunk-by.ts#L10)
+Defined in: [packages/microservice-util-lib/src/chunk-by/chunk-by.ts:10](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/chunk-by/chunk-by.ts#L10)
 
 Split an array into chunks of a certain size
 
