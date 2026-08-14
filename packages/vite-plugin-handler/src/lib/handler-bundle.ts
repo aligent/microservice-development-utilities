@@ -4,7 +4,6 @@ import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
 import type { BuildEnvironment, EnvironmentOptions, Plugin, ViteBuilder } from 'vite';
 import { type ConditionalShim, resolveShims } from './shim.js';
-import { stripUnneededPlugins } from './strip-unneeded-plugins.js';
 
 export interface HandlerBundleOptions {
     /** Max concurrent environment builds (default: Infinity) */
@@ -63,6 +62,7 @@ function buildHandlerEnvironments(
                 rolldownOptions: {
                     input: { index: handler },
                     moduleTypes: { ...options.moduleTypes },
+                    checks: { pluginTimings: false, },
                     external,
                     output: {
                         entryFileNames: 'index.mjs',
@@ -140,7 +140,6 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             }
 
             return {
-                plugins: [stripUnneededPlugins],
                 environments,
                 builder: {
                     buildApp: (builder: ViteBuilder) =>
