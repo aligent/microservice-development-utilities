@@ -49,11 +49,11 @@ Retried requests do not re-enter `onRequest`. The request is cloned per attempt,
 ```ts
 // Before — xmlToJsonMiddleware never sees a retried response
 const client = createClient<paths>({ baseUrl });
-client.use(retryMiddleware({ throwOnNotOk: true }), xmlToJsonMiddleware());
+client.use(retryMiddleware({ throwOnNotOk: true }), parseXmlResponse());
 
 // After — every attempt flows through the whole chain
 const client = createClient<paths>({ baseUrl, fetch: retryFetch() });
-client.use(throwOnNotOk(), xmlToJsonMiddleware());
+client.use(throwOnNotOk(), parseXmlResponse());
 ```
 
 Config mapping:
