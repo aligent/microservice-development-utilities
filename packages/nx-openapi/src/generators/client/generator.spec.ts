@@ -235,6 +235,44 @@ describe('client generator', () => {
         expect(clientContent).toContain("logMiddleware('Test')");
     });
 
+    it('should wire retries into the client fetch rather than the middleware chain', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'basic',
+        };
+        await clientGenerator(tree, options);
+
+        const clientContent = tree.read('clients/src/test/client.ts', 'utf-8') ?? '';
+
+        // Retry belongs to the transport: registering it as middleware means retried
+        // responses skip any middleware registered after it.
+        expect(clientContent).toContain('retryFetch(');
+        expect(clientContent).not.toContain('retryMiddleware');
+    });
+
+    it('should register throwOnNotOk so failures are logged before they throw', async () => {
+        const options: ClientGeneratorSchema = {
+            name: 'test',
+            schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
+            skipValidate: true,
+            override: false,
+            authMethod: 'basic',
+        };
+        await clientGenerator(tree, options);
+
+        const clientContent = tree.read('clients/src/test/client.ts', 'utf-8') ?? '';
+
+        // onResponse runs in reverse registration order, so logMiddleware must be
+        // registered after throwOnNotOk to observe a failing response before the throw.
+        const throwIndex = clientContent.indexOf('throwOnNotOk()');
+        const logIndex = clientContent.indexOf("logMiddleware('Test')");
+        expect(throwIndex).toBeGreaterThanOrEqual(0);
+        expect(logIndex).toBeGreaterThan(throwIndex);
+    });
+
     it('should add clients to root package.json workspaces', async () => {
         tree.write('package.json', JSON.stringify({ name: 'workspace', workspaces: ['libs/*'] }));
 
