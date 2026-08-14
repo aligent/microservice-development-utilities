@@ -16,6 +16,7 @@ import {
 } from './openapi-fetch-middlewares/authentications';
 import { LogLevel, Logger, logMiddleware } from './openapi-fetch-middlewares/log';
 import { createXmlParser, parseXmlResponse } from './openapi-fetch-middlewares/parse-xml-response';
+import { requestTimeout } from './openapi-fetch-middlewares/request-timeout';
 import {
     RetryConfig as RetryMiddlewareConfig,
     retryMiddleware,
@@ -84,4 +85,5 @@ export {
     retryMiddleware,
     retryWrapper,
     throwOnNotOk,
+    requestTimeout,
 };
