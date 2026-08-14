@@ -2,13 +2,13 @@ import { Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { applyAuthMethodConfiguration } from './auth-configurations';
 
-const BASE_CLIENT = `import { logMiddleware, retryMiddleware } from '@aligent/microservice-util-lib';
+const BASE_CLIENT = `import { logMiddleware, throwOnNotOk } from '@aligent/microservice-util-lib';
 export class TestClient {
     public readonly client: any;
     constructor() {
         this.client.use(
-            logMiddleware('test'),
-            retryMiddleware({})
+            throwOnNotOk(),
+            logMiddleware('test')
         );
     }
 }`;
@@ -38,7 +38,7 @@ describe('auth-configurations', () => {
         it('should throw error when class is not found', () => {
             tree.write(
                 'client.ts',
-                `import { retryMiddleware } from '@aligent/microservice-util-lib';
+                `import { throwOnNotOk } from '@aligent/microservice-util-lib';
 export class DifferentClass {}`
             );
 
@@ -50,7 +50,7 @@ export class DifferentClass {}`
         it('should throw error when constructor is not found', () => {
             tree.write(
                 'client.ts',
-                `import { retryMiddleware } from '@aligent/microservice-util-lib';
+                `import { throwOnNotOk } from '@aligent/microservice-util-lib';
 export class TestClient {
     public readonly client: any;
 }`
@@ -68,7 +68,7 @@ export class TestClient {
     public readonly client: any;
     constructor() {
         this.client.use(
-            retryMiddleware({})
+            throwOnNotOk()
         );
     }
 }`
@@ -78,14 +78,39 @@ export class TestClient {
             const content = tree.read('client.ts', 'utf-8');
             expect(content).toContain('basicAuthMiddleware');
             expect(content).not.toContain(
-                "import { retryMiddleware, basicAuthMiddleware } from '@aligent/microservice-util-lib'"
+                "import { throwOnNotOk, basicAuthMiddleware } from '@aligent/microservice-util-lib'"
             );
         });
 
-        it('should not insert middleware when retryMiddleware statement is not found', () => {
+        it('should insert middleware into a client that does not use retryMiddleware', () => {
             tree.write(
                 'client.ts',
-                `import { retryMiddleware } from '@aligent/microservice-util-lib';
+                `import { logMiddleware, throwOnNotOk } from '@aligent/microservice-util-lib';
+export class TestClient {
+    public readonly client: any;
+    constructor() {
+        this.client.use(
+            throwOnNotOk(),
+            logMiddleware('test')
+        );
+    }
+}`
+            );
+
+            applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
+            const content = tree.read('client.ts', 'utf-8');
+
+            expect(content).toContain('basicAuthMiddleware({');
+            const authIndex = content?.indexOf('basicAuthMiddleware({') ?? -1;
+            const logIndex = content?.indexOf("logMiddleware('test')") ?? -1;
+            expect(authIndex).toBeGreaterThanOrEqual(0);
+            expect(authIndex).toBeLessThan(logIndex);
+        });
+
+        it('should throw when no client.use statement is present to anchor against', () => {
+            tree.write(
+                'client.ts',
+                `import { throwOnNotOk } from '@aligent/microservice-util-lib';
 export class TestClient {
     public readonly client: any;
     constructor() {
@@ -94,9 +119,9 @@ export class TestClient {
 }`
             );
 
-            applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
-            const content = tree.read('client.ts', 'utf-8');
-            expect(content).not.toContain('basicAuthMiddleware({');
+            expect(() =>
+                applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient')
+            ).toThrow('Unable to find a this.client.use(...) statement in class: TestClient');
         });
 
         describe('api-key auth method', () => {
@@ -128,15 +153,15 @@ export class TestClient {
                 expect(content).toContain('credentialPath: string');
             });
 
-            it('should insert apiKeyAuthMiddleware before retryMiddleware', () => {
+            it('should insert apiKeyAuthMiddleware before the middleware registration', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
                 const apiKeyIndex = content!.indexOf('apiKeyAuthMiddleware({');
-                const retryIndex = content!.indexOf('retryMiddleware({');
+                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
                 expect(apiKeyIndex).toBeGreaterThan(-1);
-                expect(apiKeyIndex).toBeLessThan(retryIndex);
+                expect(apiKeyIndex).toBeLessThan(useIndex);
             });
 
             it('should include X-Api-Key header and fetchSsmParams in middleware config', () => {
@@ -152,11 +177,11 @@ export class TestClient {
             it('should skip adding credential property when client property is missing', () => {
                 tree.write(
                     'client.ts',
-                    `import { retryMiddleware } from '@aligent/microservice-util-lib';
+                    `import { throwOnNotOk } from '@aligent/microservice-util-lib';
 export class TestClient {
     constructor() {
         this.client.use(
-            retryMiddleware({})
+            throwOnNotOk()
         );
     }
 }`
@@ -178,15 +203,15 @@ export class TestClient {
                 expect(content).toContain('basicAuthMiddleware');
             });
 
-            it('should insert basicAuthMiddleware before retryMiddleware', () => {
+            it('should insert basicAuthMiddleware before the middleware registration', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
                 const basicIndex = content!.indexOf('basicAuthMiddleware({');
-                const retryIndex = content!.indexOf('retryMiddleware({');
+                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
                 expect(basicIndex).toBeGreaterThan(-1);
-                expect(basicIndex).toBeLessThan(retryIndex);
+                expect(basicIndex).toBeLessThan(useIndex);
             });
 
             it('should not add class property or constructor parameter', () => {
@@ -218,15 +243,15 @@ export class TestClient {
                 expect(content).toContain('oAuth20AuthMiddleware');
             });
 
-            it('should insert oAuth20AuthMiddleware before retryMiddleware', () => {
+            it('should insert oAuth20AuthMiddleware before the middleware registration', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
                 const oauthIndex = content!.indexOf('oAuth20AuthMiddleware({');
-                const retryIndex = content!.indexOf('retryMiddleware({');
+                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
                 expect(oauthIndex).toBeGreaterThan(-1);
-                expect(oauthIndex).toBeLessThan(retryIndex);
+                expect(oauthIndex).toBeLessThan(useIndex);
             });
 
             it('should not add class property or constructor parameter', () => {
@@ -256,15 +281,15 @@ export class TestClient {
                 expect(content).toContain('oAuth10aAuthMiddleware');
             });
 
-            it('should insert oAuth10aAuthMiddleware before retryMiddleware', () => {
+            it('should insert oAuth10aAuthMiddleware before the middleware registration', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
                 const oauthIndex = content!.indexOf('oAuth10aAuthMiddleware({');
-                const retryIndex = content!.indexOf('retryMiddleware({');
+                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
                 expect(oauthIndex).toBeGreaterThan(-1);
-                expect(oauthIndex).toBeLessThan(retryIndex);
+                expect(oauthIndex).toBeLessThan(useIndex);
             });
 
             it('should not add class property or constructor parameter', () => {

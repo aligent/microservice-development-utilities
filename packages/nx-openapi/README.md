@@ -80,8 +80,9 @@ A `types` file that will contain several typescript interfaces depending on the 
 
 A `client` file that will contain boilerplate code to help you get started. The client includes:
 
-- `logMiddleware` for request/response logging
-- `retryMiddleware` for automatic retry with exponential backoff
+- `retryFetch` wrapping the client's fetch, for automatic retry with exponential backoff
+- `throwOnNotOk` to surface non-2xx responses as `HttpResponseError`
+- `logMiddleware` for request/response logging, registered after `throwOnNotOk` so failures are logged before they throw
 - Authentication middleware configured based on the `--authMethod` flag:
   - **api-key**: Configured to fetch credentials from AWS SSM Parameter Store
   - **oauth1.0a**: Configured with HMAC-SHA256 algorithm and placeholder credentials

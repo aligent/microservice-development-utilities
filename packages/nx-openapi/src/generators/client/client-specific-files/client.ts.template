@@ -7,7 +7,8 @@
  */
 import {
     logMiddleware,
-    retryMiddleware,
+    retryFetch,
+    throwOnNotOk,
 } from '@aligent/microservice-util-lib';
 import createClient, { Client, ClientOptions } from 'openapi-fetch';
 import { paths } from './generated-types';
@@ -16,20 +17,27 @@ export class <%= className %> {
     public readonly client: Client<paths, `${string}/${string}`>;
 
     constructor(options: ClientOptions) {
-        this.client = createClient<paths>(options);
+        /**
+         * Retries wrap the client's fetch rather than being registered as middleware,
+         * so every attempt's response flows through the whole middleware chain.
+         * Pass `onRetry` if a request must be rebuilt per attempt, such as re-signing.
+         */
+        this.client = createClient<paths>({
+            ...options,
+            fetch: retryFetch(options.fetch),
+        });
 
         /**
          * The order in which middleware are registered matters.
          * - For requests, onRequest() will be called in the order registered
          * - For responses, onResponse() will be called in reverse order.
+         *
+         * throwOnNotOk() is registered first so that logMiddleware, registered after
+         * it, still sees a failing response before it is thrown to the caller.
          */
-
         this.client.use(
-            logMiddleware('<%= className %>'),
-            retryMiddleware({
-                onRetry: ({ attempt, error }) =>
-                    console.log(`Retrying...${attempt} due to ${String(error)}`),
-            })
+            throwOnNotOk(),
+            logMiddleware('<%= className %>')
         );
     }
 }

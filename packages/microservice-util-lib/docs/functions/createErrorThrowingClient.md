@@ -8,15 +8,16 @@
 
 > **createErrorThrowingClient**\<`Paths`, `Media`\>(`options`): [`ErrorThrowingClient`](../interfaces/ErrorThrowingClient.md)\<`Paths`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:111](https://github.com/aligent/microservice-development-utilities/blob/2924feaebbc12f9d81d6c8e146827daf51044cc9/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L111)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:112](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L112)
 
 Create an openapi-fetch client and cast it to an ErrorThrowingClient.
 
 This is a convenience wrapper around createClient + asErrorThrowingClient.
-The caller MUST register retryMiddleware (with default throwOnNotOk: true)
+The caller MUST register the throwOnNotOk() middleware
 on the returned client for the type guarantee to hold at runtime.
 
-WARNING: Do not use if retryMiddleware is configured with throwOnNotOk: false.
+WARNING: Do not use unless throwOnNotOk() is registered — without it a non-OK
+response is returned rather than thrown, and the success-only type is a lie.
 
 ## Type Parameters
 
