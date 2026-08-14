@@ -50,6 +50,8 @@ export function createXmlParser(expressions?: ExpressionSet): XMLParser {
  * @returns An `openapi-fetch` {@link Middleware} with an `onResponse` hook.
  */
 export function parseXmlResponse(expressions?: ExpressionSet): Middleware {
+    const parser = createXmlParser(expressions);
+
     return {
         onResponse: async ({ response }) => {
             const headers = new Headers(response.headers);
@@ -59,7 +61,7 @@ export function parseXmlResponse(expressions?: ExpressionSet): Middleware {
             headers.set('Content-Type', 'application/json');
 
             const text = await response.text();
-            const body = JSON.stringify(createXmlParser(expressions).parse(text));
+            const body = JSON.stringify(parser.parse(text));
 
             return new Response(body, { headers, status, statusText });
         },
