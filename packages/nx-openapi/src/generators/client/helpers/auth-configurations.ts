@@ -172,17 +172,19 @@ export function applyAuthMethodConfiguration(
             })
         );`;
 
-    // Find the middleware use statement and insert auth before it
+    // Insert auth before the middleware registration. Anchored on the `use()` call
+    // itself rather than on any particular middleware — keying on a middleware name
+    // silently stopped matching when retry moved out of the chain.
     const statements = constructor.getStatements();
-    const retryStatementIndex = statements.findIndex(
-        statement =>
-            /this\.client\.use\(/.test(statement.getText()) &&
-            /retryMiddleware/.test(statement.getText())
+    const useStatementIndex = statements.findIndex(statement =>
+        /this\.client\.use\(/.test(statement.getText())
     );
 
-    if (retryStatementIndex !== -1) {
-        constructor.insertStatements(retryStatementIndex, middlewareCall);
+    if (useStatementIndex === -1) {
+        throw new Error(`Unable to find a this.client.use(...) statement in class: ${className}`);
     }
+
+    constructor.insertStatements(useStatementIndex, middlewareCall);
 
     // Write the modified content back to the tree
     tree.write(filePath, sourceFile.getFullText());

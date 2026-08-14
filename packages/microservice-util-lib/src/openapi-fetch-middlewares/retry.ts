@@ -125,6 +125,12 @@ async function throwErrorIfNotOkResponse(
  * - Callbacks for retry events
  * - Filtering by status codes
  *
+ * @deprecated Use {@link retryFetch} with `ClientOptions.fetch`, plus `throwOnNotOk()` if you
+ * relied on `throwOnNotOk: true`. Retrying inside `onResponse` means retried responses re-enter
+ * the middleware chain past any middleware registered after this one, so response-transforming
+ * middleware silently skips them. `retryFetch` retries beneath the chain, so every attempt flows
+ * through it. See the package README for the migration.
+ *
  * @param {RetryConfig} [config={}] - The retry configuration.
  * @returns {Middleware} The middleware for retry functionality.
  *

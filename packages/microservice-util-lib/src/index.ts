@@ -19,17 +19,25 @@ import {
     RetryConfig as RetryMiddlewareConfig,
     retryMiddleware,
 } from './openapi-fetch-middlewares/retry';
+import { throwOnNotOk } from './openapi-fetch-middlewares/throw-on-not-ok';
 import {
     ClientOptions,
     ErrorThrowingClient,
     createErrorThrowingClient,
 } from './openapi-fetch-middlewares/throwing-client';
+import type {
+    OnRetryFn,
+    RetryConditionFn,
+    RetryContext,
+    RetryDelayFn,
+} from './openapi-fetch-middlewares/types/retry';
 import {
     HttpResponseError,
     isHttpResponseError,
 } from './openapi-fetch-middlewares/utils/http-response-error';
 import remap, { ObjectMap, Remap } from './remap/remap';
-import retryWrapper, { RetryConfig } from './retry-wrapper/retry-wrapper';
+import { RetryFetchConfig, retryFetch } from './retry-fetch/retry-fetch';
+import retryWrapper, { RetryConfig, RetryWrapperConfig } from './retry-wrapper/retry-wrapper';
 import S3Dao from './s3/s3';
 
 export type {
@@ -42,9 +50,15 @@ export type {
     OAuth10a,
     OAuth20,
     ObjectMap,
+    OnRetryFn,
     Remap,
+    RetryConditionFn,
     RetryConfig,
+    RetryContext,
+    RetryDelayFn,
+    RetryFetchConfig,
     RetryMiddlewareConfig,
+    RetryWrapperConfig,
     S3Dao,
 };
 
@@ -63,6 +77,8 @@ export {
     oAuth20AuthMiddleware,
     remap,
     resignOauth10aRequest,
+    retryFetch,
     retryMiddleware,
     retryWrapper,
+    throwOnNotOk,
 };

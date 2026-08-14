@@ -1,5 +1,5 @@
 /** Configuration for the retryWrapper */
-interface RetryConfig {
+interface RetryWrapperConfig {
     /**
      * The number of retries to attempt after the first run
      * @default 1
@@ -21,7 +21,7 @@ interface RetryConfig {
      * @param error the error from the last attempt
      * @param config the configuration supplied to the retryWrapper
      */
-    onRetry?: (retries: number, error: Error, config: RetryConfig) => void;
+    onRetry?: (retries: number, error: Error, config: RetryWrapperConfig) => void;
 }
 
 /**
@@ -33,7 +33,7 @@ interface RetryConfig {
  */
 async function retryWrapperInternal<T>(
     fn: () => Promise<T>,
-    config: Required<RetryConfig>,
+    config: Required<RetryWrapperConfig>,
     retryCount: number,
     error?: Error
 ): Promise<T> {
@@ -75,8 +75,8 @@ async function retryWrapperInternal<T>(
  * });
  * ```
  */
-async function retryWrapper<T>(fn: () => Promise<T>, config: RetryConfig): Promise<T> {
-    const defaultConfig: Required<RetryConfig> = {
+async function retryWrapper<T>(fn: () => Promise<T>, config: RetryWrapperConfig): Promise<T> {
+    const defaultConfig: Required<RetryWrapperConfig> = {
         retries: 1,
         delay: 0,
         backoffAmount: 0,
@@ -92,5 +92,11 @@ async function retryWrapper<T>(fn: () => Promise<T>, config: RetryConfig): Promi
     );
 }
 
-export type { RetryConfig };
+/**
+ * @deprecated Renamed to {@link RetryWrapperConfig}. The old name collided with the retry
+ * middleware's own config, which forced it to be re-exported as `RetryMiddlewareConfig`.
+ */
+type RetryConfig = RetryWrapperConfig;
+
+export type { RetryConfig, RetryWrapperConfig };
 export default retryWrapper;

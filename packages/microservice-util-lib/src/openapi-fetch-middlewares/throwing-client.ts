@@ -3,7 +3,7 @@
  *
  * An `ErrorThrowingClient` wrapper around `openapi-fetch` whose HTTP methods
  * return only the success branch of `FetchResponse`, reflecting the runtime
- * contract when `retryMiddleware` is registered with `throwOnNotOk: true`.
+ * contract when `throwOnNotOk()` is registered.
  *
  * **TS2590 fix** — The original implementation used a mapped conditional type
  * with `Extract<FetchResponse<...>, { error?: never }>`, which caused
@@ -80,7 +80,7 @@ type ThrowingClientMethod<
 /**
  * A Client whose HTTP methods return only the success branch
  * ({ data: D; response: Response }), reflecting the runtime contract
- * when retryMiddleware is registered with throwOnNotOk: true (the default).
+ * when the throwOnNotOk() middleware is registered.
  *
  * Errors are thrown as HttpResponseError, never returned in the union.
  */
@@ -102,10 +102,11 @@ export interface ErrorThrowingClient<Paths extends {}, Media extends MediaType =
  * Create an openapi-fetch client and cast it to an ErrorThrowingClient.
  *
  * This is a convenience wrapper around createClient + asErrorThrowingClient.
- * The caller MUST register retryMiddleware (with default throwOnNotOk: true)
+ * The caller MUST register the throwOnNotOk() middleware
  * on the returned client for the type guarantee to hold at runtime.
  *
- * WARNING: Do not use if retryMiddleware is configured with throwOnNotOk: false.
+ * WARNING: Do not use unless throwOnNotOk() is registered — without it a non-OK
+ * response is returned rather than thrown, and the success-only type is a lie.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Matches openapi-fetch's Client<Paths extends {}> constraint
 export function createErrorThrowingClient<Paths extends {}, Media extends MediaType = MediaType>(
