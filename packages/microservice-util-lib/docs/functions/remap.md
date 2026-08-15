@@ -8,7 +8,7 @@
 
 > **remap**\<`Original`, `MapArray`\>(`object`, `map`): `SimplifyIntersection`\<`ConstructTypeFromProperties`\<`MapArray`, `Original`, `0`\>\>
 
-Defined in: [packages/microservice-util-lib/src/remap/remap.ts:246](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/remap/remap.ts#L246)
+Defined in: [packages/microservice-util-lib/src/remap/remap.ts:246](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/remap/remap.ts#L246)
 
 Map one object's values to another structure
 
@@ -44,6 +44,8 @@ the remapped object
 
 ## Examples
 
+**without a transformer function**
+
 ```ts
 const map = [
   ['foo', 'baz'],
@@ -53,6 +55,8 @@ const obj = { foo: 'hi', bar: 7 }
 remap(obj, map); // { baz: 'hi', qux: [7] }
 ```
 
+**with a transformer function**
+
 ```ts
 const map = [
  ['foo', 'baz'],
@@ -61,6 +65,8 @@ const map = [
 const obj = { foo: 'hi', bar: 7 }
 remap(obj, map); // { baz: 'hi', qux: [8] }
 ```
+
+**with an empty initial key**
 
 ```ts
 const map = [

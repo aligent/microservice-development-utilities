@@ -6,7 +6,7 @@
 
 # Interface: OAuth20
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:86](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L86)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:86](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L86)
 
 Represents OAuth 2.0 authentication credentials.
 
@@ -24,7 +24,7 @@ It also supports an optional token type (e.g., 'Bearer').
 
 > **token**: `Resolvable`\<`string`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:87](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L87)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:87](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L87)
 
 The access token, or a function returning it.
 
@@ -36,6 +36,6 @@ The access token, or a function returning it.
 
 > `optional` **tokenType?**: `string`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:88](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L88)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:88](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L88)
 
 The type of the token (e.g., 'Bearer'). Defaults to 'Bearer' if not specified.

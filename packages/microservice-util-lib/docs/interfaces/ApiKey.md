@@ -6,7 +6,7 @@
 
 # Interface: ApiKey
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:28](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L28)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:28](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L28)
 
 Represents an API key authentication method.
 
@@ -23,7 +23,7 @@ in a specific header. The value can be a static string or a function that return
 
 > **header**: `string`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:29](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L29)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:29](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L29)
 
 The header name where the API key will be set.
 
@@ -35,6 +35,6 @@ The header name where the API key will be set.
 
 > **value**: `Resolvable`\<`string`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:30](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L30)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts:30](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/authentications.ts#L30)
 
 The API key value, or a function returning it.
