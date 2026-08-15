@@ -68,7 +68,11 @@ describe('retryWrapper', () => {
         const retries = 3;
         const delay = 300;
 
-        const startTime = Date.now();
+        // Asserts the delay actually scheduled via setTimeout, rather than elapsed
+        // wall-clock time — the previous version of this test measured Date.now()
+        // before/after, which was flaky by a millisecond or two on a loaded CI box.
+        const delays: number[] = [];
+        mockImmediateSetTimeout(ms => delays.push(ms));
 
         try {
             await retryWrapper(fn, {
@@ -76,11 +80,14 @@ describe('retryWrapper', () => {
                 delay,
             });
             // eslint-disable-next-line no-empty
-        } catch {}
+        } catch {
+        } finally {
+            vi.mocked(globalThis.setTimeout).mockRestore();
+        }
 
-        const totalTime = Date.now() - startTime;
-
-        expect(totalTime).toBeGreaterThanOrEqual((retries + 1) * delay);
+        // One sleep per failed attempt (retries + 1), each holding the configured
+        // delay since no backoffAmount is set.
+        expect(delays).toEqual(Array(retries + 1).fill(delay));
     });
 
     it('calls the onRetry function when a retry happens', async () => {
