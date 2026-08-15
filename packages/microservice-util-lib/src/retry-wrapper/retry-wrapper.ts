@@ -1,3 +1,22 @@
+/**
+ * A minimal, injectable clock/timer abstraction. Keeping `now`/`sleep` behind this
+ * interface (rather than calling `Date.now()`/`setTimeout` directly in
+ * `retryWrapperInternal`) is what makes the `deadline` check unit-testable with
+ * `vi.useFakeTimers()` — it's an internal implementation detail, not part of the
+ * public `RetryWrapperConfig` API.
+ */
+interface RetryRuntime {
+    /** The current time in ms, analogous to `Date.now()`. */
+    now: () => number;
+    /** Resolves once the given number of ms have elapsed. */
+    sleep: (ms: number) => Promise<void>;
+}
+
+const defaultRetryRuntime: RetryRuntime = {
+    now: () => Date.now(),
+    sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
+};
+
 /** Configuration for the retryWrapper */
 interface RetryWrapperConfig {
     /**
@@ -22,19 +41,55 @@ interface RetryWrapperConfig {
      * @param config the configuration supplied to the retryWrapper
      */
     onRetry?: (retries: number, error: Error, config: RetryWrapperConfig) => void;
+    /**
+     * Decides whether a given error should trigger a retry. Checked before any delay
+     * is calculated; returning false rethrows the error immediately instead of
+     * continuing to retry.
+     * @param error the error from the last attempt
+     * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
+     * @default () => true — retries every error
+     */
+    shouldRetry?: (error: Error, attempt: number) => boolean;
+    /**
+     * Computes the delay (ms) before the next retry.
+     * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
+     * @param previousDelay the delay (ms) that was used for the attempt that just failed
+     * @param config the configuration supplied to the retryWrapper
+     * @default (attempt, previousDelay, config) => previousDelay + config.backoffAmount — linear growth
+     */
+    calculateDelay?: (attempt: number, previousDelay: number, config: RetryWrapperConfig) => number;
+    /**
+     * Total wall-clock ms budget across all attempts, measured from the first call.
+     * Once exceeded, the next retry is skipped and the last error is thrown immediately,
+     * regardless of `retries` remaining.
+     * @default undefined — no deadline, `retries` is the only bound
+     */
+    deadline?: number;
 }
+
+/**
+ * `RetryWrapperConfig` with every field defaulted, except `deadline` — which has no
+ * sensible non-`undefined` default, since its absence means "no deadline" rather than
+ * "deadline of 0".
+ */
+type ResolvedRetryWrapperConfig = Required<Omit<RetryWrapperConfig, 'deadline'>> &
+    Pick<RetryWrapperConfig, 'deadline'>;
 
 /**
  * Retry an async function if it fails
  * @param fn the function to be retried
  * @param config the configuration for retries
  * @param retryCount the number of retries so far
- * @param error the error from teh last retry
+ * @param startTime the timestamp (ms) the first attempt started, used to enforce `config.deadline`
+ * @param runtime the clock/timer abstraction backing `now()`/`sleep()`
+ * @param error the error from the last retry
  */
 async function retryWrapperInternal<T>(
     fn: () => Promise<T>,
-    config: Required<RetryWrapperConfig>,
+    config: ResolvedRetryWrapperConfig,
     retryCount: number,
+    startTime: number,
+    runtime: RetryRuntime,
     error?: Error
 ): Promise<T> {
     if (config.retries < 0) {
@@ -49,16 +104,29 @@ async function retryWrapperInternal<T>(
         const result = await fn();
         return result;
     } catch (err) {
-        await (() => new Promise(res => setTimeout(res, config.delay)))();
+        const caughtError = err as Error;
+        const attempt = retryCount + 1;
+
+        if (!config.shouldRetry(caughtError, attempt)) {
+            throw caughtError;
+        }
+
+        if (config.deadline !== undefined && runtime.now() - startTime >= config.deadline) {
+            throw caughtError;
+        }
+
+        await runtime.sleep(config.delay);
         return await retryWrapperInternal(
             fn,
             {
                 ...config,
                 retries: config.retries - 1,
-                delay: config.delay + config.backoffAmount,
+                delay: config.calculateDelay(attempt, config.delay, config),
             },
-            retryCount + 1,
-            err as Error
+            attempt,
+            startTime,
+            runtime,
+            caughtError
         );
     }
 }
@@ -74,13 +142,27 @@ async function retryWrapperInternal<T>(
  *   onRetry: (_, error) => console.error(error)
  * });
  * ```
+ * @example
+ * ```ts
+ * // Only retry a specific error, back off exponentially with jitter, and give up
+ * // after 10s regardless of retries remaining
+ * retryWrapper(someAsyncFunction, {
+ *   retries: 5,
+ *   delay: 100,
+ *   shouldRetry: (error) => error.name === 'TransientError',
+ *   calculateDelay: (attempt) => Math.min(100 * 2 ** attempt, 5000) + Math.random() * 100,
+ *   deadline: 10_000,
+ * });
+ * ```
  */
 async function retryWrapper<T>(fn: () => Promise<T>, config: RetryWrapperConfig): Promise<T> {
-    const defaultConfig: Required<RetryWrapperConfig> = {
+    const defaultConfig: ResolvedRetryWrapperConfig = {
         retries: 1,
         delay: 0,
         backoffAmount: 0,
         onRetry: () => null,
+        shouldRetry: () => true,
+        calculateDelay: (_attempt, previousDelay, cfg) => previousDelay + (cfg.backoffAmount ?? 0),
     };
     return await retryWrapperInternal(
         fn,
@@ -88,7 +170,9 @@ async function retryWrapper<T>(fn: () => Promise<T>, config: RetryWrapperConfig)
             ...defaultConfig,
             ...config,
         },
-        0
+        0,
+        defaultRetryRuntime.now(),
+        defaultRetryRuntime
     );
 }
 
