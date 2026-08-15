@@ -1,5 +1,19 @@
 import retryWrapper from './retry-wrapper';
 
+/**
+ * Replaces global setTimeout with one that resolves on the next tick (no real wait)
+ * while reporting the requested delay to `onSchedule` — shared by the `calculateDelay`
+ * and `deadline` describe blocks below, which both need this but for different reasons
+ * (capturing the scheduled delays vs. advancing a virtual clock by them).
+ */
+const mockImmediateSetTimeout = (onSchedule: (ms: number) => void) => {
+    const realSetTimeout = globalThis.setTimeout;
+    vi.spyOn(globalThis, 'setTimeout').mockImplementation(((callback: () => void, ms?: number) => {
+        onSchedule(ms ?? 0);
+        return realSetTimeout(callback, 0);
+    }) as typeof setTimeout);
+};
+
 describe('retryWrapper', () => {
     it("returns function's result", async () => {
         const result = await retryWrapper(async () => 3, {
@@ -150,14 +164,7 @@ describe('retryWrapper', () => {
          */
         const scheduledDelays = async (config: Parameters<typeof retryWrapper>[1]) => {
             const delays: number[] = [];
-            const realSetTimeout = globalThis.setTimeout;
-            vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
-                callback: () => void,
-                ms?: number
-            ) => {
-                delays.push(ms ?? 0);
-                return realSetTimeout(callback, 0);
-            }) as typeof setTimeout);
+            mockImmediateSetTimeout(ms => delays.push(ms));
 
             const fn = vi.fn(async () => {
                 throw new Error('Test Error');
@@ -197,15 +204,10 @@ describe('retryWrapper', () => {
          */
         const withVirtualClock = async <T>(run: () => Promise<T>): Promise<T> => {
             let elapsed = 0;
-            const realSetTimeout = globalThis.setTimeout;
             vi.spyOn(Date, 'now').mockImplementation(() => elapsed);
-            vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
-                callback: () => void,
-                ms?: number
-            ) => {
-                elapsed += ms ?? 0;
-                return realSetTimeout(callback, 0);
-            }) as typeof setTimeout);
+            mockImmediateSetTimeout(ms => {
+                elapsed += ms;
+            });
 
             try {
                 return await run();
