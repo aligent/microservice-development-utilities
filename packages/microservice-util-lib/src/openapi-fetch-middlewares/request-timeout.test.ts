@@ -8,7 +8,6 @@ interface paths {
     };
 }
 
-
 describe('requestTimeout', () => {
     it('should attach a timeout signal to the request', async () => {
         const fetchFn = vi

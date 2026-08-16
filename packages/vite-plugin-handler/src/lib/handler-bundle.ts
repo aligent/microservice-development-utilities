@@ -62,7 +62,7 @@ function buildHandlerEnvironments(
                 rolldownOptions: {
                     input: { index: handler },
                     moduleTypes: { ...options.moduleTypes },
-                    checks: { pluginTimings: false, },
+                    checks: { pluginTimings: false },
                     external,
                     output: {
                         entryFileNames: 'index.mjs',

@@ -80,10 +80,10 @@ export {
     oAuth20AuthMiddleware,
     parseXmlResponse,
     remap,
+    requestTimeout,
     resignOauth10aRequest,
     retryFetch,
     retryMiddleware,
     retryWrapper,
     throwOnNotOk,
-    requestTimeout,
 };
