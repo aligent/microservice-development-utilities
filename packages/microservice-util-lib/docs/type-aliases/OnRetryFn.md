@@ -8,7 +8,7 @@
 
 > **OnRetryFn** = (`context`) => `Request` \| `void` \| `Promise`\<`Request` \| `void`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:52](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L52)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:52](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L52)
 
 Function type for the onRetry callback.
 Called before each retry attempt.

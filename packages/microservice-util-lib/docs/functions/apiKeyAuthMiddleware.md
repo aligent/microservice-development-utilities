@@ -8,7 +8,7 @@
 
 > **apiKeyAuthMiddleware**(`config`): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:37](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L37)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts:37](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/openapi-fetch-middlewares/authentications.ts#L37)
 
 Creates an openapi-fetch middleware for API key authentication.
 This middleware sets the API key in the specified header for each request.

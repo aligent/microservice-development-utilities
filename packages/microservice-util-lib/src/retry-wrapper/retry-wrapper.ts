@@ -35,7 +35,9 @@ interface RetryWrapperConfig {
      */
     backoffAmount?: number;
     /**
-     * A callback to run before each retry
+     * A callback to run before each retry. Not called once `retries` are exhausted,
+     * or when `shouldRetry`/`deadline` prevent a further attempt — only fires before
+     * an attempt that's actually about to happen.
      * @param retries the number of retries so far (will start at 1)
      * @param error the error from the last attempt
      * @param config the configuration supplied to the retryWrapper
@@ -47,14 +49,16 @@ interface RetryWrapperConfig {
     /**
      * Decides whether a given error should trigger a retry. Checked before any delay
      * is calculated; returning false rethrows the error immediately instead of
-     * continuing to retry.
+     * continuing to retry. Not called once `retries` are exhausted — there's nothing
+     * left to retry regardless of what this returns.
      * @param error the error from the last attempt
      * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
      * @default () => true — retries every error
      */
     shouldRetry?: (error: Error, attempt: number) => boolean | Promise<boolean>;
     /**
-     * Computes the delay (ms) before the next retry.
+     * Computes the delay (ms) before the next retry. Not called once `retries` are
+     * exhausted, for the same reason as `shouldRetry`.
      * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
      * @param previousDelay the delay (ms) that was used for the attempt that just failed
      * @param config the configuration supplied to the retryWrapper
@@ -67,8 +71,11 @@ interface RetryWrapperConfig {
     ) => number | Promise<number>;
     /**
      * Total wall-clock ms budget across all attempts, measured from the first call.
-     * Once exceeded, the next retry is skipped and the last error is thrown immediately,
-     * regardless of `retries` remaining.
+     * Once the elapsed time plus the delay before the next retry would exceed this
+     * budget, that retry is skipped and the last error is thrown immediately,
+     * regardless of `retries` remaining. This bounds when the next attempt *starts*,
+     * not how long an individual `fn()` invocation may run — a slow attempt can still
+     * finish after the deadline has passed.
      * @default undefined — no deadline, `retries` is the only bound
      */
     deadline?: number;
@@ -101,9 +108,6 @@ async function retryWrapperInternal<T>(
     error?: Error,
     delayMs = 0
 ): Promise<T> {
-    if (config.retries < 0) {
-        throw error;
-    }
     if (error) {
         if (config.onRetry) {
             config.onRetry(retryCount, error, config, delayMs);
@@ -114,17 +118,36 @@ async function retryWrapperInternal<T>(
         return result;
     } catch (err) {
         const caughtError = err as Error;
+
+        // No retries left: rethrow the error this attempt actually produced, without
+        // running shouldRetry/calculateDelay or sleeping — there's no further attempt
+        // for either hook to influence, and (now that both can be async and can
+        // throw) invoking them here would risk masking caughtError with an unrelated
+        // failure from a hook that was never going to change the outcome.
+        if (config.retries <= 0) {
+            throw caughtError;
+        }
+
         const attempt = retryCount + 1;
 
         if (!(await config.shouldRetry(caughtError, attempt))) {
             throw caughtError;
         }
 
-        if (config.deadline !== undefined && runtime.now() - startTime >= config.deadline) {
-            throw caughtError;
+        const waitedDelay = config.delay;
+
+        // A real deadline bounds when the *next attempt starts*, not just where
+        // "now" happens to be when this check runs — so it must account for the
+        // sleep about to happen, not merely the time elapsed so far. Checking only
+        // `now() - startTime >= deadline` would let a long `waitedDelay` push the
+        // next attempt well past the budget before the overrun is ever detected.
+        if (config.deadline !== undefined) {
+            const remaining = config.deadline - (runtime.now() - startTime);
+            if (remaining <= 0 || waitedDelay >= remaining) {
+                throw caughtError;
+            }
         }
 
-        const waitedDelay = config.delay;
         // calculateDelay's inputs don't depend on the sleep finishing, so run them
         // concurrently — otherwise an async calculateDelay (e.g. one that fetches a
         // remote backoff hint) would add its own latency on top of the sleep instead
@@ -148,6 +171,16 @@ async function retryWrapperInternal<T>(
         );
     }
 }
+
+// Stateless, so hoisted to module scope (same reasoning as defaultRetryRuntime above)
+// rather than reallocated as new closures on every retryWrapper() call.
+const defaultOnRetry: NonNullable<RetryWrapperConfig['onRetry']> = () => null;
+const defaultShouldRetry: NonNullable<RetryWrapperConfig['shouldRetry']> = () => true;
+const defaultCalculateDelay: NonNullable<RetryWrapperConfig['calculateDelay']> = (
+    _attempt,
+    previousDelay,
+    cfg
+) => previousDelay + (cfg.backoffAmount ?? 0);
 
 /**
  * Retry an async function if it fails
@@ -178,9 +211,9 @@ async function retryWrapper<T>(fn: () => Promise<T>, config: RetryWrapperConfig)
         retries: 1,
         delay: 0,
         backoffAmount: 0,
-        onRetry: () => null,
-        shouldRetry: () => true,
-        calculateDelay: (_attempt, previousDelay, cfg) => previousDelay + (cfg.backoffAmount ?? 0),
+        onRetry: defaultOnRetry,
+        shouldRetry: defaultShouldRetry,
+        calculateDelay: defaultCalculateDelay,
     };
     return await retryWrapperInternal(
         fn,

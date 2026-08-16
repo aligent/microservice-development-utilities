@@ -85,9 +85,10 @@ describe('retryWrapper', () => {
             vi.mocked(globalThis.setTimeout).mockRestore();
         }
 
-        // One sleep per failed attempt (retries + 1), each holding the configured
-        // delay since no backoffAmount is set.
-        expect(delays).toEqual(Array(retries + 1).fill(delay));
+        // One sleep per attempt that's actually followed by another (retries of
+        // them) — the final, exhausted attempt's failure rethrows immediately
+        // without sleeping, since there's no further attempt for the wait to precede.
+        expect(delays).toEqual(Array(retries).fill(delay));
     });
 
     it('calls the onRetry function when a retry happens', async () => {
@@ -186,8 +187,12 @@ describe('retryWrapper', () => {
                 // eslint-disable-next-line no-empty
             } catch {}
 
+            // 3 attempts happen (retries + 1), but shouldRetry is only consulted
+            // ahead of the 2 that are actually followed by another — the final,
+            // exhausted attempt's failure rethrows without asking shouldRetry, since
+            // there's no retry left for its answer to affect.
             expect(fn).toHaveBeenCalledTimes(3);
-            expect(shouldRetry.mock.calls.map(([, attempt]) => attempt)).toEqual([1, 2, 3]);
+            expect(shouldRetry.mock.calls.map(([, attempt]) => attempt)).toEqual([1, 2]);
         });
 
         it('accepts an async shouldRetry, awaiting its result before continuing', async () => {
@@ -227,9 +232,13 @@ describe('retryWrapper', () => {
             return delays;
         };
 
+        // 3 sleeps (retries), not 4 — the final, exhausted attempt's failure
+        // rethrows immediately without a wasted trailing sleep. See the
+        // "adds a delay between tries" test above for the same reasoning.
+
         it('keeps the default linear growth when calculateDelay is omitted', async () => {
             expect(await scheduledDelays({ retries: 3, delay: 100, backoffAmount: 50 })).toEqual([
-                100, 150, 200, 250,
+                100, 150, 200,
             ]);
         });
 
@@ -237,7 +246,7 @@ describe('retryWrapper', () => {
             const calculateDelay = vi.fn((attempt: number) => attempt * 20);
 
             expect(await scheduledDelays({ retries: 3, delay: 10, calculateDelay })).toEqual([
-                10, 20, 40, 60,
+                10, 20, 40,
             ]);
         });
 
@@ -245,8 +254,27 @@ describe('retryWrapper', () => {
             const calculateDelay = vi.fn(async (attempt: number) => attempt * 20);
 
             expect(await scheduledDelays({ retries: 3, delay: 10, calculateDelay })).toEqual([
-                10, 20, 40, 60,
+                10, 20, 40,
             ]);
+        });
+
+        it('is not called once retries are exhausted, so it cannot mask the real error', async () => {
+            const originalError = new Error('original failure');
+            const calculateDelay = vi.fn(async () => {
+                throw new Error('delay calculation failed');
+            });
+            const shouldRetry = vi.fn();
+
+            await expect(
+                retryWrapper(() => Promise.reject(originalError), {
+                    retries: 0,
+                    calculateDelay,
+                    shouldRetry,
+                })
+            ).rejects.toBe(originalError);
+
+            expect(shouldRetry).not.toHaveBeenCalled();
+            expect(calculateDelay).not.toHaveBeenCalled();
         });
     });
 
@@ -324,7 +352,12 @@ describe('retryWrapper', () => {
                 ).rejects.toBe(err)
             );
 
-            expect(fn).toHaveBeenCalledTimes(3);
+            // 1st failure at t=0: waitedDelay=100, remaining=250 — 100 < 250, sleeps, t=100.
+            // 2nd failure at t=100: waitedDelay=200 (100 + backoffAmount), remaining=150 —
+            // sleeping the full 200ms would land at t=300, past the 250 deadline, so this
+            // is refused *before* sleeping (not just detected afterwards via a 3rd attempt
+            // that shouldn't have been allowed to start).
+            expect(fn).toHaveBeenCalledTimes(2);
         });
 
         it('does not affect retries that complete within the deadline', async () => {

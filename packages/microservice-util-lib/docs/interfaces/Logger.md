@@ -6,7 +6,7 @@
 
 # Interface: Logger
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:7](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L7)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:7](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L7)
 
 Logger interface to support various logging implementations
 (console, winston, pino, bunyan, etc.)
@@ -19,7 +19,7 @@ Logger interface to support various logging implementations
 
 > `optional` **debug**(`message`, ...`args`): `void`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:9](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L9)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:9](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L9)
 
 #### Parameters
 
@@ -43,7 +43,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts
 
 > **info**(`message`, ...`args`): `void`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:8](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L8)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts:8](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/openapi-fetch-middlewares/log.ts#L8)
 
 #### Parameters
 
