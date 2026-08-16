@@ -119,11 +119,9 @@ async function retryWrapperInternal<T>(
     } catch (err) {
         const caughtError = err as Error;
 
-        // No retries left: rethrow the error this attempt actually produced, without
-        // running shouldRetry/calculateDelay or sleeping — there's no further attempt
-        // for either hook to influence, and (now that both can be async and can
-        // throw) invoking them here would risk masking caughtError with an unrelated
-        // failure from a hook that was never going to change the outcome.
+        // No retries left — skip shouldRetry/calculateDelay/sleep (see their docs
+        // above) and rethrow immediately, so a throwing/rejecting hook can't mask
+        // caughtError on an attempt that was never going to retry anyway.
         if (config.retries <= 0) {
             throw caughtError;
         }
@@ -136,11 +134,8 @@ async function retryWrapperInternal<T>(
 
         const waitedDelay = config.delay;
 
-        // A real deadline bounds when the *next attempt starts*, not just where
-        // "now" happens to be when this check runs — so it must account for the
-        // sleep about to happen, not merely the time elapsed so far. Checking only
-        // `now() - startTime >= deadline` would let a long `waitedDelay` push the
-        // next attempt well past the budget before the overrun is ever detected.
+        // Must account for the upcoming sleep, not just elapsed time so far — see
+        // the `deadline` field's doc above for why.
         if (config.deadline !== undefined) {
             const remaining = config.deadline - (runtime.now() - startTime);
             if (remaining <= 0 || waitedDelay >= remaining) {
@@ -148,10 +143,9 @@ async function retryWrapperInternal<T>(
             }
         }
 
-        // calculateDelay's inputs don't depend on the sleep finishing, so run them
-        // concurrently — otherwise an async calculateDelay (e.g. one that fetches a
-        // remote backoff hint) would add its own latency on top of the sleep instead
-        // of overlapping with it.
+        // calculateDelay's inputs don't depend on the sleep finishing, so run both
+        // concurrently — otherwise a slow async calculateDelay would add its own
+        // latency on top of the sleep instead of overlapping with it.
         const [, nextDelay] = await Promise.all([
             runtime.sleep(waitedDelay),
             config.calculateDelay(attempt, config.delay, config),

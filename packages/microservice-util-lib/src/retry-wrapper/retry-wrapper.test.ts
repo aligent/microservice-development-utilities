@@ -68,9 +68,8 @@ describe('retryWrapper', () => {
         const retries = 3;
         const delay = 300;
 
-        // Asserts the delay actually scheduled via setTimeout, rather than elapsed
-        // wall-clock time — the previous version of this test measured Date.now()
-        // before/after, which was flaky by a millisecond or two on a loaded CI box.
+        // Delay actually scheduled via setTimeout, not measured wall-clock time —
+        // the old Date.now()-based version was flaky by a millisecond or two on CI.
         const delays: number[] = [];
         mockImmediateSetTimeout(ms => delays.push(ms));
 
@@ -136,9 +135,7 @@ describe('retryWrapper', () => {
                 shouldRetry: expect.any(Function),
                 calculateDelay: expect.any(Function),
             },
-            // delayMs — the delay actually waited before this retry. 0 here since no
-            // delay/backoffAmount was configured.
-            0
+            0 // delayMs: no delay/backoffAmount was configured
         );
     });
 
@@ -157,8 +154,7 @@ describe('retryWrapper', () => {
             vi.mocked(globalThis.setTimeout).mockRestore();
         }
 
-        // config.delay has already grown to the *next* retry's delay by the time
-        // onRetry reads it (20, 30) — delayMs reports what was actually just waited.
+        // delayMs: what was waited; config.delay: what's queued for next time.
         expect(onRetry.mock.calls.map(([, , , delayMs]) => delayMs)).toEqual([10, 20]);
         expect(onRetry.mock.calls.map(([, , config]) => config.delay)).toEqual([20, 30]);
     });
@@ -187,10 +183,8 @@ describe('retryWrapper', () => {
                 // eslint-disable-next-line no-empty
             } catch {}
 
-            // 3 attempts happen (retries + 1), but shouldRetry is only consulted
-            // ahead of the 2 that are actually followed by another — the final,
-            // exhausted attempt's failure rethrows without asking shouldRetry, since
-            // there's no retry left for its answer to affect.
+            // 3 attempts (retries + 1), but shouldRetry is skipped for the final,
+            // exhausted one — see "adds a delay between tries" above for why.
             expect(fn).toHaveBeenCalledTimes(3);
             expect(shouldRetry.mock.calls.map(([, attempt]) => attempt)).toEqual([1, 2]);
         });
@@ -209,9 +203,8 @@ describe('retryWrapper', () => {
 
     describe('calculateDelay', () => {
         /**
-         * Observes the delay each retry actually schedules via setTimeout, rather than
-         * measuring elapsed wall-clock time — mirrors the approach in
-         * retry-fetch.test.ts, which found wall-clock timing flaky on a loaded CI box.
+         * Runs retryWrapper against an always-throwing fn and returns the delays it
+         * actually scheduled via setTimeout (see mockImmediateSetTimeout above).
          */
         const scheduledDelays = async (config: Parameters<typeof retryWrapper>[1]) => {
             const delays: number[] = [];
@@ -232,9 +225,8 @@ describe('retryWrapper', () => {
             return delays;
         };
 
-        // 3 sleeps (retries), not 4 — the final, exhausted attempt's failure
-        // rethrows immediately without a wasted trailing sleep. See the
-        // "adds a delay between tries" test above for the same reasoning.
+        // 3 sleeps (retries), not 4 — see "adds a delay between tries" above for why
+        // the final, exhausted attempt doesn't get a trailing sleep.
 
         it('keeps the default linear growth when calculateDelay is omitted', async () => {
             expect(await scheduledDelays({ retries: 3, delay: 100, backoffAmount: 50 })).toEqual([
