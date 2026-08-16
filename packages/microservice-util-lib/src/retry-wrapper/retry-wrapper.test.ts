@@ -1,4 +1,4 @@
-import retryWrapper from './retry-wrapper';
+import retryWrapper, { exponentialJitter } from './retry-wrapper';
 
 /**
  * Replaces global setTimeout with one that resolves on the next tick (no real wait)
@@ -122,16 +122,44 @@ describe('retryWrapper', () => {
             // eslint-disable-next-line no-empty
         } catch {}
 
-        expect(onRetry).toHaveBeenLastCalledWith(3, err, {
-            retries: 0,
-            onRetry,
-            delay: 0,
-            backoffAmount: 0,
-            // Resolved defaults added for shouldRetry/calculateDelay — asserted by
-            // shape only, since the default functions aren't exported to reference here.
-            shouldRetry: expect.any(Function),
-            calculateDelay: expect.any(Function),
+        expect(onRetry).toHaveBeenLastCalledWith(
+            3,
+            err,
+            {
+                retries: 0,
+                onRetry,
+                delay: 0,
+                backoffAmount: 0,
+                // Resolved defaults added for shouldRetry/calculateDelay — asserted by
+                // shape only, since the default functions aren't exported to reference here.
+                shouldRetry: expect.any(Function),
+                calculateDelay: expect.any(Function),
+            },
+            // delayMs — the delay actually waited before this retry. 0 here since no
+            // delay/backoffAmount was configured.
+            0
+        );
+    });
+
+    it('passes onRetry the delay that was actually waited, not the one config.delay already grew to', async () => {
+        const onRetry = vi.fn();
+        const fn = vi.fn(async () => {
+            throw new Error('Test Error');
         });
+        mockImmediateSetTimeout(() => {});
+
+        try {
+            await retryWrapper(fn, { retries: 2, delay: 10, backoffAmount: 10, onRetry });
+            // eslint-disable-next-line no-empty
+        } catch {
+        } finally {
+            vi.mocked(globalThis.setTimeout).mockRestore();
+        }
+
+        // config.delay has already grown to the *next* retry's delay by the time
+        // onRetry reads it (20, 30) — delayMs reports what was actually just waited.
+        expect(onRetry.mock.calls.map(([, , , delayMs]) => delayMs)).toEqual([10, 20]);
+        expect(onRetry.mock.calls.map(([, , config]) => config.delay)).toEqual([20, 30]);
     });
 
     describe('shouldRetry', () => {
@@ -160,6 +188,17 @@ describe('retryWrapper', () => {
 
             expect(fn).toHaveBeenCalledTimes(3);
             expect(shouldRetry.mock.calls.map(([, attempt]) => attempt)).toEqual([1, 2, 3]);
+        });
+
+        it('accepts an async shouldRetry, awaiting its result before continuing', async () => {
+            const err = new Error('Not retryable');
+            const fn = vi.fn(async () => {
+                throw err;
+            });
+            const shouldRetry = vi.fn(async () => false);
+
+            await expect(retryWrapper(fn, { retries: 3, shouldRetry })).rejects.toBe(err);
+            expect(fn).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -200,6 +239,55 @@ describe('retryWrapper', () => {
             expect(await scheduledDelays({ retries: 3, delay: 10, calculateDelay })).toEqual([
                 10, 20, 40, 60,
             ]);
+        });
+
+        it('accepts an async calculateDelay, awaiting its result before sleeping', async () => {
+            const calculateDelay = vi.fn(async (attempt: number) => attempt * 20);
+
+            expect(await scheduledDelays({ retries: 3, delay: 10, calculateDelay })).toEqual([
+                10, 20, 40, 60,
+            ]);
+        });
+    });
+
+    describe('exponentialJitter', () => {
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('is 0 when Math.random() returns 0', () => {
+            vi.spyOn(Math, 'random').mockReturnValue(0);
+            const delay = exponentialJitter(100, 5000);
+
+            expect(delay(1)).toBe(0);
+            expect(delay(3)).toBe(0);
+        });
+
+        it('scales exponentially with attempt, capped at maxDelay', () => {
+            // Math.random() never actually returns 1, but pinning it there lets this
+            // test assert the uncapped/capped boundary deterministically.
+            vi.spyOn(Math, 'random').mockReturnValue(1);
+            const delay = exponentialJitter(100, 5000);
+
+            expect(delay(1)).toBe(200); // 100 * 2^1
+            expect(delay(2)).toBe(400); // 100 * 2^2
+            expect(delay(10)).toBe(5000); // 100 * 2^10 = 102_400, capped at maxDelay
+        });
+
+        it('stays within [0, cap] across a range of attempts and random fractions', () => {
+            const baseDelay = 50;
+            const maxDelay = 1000;
+            const delay = exponentialJitter(baseDelay, maxDelay);
+
+            for (const random of [0, 0.25, 0.5, 0.75, 1]) {
+                vi.spyOn(Math, 'random').mockReturnValue(random);
+
+                for (const attempt of [1, 2, 3, 4, 5, 8]) {
+                    const cap = Math.min(maxDelay, baseDelay * 2 ** attempt);
+                    expect(delay(attempt)).toBeGreaterThanOrEqual(0);
+                    expect(delay(attempt)).toBeLessThanOrEqual(cap);
+                }
+            }
         });
     });
 

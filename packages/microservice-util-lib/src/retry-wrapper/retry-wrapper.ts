@@ -39,8 +39,11 @@ interface RetryWrapperConfig {
      * @param retries the number of retries so far (will start at 1)
      * @param error the error from the last attempt
      * @param config the configuration supplied to the retryWrapper
+     * @param delayMs the delay (ms) that was actually just waited before this retry —
+     * `config.delay` itself already holds the delay `calculateDelay` computed for the
+     * *next* retry, not the one that was just waited, so read this instead of that
      */
-    onRetry?: (retries: number, error: Error, config: RetryWrapperConfig) => void;
+    onRetry?: (retries: number, error: Error, config: RetryWrapperConfig, delayMs: number) => void;
     /**
      * Decides whether a given error should trigger a retry. Checked before any delay
      * is calculated; returning false rethrows the error immediately instead of
@@ -49,7 +52,7 @@ interface RetryWrapperConfig {
      * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
      * @default () => true — retries every error
      */
-    shouldRetry?: (error: Error, attempt: number) => boolean;
+    shouldRetry?: (error: Error, attempt: number) => boolean | Promise<boolean>;
     /**
      * Computes the delay (ms) before the next retry.
      * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
@@ -57,7 +60,11 @@ interface RetryWrapperConfig {
      * @param config the configuration supplied to the retryWrapper
      * @default (attempt, previousDelay, config) => previousDelay + config.backoffAmount — linear growth
      */
-    calculateDelay?: (attempt: number, previousDelay: number, config: RetryWrapperConfig) => number;
+    calculateDelay?: (
+        attempt: number,
+        previousDelay: number,
+        config: RetryWrapperConfig
+    ) => number | Promise<number>;
     /**
      * Total wall-clock ms budget across all attempts, measured from the first call.
      * Once exceeded, the next retry is skipped and the last error is thrown immediately,
@@ -83,6 +90,7 @@ type ResolvedRetryWrapperConfig = Required<Omit<RetryWrapperConfig, 'deadline'>>
  * @param startTime the timestamp (ms) the first attempt started, used to enforce `config.deadline`
  * @param runtime the clock/timer abstraction backing `now()`/`sleep()`
  * @param error the error from the last retry
+ * @param delayMs the delay (ms) that was just waited before this retry, passed through to `onRetry`
  */
 async function retryWrapperInternal<T>(
     fn: () => Promise<T>,
@@ -90,14 +98,15 @@ async function retryWrapperInternal<T>(
     retryCount: number,
     startTime: number,
     runtime: RetryRuntime,
-    error?: Error
+    error?: Error,
+    delayMs = 0
 ): Promise<T> {
     if (config.retries < 0) {
         throw error;
     }
     if (error) {
         if (config.onRetry) {
-            config.onRetry(retryCount, error, config);
+            config.onRetry(retryCount, error, config, delayMs);
         }
     }
     try {
@@ -107,7 +116,7 @@ async function retryWrapperInternal<T>(
         const caughtError = err as Error;
         const attempt = retryCount + 1;
 
-        if (!config.shouldRetry(caughtError, attempt)) {
+        if (!(await config.shouldRetry(caughtError, attempt))) {
             throw caughtError;
         }
 
@@ -115,18 +124,27 @@ async function retryWrapperInternal<T>(
             throw caughtError;
         }
 
-        await runtime.sleep(config.delay);
+        const waitedDelay = config.delay;
+        // calculateDelay's inputs don't depend on the sleep finishing, so run them
+        // concurrently — otherwise an async calculateDelay (e.g. one that fetches a
+        // remote backoff hint) would add its own latency on top of the sleep instead
+        // of overlapping with it.
+        const [, nextDelay] = await Promise.all([
+            runtime.sleep(waitedDelay),
+            config.calculateDelay(attempt, config.delay, config),
+        ]);
         return await retryWrapperInternal(
             fn,
             {
                 ...config,
                 retries: config.retries - 1,
-                delay: config.calculateDelay(attempt, config.delay, config),
+                delay: nextDelay,
             },
             attempt,
             startTime,
             runtime,
-            caughtError
+            caughtError,
+            waitedDelay
         );
     }
 }
@@ -150,7 +168,7 @@ async function retryWrapperInternal<T>(
  *   retries: 5,
  *   delay: 100,
  *   shouldRetry: (error) => error.name === 'TransientError',
- *   calculateDelay: (attempt) => Math.min(100 * 2 ** attempt, 5000) + Math.random() * 100,
+ *   calculateDelay: exponentialJitter(100, 5000),
  *   deadline: 10_000,
  * });
  * ```
@@ -177,10 +195,34 @@ async function retryWrapper<T>(fn: () => Promise<T>, config: RetryWrapperConfig)
 }
 
 /**
+ * A ready-made {@link RetryWrapperConfig.calculateDelay} strategy: full-jitter
+ * exponential backoff, picking the delay for a given attempt uniformly at random
+ * between 0 and `min(maxDelay, baseDelay * 2 ** attempt)`. Saves hand-rolling this
+ * `Math.random()`/`Math.min()` formula per caller.
+ * @param baseDelay the starting delay (ms), before exponential growth and jitter
+ * @param maxDelay the delay (ms) ceiling, applied before jitter narrows it further
+ * @example
+ * ```ts
+ * // `delay` (the wait before the *first* retry) isn't itself computed by
+ * // calculateDelay, so set it explicitly — here, matching baseDelay — or the
+ * // first retry fires with the default 0ms delay before backoff kicks in.
+ * retryWrapper(someAsyncFunction, {
+ *   retries: 5,
+ *   delay: 100,
+ *   calculateDelay: exponentialJitter(100, 5000),
+ * });
+ * ```
+ */
+function exponentialJitter(baseDelay: number, maxDelay: number): (attempt: number) => number {
+    return attempt => Math.random() * Math.min(maxDelay, baseDelay * 2 ** attempt);
+}
+
+/**
  * @deprecated Renamed to {@link RetryWrapperConfig}. The old name collided with the retry
  * middleware's own config, which forced it to be re-exported as `RetryMiddlewareConfig`.
  */
 type RetryConfig = RetryWrapperConfig;
 
+export { exponentialJitter };
 export type { RetryConfig, RetryWrapperConfig };
 export default retryWrapper;

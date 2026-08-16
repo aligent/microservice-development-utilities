@@ -8,7 +8,7 @@
 
 > **RetryDelayFn** = (`attempt`, `context`) => `number` \| `Promise`\<`number`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:38](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L38)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:38](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L38)
 
 Function type for custom retry delay calculation.
 Returns the delay in milliseconds before the next retry attempt.

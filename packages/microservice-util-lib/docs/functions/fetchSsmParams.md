@@ -36,7 +36,7 @@ the keys of the parameters to fetch
 
 > **fetchSsmParams**(`param`): `Promise`\<`Parameter` \| `undefined`\>
 
-Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:15](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L15)
+Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:15](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L15)
 
 Fetch one SSM parameter
 
@@ -60,7 +60,7 @@ Use `SSMService#getParameter` from `@aligent/aws-wrappers` instead.
 
 > **fetchSsmParams**(...`params`): `Promise`\<(`Parameter` \| `undefined`)[]\>
 
-Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:22](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L22)
+Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:22](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L22)
 
 Fetch a list of SSM parameters
 

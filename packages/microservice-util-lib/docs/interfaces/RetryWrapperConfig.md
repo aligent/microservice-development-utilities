@@ -6,7 +6,7 @@
 
 # Interface: RetryWrapperConfig
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:21](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L21)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:21](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L21)
 
 Configuration for the retryWrapper
 
@@ -18,7 +18,7 @@ Configuration for the retryWrapper
 
 > `optional` **backoffAmount?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:36](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L36)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:36](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L36)
 
 The amount to increase the delay by each retry (in ms)
 
@@ -34,9 +34,9 @@ The amount to increase the delay by each retry (in ms)
 
 ### calculateDelay?
 
-> `optional` **calculateDelay?**: (`attempt`, `previousDelay`, `config`) => `number`
+> `optional` **calculateDelay?**: (`attempt`, `previousDelay`, `config`) => `number` \| `Promise`\<`number`\>
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:60](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L60)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:63](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L63)
 
 Computes the delay (ms) before the next retry.
 
@@ -62,7 +62,7 @@ the configuration supplied to the retryWrapper
 
 #### Returns
 
-`number`
+`number` \| `Promise`\<`number`\>
 
 #### Default
 
@@ -78,7 +78,7 @@ the configuration supplied to the retryWrapper
 
 > `optional` **deadline?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:67](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L67)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:74](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L74)
 
 Total wall-clock ms budget across all attempts, measured from the first call.
 Once exceeded, the next retry is skipped and the last error is thrown immediately,
@@ -96,7 +96,7 @@ undefined — no deadline, `retries` is the only bound
 
 > `optional` **delay?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:31](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L31)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:31](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L31)
 
 The base delay between retries (in ms)
 
@@ -112,9 +112,9 @@ The base delay between retries (in ms)
 
 ### onRetry?
 
-> `optional` **onRetry?**: (`retries`, `error`, `config`) => `void`
+> `optional` **onRetry?**: (`retries`, `error`, `config`, `delayMs`) => `void`
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:43](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L43)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:46](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L46)
 
 A callback to run before each retry
 
@@ -138,6 +138,14 @@ the error from the last attempt
 
 the configuration supplied to the retryWrapper
 
+##### delayMs
+
+`number`
+
+the delay (ms) that was actually just waited before this retry —
+`config.delay` itself already holds the delay `calculateDelay` computed for the
+*next* retry, not the one that was just waited, so read this instead of that
+
 #### Returns
 
 `void`
@@ -150,7 +158,7 @@ the configuration supplied to the retryWrapper
 
 > `optional` **retries?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:26](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L26)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:26](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L26)
 
 The number of retries to attempt after the first run
 
@@ -166,9 +174,9 @@ The number of retries to attempt after the first run
 
 ### shouldRetry?
 
-> `optional` **shouldRetry?**: (`error`, `attempt`) => `boolean`
+> `optional` **shouldRetry?**: (`error`, `attempt`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:52](https://github.com/aligent/microservice-development-utilities/blob/b2c6889ec9b1af6e73d937636b016a21ca213617/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L52)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:55](https://github.com/aligent/microservice-development-utilities/blob/3299b477c44ea5ded7c52690ed62a5aa48c95908/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L55)
 
 Decides whether a given error should trigger a retry. Checked before any delay
 is calculated; returning false rethrows the error immediately instead of
@@ -190,7 +198,7 @@ the retry attempt about to be made (1-indexed, matching `onRetry`)
 
 #### Returns
 
-`boolean`
+`boolean` \| `Promise`\<`boolean`\>
 
 #### Default
 

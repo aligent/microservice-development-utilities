@@ -39,6 +39,7 @@
 - [basicAuthMiddleware](functions/basicAuthMiddleware.md)
 - [chunkBy](functions/chunkBy.md)
 - [createErrorThrowingClient](functions/createErrorThrowingClient.md)
+- [exponentialJitter](functions/exponentialJitter.md)
 - [~~fetchSsmParams~~](functions/fetchSsmParams.md)
 - [getAwsIdFromArn](functions/getAwsIdFromArn.md)
 - [hasDefinedProperties](functions/hasDefinedProperties.md)

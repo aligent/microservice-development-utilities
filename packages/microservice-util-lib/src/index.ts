@@ -37,7 +37,11 @@ import {
 } from './openapi-fetch-middlewares/utils/http-response-error';
 import remap, { ObjectMap, Remap } from './remap/remap';
 import { RetryFetchConfig, retryFetch } from './retry-fetch/retry-fetch';
-import retryWrapper, { RetryConfig, RetryWrapperConfig } from './retry-wrapper/retry-wrapper';
+import retryWrapper, {
+    RetryConfig,
+    RetryWrapperConfig,
+    exponentialJitter,
+} from './retry-wrapper/retry-wrapper';
 import S3Dao from './s3/s3';
 
 export type {
@@ -68,6 +72,7 @@ export {
     basicAuthMiddleware,
     chunkBy,
     createErrorThrowingClient,
+    exponentialJitter,
     fetchSsmParams,
     getAwsIdFromArn,
     hasDefinedProperties,
