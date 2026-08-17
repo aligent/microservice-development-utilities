@@ -59,8 +59,8 @@ interface RetryWrapperConfig {
     /**
      * Computes the delay (ms) before the next retry. Not called once `retries` are
      * exhausted, for the same reason as `shouldRetry`.
-     * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
-     * @param previousDelay the delay (ms) that was used for the attempt that just failed
+     * @param attempt the retry attempt whose following delay is being calculated
+     * @param previousDelay the delay used before that retry
      * @param config the configuration supplied to the retryWrapper
      * @default (attempt, previousDelay, config) => previousDelay + config.backoffAmount — linear growth
      */

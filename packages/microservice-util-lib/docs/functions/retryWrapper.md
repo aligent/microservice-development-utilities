@@ -8,7 +8,7 @@
 
 > **retryWrapper**\<`T`\>(`fn`, `config`): `Promise`\<`T`\>
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:209](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L209)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:203](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L203)
 
 Retry an async function if it fails
 

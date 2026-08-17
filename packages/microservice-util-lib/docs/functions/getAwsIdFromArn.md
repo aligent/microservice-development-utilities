@@ -8,7 +8,7 @@
 
 > **getAwsIdFromArn**(`resourceArn`): `string`
 
-Defined in: [packages/microservice-util-lib/src/get-aws-id-from-arn/get-aws-id-from-arn.ts:11](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/get-aws-id-from-arn/get-aws-id-from-arn.ts#L11)
+Defined in: [packages/microservice-util-lib/src/get-aws-id-from-arn/get-aws-id-from-arn.ts:11](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/get-aws-id-from-arn/get-aws-id-from-arn.ts#L11)
 
 Get the AWS ID from its resource ARN
 

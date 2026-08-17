@@ -8,7 +8,7 @@
 
 > **exponentialJitter**(`baseDelay`, `maxDelay`): (`attempt`) => `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:249](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L249)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:243](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L243)
 
 A ready-made [RetryWrapperConfig.calculateDelay](../interfaces/RetryWrapperConfig.md#calculatedelay) strategy: full-jitter
 exponential backoff, picking the delay for a given attempt uniformly at random

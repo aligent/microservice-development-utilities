@@ -6,7 +6,7 @@
 
 # ~~Interface: S3Dao~~
 
-Defined in: [packages/microservice-util-lib/src/s3/s3.ts:30](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/s3/s3.ts#L30)
+Defined in: [packages/microservice-util-lib/src/s3/s3.ts:30](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/s3/s3.ts#L30)
 
 A data access object for an S3 bucket
 
@@ -36,7 +36,7 @@ const data = await s3.getJsonObject({ Bucket: 'my-bucket', Key: key });
 
 > **deleteData**(`objectDetails`): `Promise`\<`DeleteObjectCommandOutput`\>
 
-Defined in: [packages/microservice-util-lib/src/s3/s3.ts:127](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/s3/s3.ts#L127)
+Defined in: [packages/microservice-util-lib/src/s3/s3.ts:127](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/s3/s3.ts#L127)
 
 Delete an object from the S3 bucket
 
@@ -64,7 +64,7 @@ Use `S3Service#deleteObject` from `@aligent/aws-wrappers` instead.
 
 > **fetchChunks**\<`T`\>(`chunks`): `AsyncGenerator`\<\{ `chunk`: `T`; `s3Object`: `GetObjectCommandInput` \| `undefined`; \}, `Awaited`\<`T`\>, `unknown`\>
 
-Defined in: [packages/microservice-util-lib/src/s3/s3.ts:107](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/s3/s3.ts#L107)
+Defined in: [packages/microservice-util-lib/src/s3/s3.ts:107](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/s3/s3.ts#L107)
 
 Generator to fetch chunked data, chunk by chunk
 
@@ -99,7 +99,7 @@ chunks yourself with `S3Service#getJsonObject`.
 
 > **fetchData**\<`T`\>(`objectDetails`): `Promise`\<`T`\>
 
-Defined in: [packages/microservice-util-lib/src/s3/s3.ts:90](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/s3/s3.ts#L90)
+Defined in: [packages/microservice-util-lib/src/s3/s3.ts:90](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/s3/s3.ts#L90)
 
 Fetch an object from the S3 bucket
 
@@ -135,7 +135,7 @@ Use `S3Service#getJsonObject` from `@aligent/aws-wrappers` instead.
 
 > **storeChunked**\<`T`\>(`data`, `chunkSize`): `Promise`\<`GetObjectCommandInput`[]\>
 
-Defined in: [packages/microservice-util-lib/src/s3/s3.ts:79](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/s3/s3.ts#L79)
+Defined in: [packages/microservice-util-lib/src/s3/s3.ts:79](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/s3/s3.ts#L79)
 
 Store an array of object as individual chunks in S3
 
@@ -178,7 +178,7 @@ No direct equivalent in `@aligent/aws-wrappers` — compose
 
 > **storeData**\<`T`\>(`data`, `name?`): `Promise`\<`GetObjectCommandInput`\>
 
-Defined in: [packages/microservice-util-lib/src/s3/s3.ts:51](https://github.com/aligent/microservice-development-utilities/blob/c4dce53ca953648ae0b3bf4b11ed6a027ecdec50/packages/microservice-util-lib/src/s3/s3.ts#L51)
+Defined in: [packages/microservice-util-lib/src/s3/s3.ts:51](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/s3/s3.ts#L51)
 
 Store data in an S3 bucket
 
