@@ -92,10 +92,7 @@ describe('requestTimeout', () => {
         expect(result.signal.aborted).toBe(true);
     });
 
-    it.each([0, -1, -100, NaN, Infinity])(
-        'should throw a RangeError for invalid value %s',
-        ms => {
-            expect(() => requestTimeout(ms)).toThrow(RangeError);
-        }
-    );
+    it.each([0, -1, -100, NaN, Infinity])('should throw a RangeError for invalid value %s', ms => {
+        expect(() => requestTimeout(ms)).toThrow(RangeError);
+    });
 });
