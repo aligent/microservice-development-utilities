@@ -8,7 +8,7 @@
 
 > **RetryConfig** = [`RetryWrapperConfig`](../interfaces/RetryWrapperConfig.md)
 
-Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:251](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L251)
+Defined in: [packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts:251](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/retry-wrapper/retry-wrapper.ts#L251)
 
 ## Deprecated
 

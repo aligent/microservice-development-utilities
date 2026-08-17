@@ -57,10 +57,10 @@ interface RetryWrapperConfig {
      */
     shouldRetry?: (error: Error, attempt: number) => boolean | Promise<boolean>;
     /**
-     * Computes the delay (ms) before the next retry. Not called once `retries` are
-     * exhausted, for the same reason as `shouldRetry`.
-     * @param attempt the retry attempt whose following delay is being calculated
-     * @param previousDelay the delay used before that retry
+     * Computes the delay (ms) before the retry following `attempt`. Not called once
+     * `retries` are exhausted, for the same reason as `shouldRetry`.
+     * @param attempt the retry attempt about to be made (1-indexed, matching `onRetry`)
+     * @param previousDelay the delay being waited before that retry
      * @param config the configuration supplied to the retryWrapper
      * @default (attempt, previousDelay, config) => previousDelay + config.backoffAmount — linear growth
      */

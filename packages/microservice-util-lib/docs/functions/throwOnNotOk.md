@@ -8,7 +8,7 @@
 
 > **throwOnNotOk**(): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts:20](https://github.com/aligent/microservice-development-utilities/blob/cd832d84246fb7f35100fa0dda063c453dfda731/packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts#L20)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts:20](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts#L20)
 
 Throws an [HttpResponseError](../classes/HttpResponseError.md) when a response has a non-OK status (i.e. not 2xx).
 

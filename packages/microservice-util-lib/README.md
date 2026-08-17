@@ -44,13 +44,13 @@ Retried requests do not re-enter `onRequest`. The request is cloned per attempt,
 
 ### `retryWrapper`'s attempt timeline
 
-`calculateDelay`'s result is easy to misread as the wait before the attempt it's computed alongside — it's actually the wait before the *next* one. This traces `retryWrapper(fn, { retries: 3, delay: 100, backoffAmount: 50 })` against an `fn` that always throws (the same inputs as the `calculateDelay` describe block in `retry-wrapper.test.ts`):
+`calculateDelay(attempt, previousDelay)` computes the delay before the retry *following* `attempt` — `previousDelay` is the delay being waited before `attempt` itself, not the one being computed. This traces `retryWrapper(fn, { retries: 3, delay: 100, backoffAmount: 50 })` against an `fn` that always throws (the same inputs as the `calculateDelay` describe block in `retry-wrapper.test.ts`):
 
-![retryWrapper attempt timeline: four failing attempts, each calculateDelay call setting the wait one attempt ahead, and the fourth attempt skipping every hook once retries are exhausted](docs/diagrams/attempt-timeline.svg)
+![retryWrapper attempt timeline: four failing attempts, each calculateDelay call setting the wait one attempt ahead, and the fourth attempt skipping every hook once retries are exhausted](diagrams/attempt-timeline.svg)
 
-Source: [`docs/diagrams/attempt-timeline.svg`](docs/diagrams/attempt-timeline.svg) — plain hand-editable SVG, no build step.
+Source: [`diagrams/attempt-timeline.svg`](diagrams/attempt-timeline.svg) — plain hand-editable SVG, no build step.
 
-Two things worth taking from it: `calculateDelay(1, 100)`'s `150` isn't used until the wait before attempt 3, one attempt further ahead than where it's computed; and attempt 4 skips `shouldRetry`/`calculateDelay`/`onRetry` entirely once `retries` are exhausted, so a throwing hook can't mask the real error on an attempt that was never going to retry anyway.
+Two things worth taking from it: `calculateDelay(1, 100)` returns `150`, the delay before the retry following attempt 1 — not attempt 1's own wait, which is `previousDelay` (100); and attempt 4 skips `shouldRetry`/`calculateDelay`/`onRetry` entirely once `retries` are exhausted, so a throwing hook can't mask the real error on an attempt that was never going to retry anyway.
 
 ### Migrating from `retryMiddleware`
 
