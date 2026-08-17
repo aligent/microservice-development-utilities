@@ -8,7 +8,7 @@
 
 > **retryMiddleware**(`config?`): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts:192](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts#L192)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts:192](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/retry.ts#L192)
 
 This middleware implements retry logic with support for:
 - Configurable number of retry attempts

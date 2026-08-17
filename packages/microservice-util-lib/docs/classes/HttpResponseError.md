@@ -6,7 +6,7 @@
 
 # Class: HttpResponseError\<TBody\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:58](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L58)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:58](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L58)
 
 Custom error class for HTTP response errors, similar to Axios Error.
 Provides detailed information about the failed request and response.
@@ -67,7 +67,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:26
 
 > `readonly` **isHttpResponseError**: `true` = `true`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:64](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L64)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:64](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L64)
 
 ***
 
@@ -91,7 +91,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1077
 
 > `readonly` **name**: `"HttpResponseError"` = `'HttpResponseError'`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:59](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L59)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:59](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L59)
 
 #### Overrides
 
@@ -105,7 +105,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/
 
 > `readonly` **request**: `HttpRequestData`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:63](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L63)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:63](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L63)
 
 ***
 
@@ -115,7 +115,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/
 
 > `readonly` **response**: `HttpResponseData`\<`TBody`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:62](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L62)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:62](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L62)
 
 ***
 
@@ -139,7 +139,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1078
 
 > `readonly` **status**: `number`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:60](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L60)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:60](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L60)
 
 ***
 
@@ -149,7 +149,7 @@ Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/
 
 > `readonly` **statusText**: `string`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:61](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L61)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:61](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L61)
 
 ***
 
@@ -183,7 +183,7 @@ not capture any frames.
 
 > **toJson**(): `object`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:123](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L123)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:123](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L123)
 
 Returns a JSON representation of the error for logging/debugging.
 
@@ -295,7 +295,7 @@ a();
 
 > `static` **create**\<`TBody`\>(`response`, `request`): `Promise`\<`HttpResponseError`\<`TBody`\>\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:88](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L88)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts:88](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/utils/http-response-error.ts#L88)
 
 Creates an HttpResponseError with pre-read request and response bodies.
 Bodies are read eagerly so they are available for logging/serialization.

@@ -28,13 +28,15 @@ const { username, password } = await ssm.getParameters({
 
 ## Param
 
+**params**
+
 the keys of the parameters to fetch
 
 ## Call Signature
 
 > **fetchSsmParams**(`param`): `Promise`\<`Parameter` \| `undefined`\>
 
-Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:15](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L15)
+Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:15](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L15)
 
 Fetch one SSM parameter
 
@@ -58,7 +60,7 @@ Use `SSMService#getParameter` from `@aligent/aws-wrappers` instead.
 
 > **fetchSsmParams**(...`params`): `Promise`\<(`Parameter` \| `undefined`)[]\>
 
-Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:22](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L22)
+Defined in: [packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts:22](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/fetch-ssm-params/fetch-ssm-params.ts#L22)
 
 Fetch a list of SSM parameters
 
