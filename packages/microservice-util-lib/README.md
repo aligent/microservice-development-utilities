@@ -42,6 +42,16 @@ Retried requests do not re-enter `onRequest`. The request is cloned per attempt,
 
 `retryFetch` is HTTP-specific: it inspects status codes and distinguishes network errors from application failures. `retryWrapper` retries *any* async function and triggers only on a thrown error. Reach for `retryWrapper` when retrying something that is not a fetch, such as an SDK call.
 
+### `retryWrapper`'s attempt timeline
+
+`calculateDelay`'s result is easy to misread as the wait before the attempt it's computed alongside — it's actually the wait before the *next* one. This traces `retryWrapper(fn, { retries: 3, delay: 100, backoffAmount: 50 })` against an `fn` that always throws (the same inputs as the `calculateDelay` describe block in `retry-wrapper.test.ts`):
+
+![retryWrapper attempt timeline: four failing attempts, each calculateDelay call setting the wait one attempt ahead, and the fourth attempt skipping every hook once retries are exhausted](docs/diagrams/attempt-timeline.svg)
+
+Source: [`docs/diagrams/attempt-timeline.svg`](docs/diagrams/attempt-timeline.svg) — plain hand-editable SVG, no build step.
+
+Two things worth taking from it: `calculateDelay(1, 100)`'s `150` isn't used until the wait before attempt 3, one attempt further ahead than where it's computed; and attempt 4 skips `shouldRetry`/`calculateDelay`/`onRetry` entirely once `retries` are exhausted, so a throwing hook can't mask the real error on an attempt that was never going to retry anyway.
+
 ### Migrating from `retryMiddleware`
 
 `retryMiddleware` is deprecated. It retried inside its own `onResponse` hook, so retried responses re-entered the chain past any middleware registered after it — response-transforming middleware silently skipped them, returning a body in the wrong shape rather than an error.
