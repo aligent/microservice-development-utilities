@@ -2,6 +2,13 @@ import { XMLParser } from 'fast-xml-parser';
 import { Middleware } from 'openapi-fetch';
 import type { ExpressionSet, MatcherView } from 'path-expression-matcher';
 
+const XML_CONTENT_TYPE_RE = /^(?:application\/xml|text\/xml)\b|[/+]xml\b/i;
+const XHTML_CONTENT_TYPE_RE = /^application\/xhtml\+xml\b/i;
+
+function isXmlContentType(contentType: string): boolean {
+    return XML_CONTENT_TYPE_RE.test(contentType) && !XHTML_CONTENT_TYPE_RE.test(contentType);
+}
+
 /**
  * Builds the response XML parser.
  *
@@ -17,8 +24,7 @@ import type { ExpressionSet, MatcherView } from 'path-expression-matcher';
  * - Tag text values are kept as raw strings (no implicit number/boolean coercion).
  * - Leading/trailing whitespace in text nodes is trimmed.
  *
- * @param expressions - Optional set of jPath expressions identifying array nodes,
- *   typically generated from the OpenAPI spec via `generate-array-paths`.
+ * @param expressions - Optional set of jPath expressions identifying array nodes.
  * @returns A configured {@link XMLParser} instance.
  */
 export function createXmlParser(expressions?: ExpressionSet): XMLParser {
@@ -41,9 +47,11 @@ export function createXmlParser(expressions?: ExpressionSet): XMLParser {
  * to JSON, so every layer downstream of the transport works with a single body
  * format.
  *
- * Only responses whose `Content-Type` contains `xml` are converted. All other
- * responses (JSON, HTML, plain text, missing header) are returned untouched, so
- * non-XML error pages from load balancers or proxies pass through unmangled.
+ * Only responses whose `Content-Type` is `application/xml`, `text/xml`, or a
+ * subtype ending with `+xml` are converted. `application/xhtml+xml` is
+ * explicitly excluded to avoid mangling XHTML pages. All other responses
+ * (JSON, HTML, plain text, missing header) are returned untouched, so non-XML
+ * error pages from load balancers or proxies pass through unmangled.
  *
  * @param expressions - Optional jPath expression set forwarded to
  *   {@link createXmlParser} for array-node detection.
@@ -54,12 +62,18 @@ export function parseXmlResponse(expressions?: ExpressionSet): Middleware {
 
     return {
         onResponse: async ({ response }) => {
+            const contentType = response.headers.get('Content-Type') ?? '';
+
+            if (!response.body || !isXmlContentType(contentType)) {
+                return response;
+            }
+
             const headers = new Headers(response.headers);
-            if (!headers.get('Content-Type')?.includes('xml')) return response;
+            headers.set('Content-Type', 'application/json');
+            headers.delete('Content-Length');
+            headers.delete('Content-Encoding');
 
             const { status, statusText } = response;
-            headers.set('Content-Type', 'application/json');
-
             const text = await response.text();
             const body = JSON.stringify(parser.parse(text));
 

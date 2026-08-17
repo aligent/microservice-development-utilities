@@ -65,7 +65,7 @@ handlerBundle('src/runtime/handlers', {
 ## Behaviour
 
 - Automatically skips handler environment creation when running under **vitest** (`VITEST=true`), so tests run without interference.
-- Disables Rolldown's `pluginTimings` check (`checks: { pluginTimings: false }`) to suppress misleading `[PLUGIN_TIMINGS]` warnings. Vite 8's per-environment plugin resolution re-adds built-in plugins after config resolution, so plugins that do no meaningful work for Lambda bundles still appear in timing reports. See [Rolldown docs](https://rolldown.rs/options/checks#plugintimings) for details.
+- Sets `checks: { pluginTimings: false }` to silence misleading `[PLUGIN_TIMINGS]` warnings. This does **not** remove any plugins — it only suppresses the timing diagnostic. Vite 8's per-environment plugin resolution re-adds built-in plugins after config resolution, so plugins that do no meaningful work for Lambda bundles still appear in timing reports. See [Rolldown docs](https://rolldown.rs/options/checks#plugintimings) for details.
 - Conditionally injects shims via `renderChunk` only when the bundled output actually references the corresponding identifiers:
 
   | Shim | Trigger | Purpose |

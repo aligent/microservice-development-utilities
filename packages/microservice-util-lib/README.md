@@ -68,6 +68,71 @@ Config mapping:
 
 One behavioural difference to check when migrating: under `retryMiddleware`, supplying `retryOn` replaced the status check *and* left network errors retrying through a separate path. Under `retryFetch`, `retryOn` is an allow-list of statuses only — network errors continue to go through `retryCondition`, and `idempotentOnly` applies to the `retryOn` path too. A `POST` returning a listed status is therefore no longer retried unless you set `idempotentOnly: false`.
 
+## Request Timeout
+
+`requestTimeout` adds an `AbortSignal.timeout` to each request via `onRequest`. If the caller already supplies a signal (e.g. for Lambda lifetime), both signals are composed with `AbortSignal.any` so that whichever fires first aborts the request.
+
+```ts
+client.use(requestTimeout(5000));
+```
+
+**Interaction with `retryFetch`:** Because `requestTimeout` runs once in `onRequest` before the request reaches `retryFetch`, and `Request.clone()` preserves the original signal, the timeout acts as a **single deadline across all retry attempts** — not a per-attempt limit. A `TimeoutError` is not classified as a network error, so `retryFetch` will not retry it.
+
+If you need a per-attempt timeout, wrap the base fetch instead:
+
+```ts
+const timeoutFetch: typeof fetch = (input, init) => {
+  const request = new Request(input, init);
+  const signal = AbortSignal.any([request.signal, AbortSignal.timeout(5000)]);
+  return fetch(new Request(request, { signal }));
+};
+
+const client = createClient<paths>({
+  baseUrl,
+  fetch: retryFetch(timeoutFetch, { retries: 3 }),
+});
+```
+
+## XML Response Parsing
+
+`parseXmlResponse` converts XML responses to JSON in `onResponse`, so every downstream layer works with a single body format. Only `application/xml`, `text/xml`, and `+xml` subtypes are converted — `application/xhtml+xml` and non-XML responses pass through untouched.
+
+```ts
+client.use(parseXmlResponse());
+```
+
+The optional `ExpressionSet` parameter controls array normalisation. XML has no way to distinguish a one-element list from a scalar, so `fast-xml-parser` collapses single-child elements to a plain value by default. Pass an `ExpressionSet` with jPath patterns for nodes that should always be arrays:
+
+```ts
+import { Expression, ExpressionSet } from 'path-expression-matcher';
+
+const expressions = new ExpressionSet();
+expressions.add(new Expression('Root.Items.Item'));
+
+client.use(parseXmlResponse(expressions));
+```
+
+> **Note:** `fast-xml-parser` does not validate XML. A non-XML document served with an XML content-type may parse to `{}`. Register `logMiddleware` before `parseXmlResponse` to capture the raw response for debugging.
+
+## Middleware Ordering
+
+openapi-fetch runs `onRequest` hooks in registration order and `onResponse` hooks in **reverse** registration order. A typical registration:
+
+```ts
+const client = createClient<paths>({
+  baseUrl,
+  fetch: retryFetch({ retries: 3 }),
+});
+client.use(
+  requestTimeout(30_000),   // onRequest: adds deadline signal
+  throwOnNotOk(),           // onResponse (last): throws on non-2xx
+  parseXmlResponse(),       // onResponse: XML → JSON before throwOnNotOk inspects the body
+  logMiddleware('MyApi'),   // onResponse (first): logs the raw response before any transformation
+);
+```
+
+The `onResponse` execution order for the example above is: `logMiddleware` → `parseXmlResponse` → `throwOnNotOk`.
+
 ## Deprecations
 
 `fetchSsmParams` and `S3Dao` are deprecated in favour of `SSMService` and
