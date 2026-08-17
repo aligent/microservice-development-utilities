@@ -159,6 +159,51 @@ describe('retryWrapper', () => {
         expect(onRetry.mock.calls.map(([, , config]) => config.delay)).toEqual([20, 30]);
     });
 
+    describe('backward compatibility with the pre-existing 4-field API', () => {
+        it('preserves attempt count, onRetry call count/values, and the thrown error for a caller using only retries/delay/backoffAmount/onRetry', async () => {
+            const err = new Error('Test Error');
+            const fn = vi.fn(async () => {
+                throw err;
+            });
+            // Implemented with 2 params — no knowledge of delayMs — matching this
+            // repo's own onRetry example prior to this branch:
+            // `onRetry: (_, error) => console.error(error)`. Declared against the
+            // full 4-arg call signature only so `.mock.calls` below stays correctly
+            // typed; the implementation itself is exactly what a pre-existing caller
+            // would have written.
+            const onRetry = vi.fn<
+                (retries: number, error: Error, config: { delay?: number }, delayMs: number) => void
+            >((_retries, _error) => undefined);
+            const delays: number[] = [];
+            mockImmediateSetTimeout(ms => delays.push(ms));
+
+            let thrown: unknown;
+            try {
+                await retryWrapper(fn, { retries: 3, delay: 100, backoffAmount: 50, onRetry });
+            } catch (e) {
+                thrown = e;
+            } finally {
+                vi.mocked(globalThis.setTimeout).mockRestore();
+            }
+
+            // Unchanged from before shouldRetry/calculateDelay/deadline existed: 4 fn()
+            // calls (retries + 1), the same error identity propagates, and onRetry is
+            // called 3 times with the same (retries, error) values and the same
+            // linearly-grown config.delay.
+            expect(thrown).toBe(err);
+            expect(fn).toHaveBeenCalledTimes(4);
+            expect(onRetry).toHaveBeenCalledTimes(3);
+            expect(onRetry.mock.calls.map(([retries]) => retries)).toEqual([1, 2, 3]);
+            expect(onRetry.mock.calls.every(([, error]) => error === err)).toBe(true);
+            expect(onRetry.mock.calls.map(([, , config]) => config.delay)).toEqual([150, 200, 250]);
+
+            // The one intentional difference from pre-existing behaviour: the 4th
+            // (exhausted) attempt no longer sleeps uselessly before throwing, so this
+            // is 3 delays, not 4 — see the "adds a delay between tries" test above.
+            expect(delays).toEqual([100, 150, 200]);
+        });
+    });
+
     describe('shouldRetry', () => {
         it('rethrows immediately without retrying when shouldRetry returns false', async () => {
             const err = new Error('Not retryable');
