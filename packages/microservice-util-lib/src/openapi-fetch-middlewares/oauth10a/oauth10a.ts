@@ -1,7 +1,56 @@
 import crypto from 'crypto';
-import { rfc3986, sign } from 'oauth-sign';
 import { MiddlewareCallbackParams } from 'openapi-fetch';
 import { OAuth10a, resolve } from '../authentications';
+
+/**
+ * RFC 3986 percent-encoding.
+ * Encodes all characters except unreserved characters (ALPHA, DIGIT, '-', '.', '_', '~').
+ * @see https://datatracker.ietf.org/doc/html/rfc3986#section-2.1
+ */
+function rfc3986(str: string): string {
+    return encodeURIComponent(str)
+        .replace(/!/g, '%21')
+        .replace(/\*/g, '%2A')
+        .replace(/\(/g, '%28')
+        .replace(/\)/g, '%29')
+        .replace(/'/g, '%27');
+}
+
+/**
+ * Generates an OAuth 1.0a signature using HMAC.
+ *
+ * Implements the signature base string construction per RFC 5849 Section 3.4.1
+ * and HMAC-based signing per Section 3.4.2.
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc5849#section-3.4.1
+ */
+function hmacSign(
+    algorithm: OAuth10a['algorithm'],
+    httpMethod: string,
+    baseUri: string,
+    params: Record<string, string | string[]>,
+    consumerSecret: string,
+    tokenSecret?: string
+): string {
+    // Parameter normalization per RFC 5849 Section 3.4.1.3.2
+    const normalized = Object.entries(params)
+        .flatMap<[string, string]>(([key, val]) =>
+            Array.isArray(val)
+                ? val.map(v => [rfc3986(key), rfc3986(v)] as [string, string])
+                : [[rfc3986(key), rfc3986(val || '')] as [string, string]]
+        )
+        .sort(([aName, aVal], [bName, bVal]) =>
+            aName < bName ? -1 : aName > bName ? 1 : aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+        )
+        .map(p => p.join('='))
+        .join('&');
+
+    const signAlgorithm = algorithm === 'HMAC-SHA1' ? 'sha1' : 'sha256';
+    const base = [rfc3986(httpMethod.toUpperCase()), rfc3986(baseUri), rfc3986(normalized)];
+    const key = [rfc3986(consumerSecret || ''), rfc3986(tokenSecret || '')];
+
+    return crypto.createHmac(signAlgorithm, key.join('&')).update(base.join('&')).digest('base64');
+}
 
 /**
  * Determines whether a given URL is absolute.
@@ -219,7 +268,7 @@ async function signOauth10a(input: SignOauth10aInput, config: OAuth10a): Promise
         addParamToSign(paramsToSign, 'oauth_body_hash', bodyHash);
     }
 
-    oauthParams.oauth_signature = sign(
+    oauthParams.oauth_signature = hmacSign(
         algorithm,
         method,
         oauthUrl,
