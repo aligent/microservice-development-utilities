@@ -8,7 +8,7 @@
 
 > **RetryConditionFn** = (`context`, `idempotentOnly`) => `boolean` \| `Promise`\<`boolean`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:25](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L25)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:25](https://github.com/aligent/microservice-development-utilities/blob/b0663196a9151bf212120e65463afd54a6c9e6a3/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L25)
 
 Function type for custom retry condition.
 Returns true if the request should be retried.

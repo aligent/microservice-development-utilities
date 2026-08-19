@@ -10,7 +10,7 @@
 
 > **retryFetch**(`config?`): (`input`, `init?`) => `Promise`\<`Response`\>
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:139](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L139)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:139](https://github.com/aligent/microservice-development-utilities/blob/b0663196a9151bf212120e65463afd54a6c9e6a3/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L139)
 
 Wraps a fetch implementation with retry behaviour.
 
@@ -56,7 +56,7 @@ const client = createClient<paths>({ baseUrl, fetch: retryFetch(myFetch, { retri
 
 > **retryFetch**(`fetchImpl?`, `config?`): (`input`, `init?`) => `Promise`\<`Response`\>
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:148](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L148)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:148](https://github.com/aligent/microservice-development-utilities/blob/b0663196a9151bf212120e65463afd54a6c9e6a3/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L148)
 
 Accepts `undefined` so an optional transport can be passed straight through,
 such as `retryFetch(options.fetch)` where `ClientOptions.fetch` may be unset.

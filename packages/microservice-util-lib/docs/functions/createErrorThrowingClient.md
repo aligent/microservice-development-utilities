@@ -8,7 +8,7 @@
 
 > **createErrorThrowingClient**\<`Paths`, `Media`\>(`options`): [`ErrorThrowingClient`](../interfaces/ErrorThrowingClient.md)\<`Paths`, `Media`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:112](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L112)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts:112](https://github.com/aligent/microservice-development-utilities/blob/b0663196a9151bf212120e65463afd54a6c9e6a3/packages/microservice-util-lib/src/openapi-fetch-middlewares/throwing-client.ts#L112)
 
 Create an openapi-fetch client and cast it to an ErrorThrowingClient.
 
