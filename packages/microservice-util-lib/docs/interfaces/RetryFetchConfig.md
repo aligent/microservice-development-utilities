@@ -6,7 +6,7 @@
 
 # Interface: RetryFetchConfig
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:42](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L42)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:42](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L42)
 
 Configuration for [retryFetch](../functions/retryFetch.md).
 
@@ -20,7 +20,7 @@ Configuration for [retryFetch](../functions/retryFetch.md).
 
 > `optional` **baseDelay?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:44](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L44)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:44](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L44)
 
 Base delay in milliseconds for the built-in strategies.
 
@@ -32,7 +32,7 @@ Base delay in milliseconds for the built-in strategies.
 
 > `optional` **idempotentOnly?**: `boolean`
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:50](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L50)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:50](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L50)
 
 Retry only GET, HEAD, OPTIONS, PUT and DELETE.
 - Set `false` to retry POST and PATCH, accepting the risk of a duplicated write when the
@@ -49,7 +49,7 @@ Note there is no `throwOnNotOk`: `retryFetch` returns non-OK responses as-is. Re
 
 > `optional` **maxDelay?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:45](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L45)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:45](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L45)
 
 Upper bound in milliseconds for the built-in strategies.
 
@@ -61,7 +61,7 @@ Upper bound in milliseconds for the built-in strategies.
 
 > `optional` **onRetry?**: [`OnRetryFn`](../type-aliases/OnRetryFn.md)
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:47](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L47)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:47](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L47)
 
 Called before each retry, never before the first attempt.
 - Receives a clone of the request, so reading the body to re-sign it is safe.
@@ -75,7 +75,7 @@ Called before each retry, never before the first attempt.
 
 > `optional` **retries?**: `number`
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:43](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L43)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:43](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L43)
 
 The maximum number of retry attempts after the first.
 
@@ -87,7 +87,7 @@ The maximum number of retry attempts after the first.
 
 > `optional` **retryCondition?**: [`RetryConditionFn`](../type-aliases/RetryConditionFn.md)
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:49](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L49)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:49](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L49)
 
 Decides whether to retry. Defaults to 5xx, 429, 408 and network errors.
 - Ignored for responses whose status is checked against `retryOn`, when that is supplied.
@@ -100,7 +100,7 @@ Decides whether to retry. Defaults to 5xx, 429, 408 and network errors.
 
 > `optional` **retryDelay?**: [`RetryDelayFn`](../type-aliases/RetryDelayFn.md) \| `"exponential"` \| `"linear"`
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:46](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L46)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:46](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L46)
 
 Strategy for calculating the delay between retries.
      - 'exponential': `baseDelay * 2^(attempt - 1)`
@@ -115,7 +115,7 @@ Strategy for calculating the delay between retries.
 
 > `optional` **retryOn?**: `number`[]
 
-Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:48](https://github.com/aligent/microservice-development-utilities/blob/746c97fa9b886159e6b3133925f205ce30b1e675/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L48)
+Defined in: [packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts:48](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/retry-fetch/retry-fetch.ts#L48)
 
 Allow-list of HTTP status codes that trigger a retry, replacing the default status check.
 - Applies to *statuses only*: network errors still retry via `retryCondition`, and

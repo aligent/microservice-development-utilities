@@ -84,6 +84,7 @@ function logMiddleware(
             const contentType = response.headers.get('Content-Type');
             log(`Response from ${clientName}`, {
                 status: response.status,
+                contentType,
                 body: await parseBody(response.clone(), contentType),
             });
         },

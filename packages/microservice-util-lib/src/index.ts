@@ -15,6 +15,8 @@ import {
     resignOauth10aRequest,
 } from './openapi-fetch-middlewares/authentications';
 import { LogLevel, Logger, logMiddleware } from './openapi-fetch-middlewares/log';
+import { createXmlParser, parseXmlResponse } from './openapi-fetch-middlewares/parse-xml-response';
+import { requestTimeout } from './openapi-fetch-middlewares/request-timeout';
 import {
     RetryConfig as RetryMiddlewareConfig,
     retryMiddleware,
@@ -68,6 +70,7 @@ export {
     basicAuthMiddleware,
     chunkBy,
     createErrorThrowingClient,
+    createXmlParser,
     fetchSsmParams,
     getAwsIdFromArn,
     hasDefinedProperties,
@@ -75,7 +78,9 @@ export {
     logMiddleware,
     oAuth10aAuthMiddleware,
     oAuth20AuthMiddleware,
+    parseXmlResponse,
     remap,
+    requestTimeout,
     resignOauth10aRequest,
     retryFetch,
     retryMiddleware,

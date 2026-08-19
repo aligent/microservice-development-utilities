@@ -223,12 +223,16 @@ describe('handlerBundle', () => {
         expect(moduleTypes['.graphql']).toBe('text');
     });
 
-    it('includes strip-unneeded-plugins in returned config', () => {
+    it('disables pluginTimings in rolldown checks', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;
 
-        const plugins = result['plugins'] as Array<{ name: string }>;
-        expect(plugins.some(p => p.name === 'strip-unneeded-plugins')).toBe(true);
+        const environments = result['environments'] as Record<string, Record<string, unknown>>;
+        const env = Object.values(environments)[0] as Record<string, unknown>;
+        const build = env['build'] as Record<string, unknown>;
+        const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
+        const checks = rolldownOptions['checks'] as Record<string, unknown>;
+        expect(checks['pluginTimings']).toBe(false);
     });
 
     it('has renderChunk directly on the plugin object', () => {
