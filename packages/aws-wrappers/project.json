@@ -5,9 +5,10 @@
     "sourceRoot": "packages/aws-wrappers/src",
     "targets": {
         "build": {
-            "dependsOn": ["^typedoc", "package-dist"]
+            "dependsOn": ["package-dist"]
         },
         "package-dist": {
+            "dependsOn": ["typedoc"],
             "executor": "nx:run-commands",
             "outputs": [
                 "{projectRoot}/dist/package.json",
