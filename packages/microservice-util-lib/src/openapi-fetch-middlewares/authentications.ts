@@ -1,17 +1,7 @@
 import type { Middleware } from 'openapi-fetch';
 import { generateOauthParams, resignOauth10aRequest } from './oauth10a/oauth10a.js';
 import type { ApiKey, Basic, OAuth10a, OAuth20, Resolvable } from './types/authentications.js';
-
-/**
- * Resolves a `Resolvable<T>` value to its underlying type.
- * If the value is a function, it is called and awaited; otherwise, it is returned as-is.
- *
- * @param {Resolvable<T>} value - The resolvable value.
- * @returns {Promise<T>} The resolved value.
- */
-async function resolve<T>(value: Resolvable<T>): Promise<T> {
-    return typeof value === 'function' ? await (value as () => T | Promise<T>)() : value;
-}
+import { resolveCredential } from './utils/resolve-credential.js';
 
 /**
  * Creates an openapi-fetch middleware for API key authentication.
@@ -37,7 +27,7 @@ async function resolve<T>(value: Resolvable<T>): Promise<T> {
 function apiKeyAuthMiddleware(config: ApiKey): Middleware {
     return {
         onRequest: async ({ request }) => {
-            request.headers.set(config.header, await resolve(config.value));
+            request.headers.set(config.header, await resolveCredential(config.value));
         },
     };
 }
@@ -65,7 +55,7 @@ function apiKeyAuthMiddleware(config: ApiKey): Middleware {
 function basicAuthMiddleware(config: Basic): Middleware {
     return {
         onRequest: async ({ request }) => {
-            const { username, password } = await resolve(config.credentials);
+            const { username, password } = await resolveCredential(config.credentials);
 
             request.headers.set(
                 'Authorization',
@@ -138,12 +128,14 @@ function oAuth20AuthMiddleware(options: OAuth20): Middleware {
         onRequest: async ({ request }) => {
             const { tokenType = 'Bearer' } = options;
 
-            request.headers.set('Authorization', `${tokenType} ${await resolve(options.token)}`);
+            request.headers.set(
+                'Authorization',
+                `${tokenType} ${await resolveCredential(options.token)}`
+            );
         },
     };
 }
 
-export { resolve };
 export type { ApiKey, Basic, OAuth10a, OAuth20, Resolvable };
 
 export {

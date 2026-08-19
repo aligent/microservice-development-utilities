@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { MiddlewareCallbackParams } from 'openapi-fetch';
-import { OAuth10a, resolve } from '../authentications.js';
+import type { OAuth10a } from '../types/authentications.js';
+import { resolveCredential } from '../utils/resolve-credential.js';
 
 /**
  * RFC 3986 percent-encoding.
@@ -222,7 +223,9 @@ interface SignOauth10aInput {
 async function signOauth10a(input: SignOauth10aInput, config: OAuth10a): Promise<string> {
     const { algorithm, includeBodyHash = 'auto', realm, callback, verifier } = config;
     const { method, oauthUrl, body, contentType, query } = input;
-    const { consumerKey, consumerSecret, token, tokenSecret } = await resolve(config.credentials);
+    const { consumerKey, consumerSecret, token, tokenSecret } = await resolveCredential(
+        config.credentials
+    );
 
     const oauthParams: Record<string, string> = {
         oauth_consumer_key: consumerKey,
