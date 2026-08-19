@@ -6,7 +6,7 @@
 
 # Interface: RetryContext
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:10](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L10)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:10](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L10)
 
 Represents the context for a retry attempt.
 
@@ -20,7 +20,7 @@ Represents the context for a retry attempt.
 
 > **attempt**: `number`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:11](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L11)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:11](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L11)
 
 The current attempt number (1-indexed).
 
@@ -32,7 +32,7 @@ The current attempt number (1-indexed).
 
 > **error**: `Error` \| `null`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:14](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L14)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:14](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L14)
 
 The error that triggered the retry, if any.
 
@@ -44,7 +44,7 @@ The error that triggered the retry, if any.
 
 > **request**: `Request`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:12](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L12)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:12](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L12)
 
 The original request being retried.
 
@@ -56,6 +56,6 @@ The original request being retried.
 
 > **response**: `Response` \| `null`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:13](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L13)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts:13](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/types/retry.ts#L13)
 
 The response that triggered the retry.

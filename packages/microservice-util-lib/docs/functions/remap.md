@@ -8,7 +8,7 @@
 
 > **remap**\<`Original`, `MapArray`\>(`object`, `map`): `SimplifyIntersection`\<`ConstructTypeFromProperties`\<`MapArray`, `Original`, `0`\>\>
 
-Defined in: [packages/microservice-util-lib/src/remap/remap.ts:246](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/remap/remap.ts#L246)
+Defined in: [packages/microservice-util-lib/src/remap/remap.ts:246](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/remap/remap.ts#L246)
 
 Map one object's values to another structure
 

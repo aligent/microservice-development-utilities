@@ -14,7 +14,6 @@
 - [Basic](interfaces/Basic.md)
 - [ClientOptions](interfaces/ClientOptions.md)
 - [ErrorThrowingClient](interfaces/ErrorThrowingClient.md)
-- [Logger](interfaces/Logger.md)
 - [OAuth10a](interfaces/OAuth10a.md)
 - [OAuth20](interfaces/OAuth20.md)
 - [RetryContext](interfaces/RetryContext.md)
@@ -25,7 +24,7 @@
 
 ## Type Aliases
 
-- [LogLevel](type-aliases/LogLevel.md)
+- [LogMethod](type-aliases/LogMethod.md)
 - [ObjectMap](type-aliases/ObjectMap.md)
 - [OnRetryFn](type-aliases/OnRetryFn.md)
 - [Remap](type-aliases/Remap.md)

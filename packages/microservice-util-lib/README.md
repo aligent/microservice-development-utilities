@@ -16,8 +16,10 @@ const client = createClient<paths>({
   baseUrl,
   fetch: retryFetch({ retries: 3, retryDelay: 'exponential' }),
 });
-client.use(throwOnNotOk(), logMiddleware('MyApi'));
+client.use(throwOnNotOk(), logMiddleware('MyApi', logger));
 ```
+
+`logMiddleware` requires a `LoggerInterface` instance from `@aws-lambda-powertools/logger` (or similar logger interfaces). This produces structured JSON logs and avoids the `[Object] [Object]` problem that `console.log` has with nested objects.
 
 The fetch implementation is optional and defaults to the global `fetch`. Pass one when the client needs a specific transport:
 
@@ -32,8 +34,8 @@ It is resolved on each attempt rather than captured when you call `retryFetch`, 
 **Ordering matters here.** openapi-fetch runs `onResponse` in *reverse* registration order, so middleware registered after `throwOnNotOk()` runs before it and still observes the failing response:
 
 ```ts
-client.use(throwOnNotOk(), logMiddleware('MyApi')); // logs the 500, then throws
-client.use(logMiddleware('MyApi'), throwOnNotOk()); // throws first; the 500 is never logged
+client.use(throwOnNotOk(), logMiddleware('MyApi', logger)); // logs the 500, then throws
+client.use(logMiddleware('MyApi', logger), throwOnNotOk()); // throws first; the 500 is never logged
 ```
 
 Retried requests do not re-enter `onRequest`. The request is cloned per attempt, so headers already applied survive and a body-bearing request can be sent more than once, but anything that must be recomputed per attempt — OAuth 1.0a signatures, HMAC-over-body, short-lived bearer tokens — needs the `onRetry` callback, which can return a replacement `Request`.
@@ -127,11 +129,19 @@ client.use(
   requestTimeout(30_000),   // onRequest: adds deadline signal
   throwOnNotOk(),           // onResponse (last): throws on non-2xx
   parseXmlResponse(),       // onResponse: XML → JSON before throwOnNotOk inspects the body
-  logMiddleware('MyApi'),   // onResponse (first): logs the raw response before any transformation
+  logMiddleware('MyApi', logger),   // onResponse (first): logs the raw response before any transformation
 );
 ```
 
 The `onResponse` execution order for the example above is: `logMiddleware` → `parseXmlResponse` → `throwOnNotOk`.
+
+## Peer Dependencies
+
+This package requires `@aws-lambda-powertools/logger` (^2.0.0) as a peer dependency for the `logMiddleware` function. Install it alongside this package:
+
+```sh
+npm install @aws-lambda-powertools/logger
+```
 
 ## Deprecations
 

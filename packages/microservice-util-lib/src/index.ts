@@ -14,7 +14,7 @@ import {
     oAuth20AuthMiddleware,
     resignOauth10aRequest,
 } from './openapi-fetch-middlewares/authentications';
-import { LogLevel, Logger, logMiddleware } from './openapi-fetch-middlewares/log';
+import { LogMethod, logMiddleware } from './openapi-fetch-middlewares/log';
 import { createXmlParser, parseXmlResponse } from './openapi-fetch-middlewares/parse-xml-response';
 import { requestTimeout } from './openapi-fetch-middlewares/request-timeout';
 import {
@@ -47,8 +47,7 @@ export type {
     Basic,
     ClientOptions,
     ErrorThrowingClient,
-    LogLevel,
-    Logger,
+    LogMethod,
     OAuth10a,
     OAuth20,
     ObjectMap,

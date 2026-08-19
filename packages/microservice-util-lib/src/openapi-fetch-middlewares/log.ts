@@ -1,72 +1,52 @@
+import type {
+    LoggerInterface,
+    LogLevel,
+} from '@aws-lambda-powertools/logger/types';
 import type { Middleware } from 'openapi-fetch';
 import { parseBody } from './utils/body-parser';
-/**
- * Logger interface to support various logging implementations
- * (console, winston, pino, bunyan, etc.)
- */
-interface Logger {
-    info(message: string, ...args: unknown[]): void;
-    debug?(message: string, ...args: unknown[]): void;
-}
 
-type LogLevel = 'INFO' | 'DEBUG';
+type LogMethod = Exclude<LogLevel, 'SILENT' | 'silent'>;
 
 /**
  * Creates a logging middleware for openapi-fetch clients.
  *
  * This middleware logs HTTP requests and responses with Content-Type handling.
- * It supports various logger implementations and configurable log levels (INFO or DEBUG).
+ * It uses Powertools Logger for structured JSON output.
  *
  * Features:
  * - Automatic Content-Type detection and appropriate parsing
  * - Support for JSON, text, XML, form data, and binary content
- * - Configurable log levels (INFO/DEBUG)
- * - Compatible with multiple logging libraries
+ * - Configurable log level (defaults to INFO)
+ * - Structured JSON logging via Powertools Logger
  *
  * @param clientName - A descriptive name for the API client (used in log messages)
- * @param logLevel - The logging level to use: 'INFO' (default) or 'DEBUG'
- * @param logger - Logger instance implementing the Logger interface (defaults to console)
+ * @param logger - Logger instance implementing Powertools LoggerInterface
+ * @param logLevel - Which logger method to call (defaults to 'INFO')
  * @returns An openapi-fetch middleware that logs requests and responses
  *
  * @example
  * ```typescript
- * // Basic usage with default console logger at INFO level
  * import createClient from 'openapi-fetch';
+ * import { Logger } from '@aws-lambda-powertools/logger';
  *
+ * const logger = new Logger({ serviceName: 'my-service' });
  * const client = createClient({ baseUrl: 'https://api.example.com' });
- * client.use(logMiddleware('MyAPI'));
+ * client.use(logMiddleware('MyAPI', logger));
  * ```
  *
  * @example
  * ```typescript
- * // Using DEBUG level with console
- * client.use(logMiddleware('MyAPI', 'DEBUG'));
- * ```
- *
- * @example
- * ```typescript
- * // Custom logger implementation
- * const customLogger = {
- *   info: (msg, ...args) => console.log('[INFO]', msg, ...args),
- *   debug: (msg, ...args) => console.log('[DEBUG]', msg, ...args)
- * };
- *
- * client.use(logMiddleware('MyAPI', 'DEBUG', customLogger));
+ * // Log at DEBUG level — only visible when the logger is configured for DEBUG
+ * client.use(logMiddleware('MyAPI', logger, 'DEBUG'));
  * ```
  */
 function logMiddleware(
     clientName: string,
-    logLevel: LogLevel = 'INFO',
-    logger: Logger = console
+    logger: LoggerInterface,
+    logLevel: LogMethod = 'INFO'
 ): Middleware {
-    const log = (message: string, ...args: unknown[]) => {
-        if (logLevel === 'DEBUG' && logger.debug) {
-            logger.debug(message, ...args);
-            return;
-        }
-
-        logger.info(message, ...args);
-    };
+    const method = logLevel.toLowerCase() as Lowercase<LogMethod>;
+    const log = logger[method].bind(logger);
 
     return {
         async onRequest({ options, params, request }) {
@@ -92,4 +72,4 @@ function logMiddleware(
 }
 
 export { logMiddleware };
-export type { Logger, LogLevel };
+export type { LogMethod };

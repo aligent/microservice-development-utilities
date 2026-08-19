@@ -8,7 +8,7 @@
 
 > **requestTimeout**(`timeoutMs`): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/request-timeout.ts:9](https://github.com/aligent/microservice-development-utilities/blob/039104d2966f94c9d0628f648b1827b63578171a/packages/microservice-util-lib/src/openapi-fetch-middlewares/request-timeout.ts#L9)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/request-timeout.ts:9](https://github.com/aligent/microservice-development-utilities/blob/9b108bd1d546cc33ffe07530fc02dfe4d839a9e0/packages/microservice-util-lib/src/openapi-fetch-middlewares/request-timeout.ts#L9)
 
 Middleware that applies a timeout to each request using `AbortSignal.timeout`.
 
