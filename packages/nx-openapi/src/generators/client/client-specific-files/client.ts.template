@@ -10,13 +10,14 @@ import {
     retryFetch,
     throwOnNotOk,
 } from '@aligent/microservice-util-lib';
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import createClient, { Client, ClientOptions } from 'openapi-fetch';
 import { paths } from './generated-types';
 
 export class <%= className %> {
     public readonly client: Client<paths, `${string}/${string}`>;
 
-    constructor(options: ClientOptions) {
+    constructor(options: ClientOptions, logger: LoggerInterface) {
         /**
          * Retries wrap the client's fetch rather than being registered as middleware,
          * so every attempt's response flows through the whole middleware chain.
@@ -37,7 +38,7 @@ export class <%= className %> {
          */
         this.client.use(
             throwOnNotOk(),
-            logMiddleware('<%= className %>')
+            logMiddleware('<%= className %>', logger)
         );
     }
 }

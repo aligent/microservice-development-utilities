@@ -232,7 +232,7 @@ describe('client generator', () => {
 
         const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
         expect(clientContent).toContain('logMiddleware');
-        expect(clientContent).toContain("logMiddleware('Test')");
+        expect(clientContent).toContain("logMiddleware('Test', logger)");
     });
 
     it('should wire retries into the client fetch rather than the middleware chain', async () => {
@@ -268,7 +268,7 @@ describe('client generator', () => {
         // onResponse runs in reverse registration order, so logMiddleware must be
         // registered after throwOnNotOk to observe a failing response before the throw.
         const throwIndex = clientContent.indexOf('throwOnNotOk()');
-        const logIndex = clientContent.indexOf("logMiddleware('Test')");
+        const logIndex = clientContent.indexOf("logMiddleware('Test', logger)");
         expect(throwIndex).toBeGreaterThanOrEqual(0);
         expect(logIndex).toBeGreaterThan(throwIndex);
     });
