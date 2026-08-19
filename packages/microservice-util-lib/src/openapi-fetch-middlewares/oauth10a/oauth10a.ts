@@ -326,7 +326,7 @@ export async function generateOauthParams(
  * This function derives all information (URL, method, query params, body)
  * directly from the `Request` object, without requiring openapi-fetch middleware context.
  *
- * Designed for use with the retry middleware's `onRetry` hook to regenerate
+ * Designed for use with {@link retryFetch}'s `onRetry` hook to regenerate
  * OAuth 1.0a signatures on retried requests.
  *
  * @param {Request} request - The request to re-sign.
@@ -334,9 +334,11 @@ export async function generateOauthParams(
  * @returns {Promise<Request>} The request with a fresh `Authorization` header.
  *
  * @example
- * client.use(retryMiddleware({
- *     onRetry: ({ request }) => resignOauth10aRequest(request, config),
- * }));
+ * const client = createClient({
+ *     fetch: retryFetch({
+ *         onRetry: ({ request }) => resignOauth10aRequest(request, config),
+ *     }),
+ * });
  */
 export async function resignOauth10aRequest(request: Request, config: OAuth10a): Promise<Request> {
     const clonedRequest = request.clone();

@@ -1,7 +1,4 @@
-import type {
-    LoggerInterface,
-    LogLevel,
-} from '@aws-lambda-powertools/logger/types';
+import type { LoggerInterface, LogLevel } from '@aws-lambda-powertools/logger/types';
 import type { Middleware } from 'openapi-fetch';
 import { parseBody } from './utils/body-parser';
 

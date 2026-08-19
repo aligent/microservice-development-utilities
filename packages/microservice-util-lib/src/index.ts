@@ -1,6 +1,5 @@
 /* v8 ignore start */
 import chunkBy from './chunk-by/chunk-by';
-import fetchSsmParams from './fetch-ssm-params/fetch-ssm-params';
 import getAwsIdFromArn from './get-aws-id-from-arn/get-aws-id-from-arn';
 import hasDefinedProperties from './has-properties-defined/has-properties-defined';
 import {
@@ -17,10 +16,6 @@ import {
 import { LogMethod, logMiddleware } from './openapi-fetch-middlewares/log';
 import { createXmlParser, parseXmlResponse } from './openapi-fetch-middlewares/parse-xml-response';
 import { requestTimeout } from './openapi-fetch-middlewares/request-timeout';
-import {
-    RetryConfig as RetryMiddlewareConfig,
-    retryMiddleware,
-} from './openapi-fetch-middlewares/retry';
 import { throwOnNotOk } from './openapi-fetch-middlewares/throw-on-not-ok';
 import {
     ClientOptions,
@@ -39,8 +34,7 @@ import {
 } from './openapi-fetch-middlewares/utils/http-response-error';
 import remap, { ObjectMap, Remap } from './remap/remap';
 import { RetryFetchConfig, retryFetch } from './retry-fetch/retry-fetch';
-import retryWrapper, { RetryConfig, RetryWrapperConfig } from './retry-wrapper/retry-wrapper';
-import S3Dao from './s3/s3';
+import retryWrapper, { RetryWrapperConfig } from './retry-wrapper/retry-wrapper';
 
 export type {
     ApiKey,
@@ -54,13 +48,10 @@ export type {
     OnRetryFn,
     Remap,
     RetryConditionFn,
-    RetryConfig,
     RetryContext,
     RetryDelayFn,
     RetryFetchConfig,
-    RetryMiddlewareConfig,
     RetryWrapperConfig,
-    S3Dao,
 };
 
 export {
@@ -70,7 +61,6 @@ export {
     chunkBy,
     createErrorThrowingClient,
     createXmlParser,
-    fetchSsmParams,
     getAwsIdFromArn,
     hasDefinedProperties,
     isHttpResponseError,
@@ -82,7 +72,6 @@ export {
     requestTimeout,
     resignOauth10aRequest,
     retryFetch,
-    retryMiddleware,
     retryWrapper,
     throwOnNotOk,
 };

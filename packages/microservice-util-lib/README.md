@@ -46,7 +46,7 @@ Retried requests do not re-enter `onRequest`. The request is cloned per attempt,
 
 ### Migrating from `retryMiddleware`
 
-`retryMiddleware` is deprecated. It retried inside its own `onResponse` hook, so retried responses re-entered the chain past any middleware registered after it — response-transforming middleware silently skipped them, returning a body in the wrong shape rather than an error.
+`retryMiddleware` was removed in v2. It retried inside its own `onResponse` hook, so retried responses re-entered the chain past any middleware registered after it — response-transforming middleware silently skipped them, returning a body in the wrong shape rather than an error.
 
 ```ts
 // Before — xmlToJsonMiddleware never sees a retried response
@@ -143,9 +143,9 @@ This package requires `@aws-lambda-powertools/logger` (^2.0.0) as a peer depende
 npm install @aws-lambda-powertools/logger
 ```
 
-## Deprecations
+## Removed in v2
 
-`fetchSsmParams` and `S3Dao` are deprecated in favour of `SSMService` and
+`fetchSsmParams` and `S3Dao` were removed in v2 in favour of `SSMService` and
 `S3Service` from [`@aligent/aws-wrappers`](../aws-wrappers/README.md), which add
 Powertools structured logging and X-Ray tracing by default.
 
