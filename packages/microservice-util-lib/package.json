@@ -2,9 +2,31 @@
   "name": "@aligent/microservice-util-lib",
   "version": "1.10.0",
   "description": "A set of utility functions for Aligent Microservices",
-  "type": "commonjs",
-  "main": "./src/index.js",
-  "typings": "./src/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./cjs/index.cjs",
+  "module": "./esm/index.mjs",
+  "types": "./cjs/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./esm/src/index.d.ts",
+        "default": "./esm/index.mjs"
+      },
+      "require": {
+        "types": "./cjs/src/index.d.ts",
+        "default": "./cjs/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "cjs",
+    "esm",
+    "README.md",
+    "docs"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/aligent/microservice-development-utilities.git",

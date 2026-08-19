@@ -1,6 +1,6 @@
 import type { Middleware } from 'openapi-fetch';
-import { generateOauthParams, resignOauth10aRequest } from './oauth10a/oauth10a';
-import type { ApiKey, Basic, OAuth10a, OAuth20, Resolvable } from './types/authentications';
+import { generateOauthParams, resignOauth10aRequest } from './oauth10a/oauth10a.js';
+import type { ApiKey, Basic, OAuth10a, OAuth20, Resolvable } from './types/authentications.js';
 
 /**
  * Resolves a `Resolvable<T>` value to its underlying type.

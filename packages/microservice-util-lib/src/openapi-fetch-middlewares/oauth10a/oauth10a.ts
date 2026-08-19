@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { MiddlewareCallbackParams } from 'openapi-fetch';
-import { OAuth10a, resolve } from '../authentications';
+import { OAuth10a, resolve } from '../authentications.js';
 
 /**
  * RFC 3986 percent-encoding.

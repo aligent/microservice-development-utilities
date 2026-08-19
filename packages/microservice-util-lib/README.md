@@ -217,28 +217,31 @@ for (const Key of keys) {
 
 ## Build
 
-This library is written in typescript and can be built using the NPM script:
+The package is dual-published as both CommonJS and ES modules via `@nx/rollup`.
 
 ```sh
-npm install
-npm run build
+npx nx build microservice-util-lib
 ```
 
-## Installation
+The build produces:
 
-You can locally install this package to your NPM projects by pulling this repo,
-building it, then running:
-
-```sh
-npm install --save ./path/to/this/project
+```
+dist/
+├── cjs/          # CommonJS (index.cjs)
+├── esm/          # ES modules (index.mjs)
+├── package.json  # publishable manifest with exports map
+├── README.md
+└── docs/
 ```
 
-from your project root.
+ESM consumers get tree-shakeable imports; CJS consumers continue to work unchanged via the conditional `exports` map.
 
 ## Testing & Linting
 
-Vitest tests, linting & type-checking can be run with
+Vitest tests, linting & type-checking can be run from the repo root:
 
 ```sh
 npm run test
+npm run lint
+npm run check-types
 ```

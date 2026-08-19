@@ -1,5 +1,5 @@
 import type { Middleware } from 'openapi-fetch';
-import { HttpResponseError } from './utils/http-response-error';
+import { HttpResponseError } from './utils/http-response-error.js';
 
 /**
  * Throws an {@link HttpResponseError} when a response has a non-OK status (i.e. not 2xx).
