@@ -1,4 +1,4 @@
-import { parseBody } from './body-parser';
+import { parseBody } from './body-parser.js';
 
 /**
  * Serializable snapshot of an HTTP request.

@@ -43,7 +43,7 @@ describe('retryFetch', () => {
 
         it('should resolve the global fetch per call, not when it was constructed', async () => {
             // Built before the spy exists. Capturing globalThis.fetch eagerly here is the
-            // same defect retryMiddleware had: a fetch patched later is silently bypassed.
+            // same defect the old retry middleware had: a fetch patched later is silently bypassed.
             const fetchWithRetry = retryFetch({ retries: 1, baseDelay: 10 });
 
             const globalFetch = vi

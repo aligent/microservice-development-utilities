@@ -198,6 +198,10 @@ To bootstrap a new package:
 
 5. For First Releases only, you need to trigger the `publish` workflow manually (via Github Action UI) and pass in `--first-release` flag. For more information, please check Nx documentation on [Publishing First Releases](https://nx.dev/reference/core-api/nx/documents/release#publish)
 
+## API Documentation
+
+Each package that ships generated API docs keeps a `docs/modules.md` index file checked into the repository. This file is the entry point that [typedoc](https://typedoc.org/) requires to exist before it can regenerate the per-symbol pages. The CI pipeline runs typedoc during the build to produce the full documentation set, so the individual class/function/interface pages are **not** committed — only `modules.md` is tracked.
+
 ## Notes
 
 - Nx is responsible for removing the version plans after a release. This is because **having multiple version plan files may produce unpredictable results**. For this reason make sure not to commit more than one version plan file.

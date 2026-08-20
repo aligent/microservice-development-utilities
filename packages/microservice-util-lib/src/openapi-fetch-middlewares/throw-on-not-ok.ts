@@ -1,5 +1,5 @@
 import type { Middleware } from 'openapi-fetch';
-import { HttpResponseError } from './utils/http-response-error';
+import { HttpResponseError } from './utils/http-response-error.js';
 
 /**
  * Throws an {@link HttpResponseError} when a response has a non-OK status (i.e. not 2xx).
@@ -13,7 +13,7 @@ import { HttpResponseError } from './utils/http-response-error';
  *
  * @example
  * // logMiddleware logs the 500, then throwOnNotOk raises it to the caller
- * client.use(throwOnNotOk(), logMiddleware('MyApi'));
+ * client.use(throwOnNotOk(), logMiddleware('MyApi', logger));
  *
  * @returns {Middleware} The middleware for throwing on non-OK responses.
  */

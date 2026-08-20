@@ -92,11 +92,5 @@ async function retryWrapper<T>(fn: () => Promise<T>, config: RetryWrapperConfig)
     );
 }
 
-/**
- * @deprecated Renamed to {@link RetryWrapperConfig}. The old name collided with the retry
- * middleware's own config, which forced it to be re-exported as `RetryMiddlewareConfig`.
- */
-type RetryConfig = RetryWrapperConfig;
-
-export type { RetryConfig, RetryWrapperConfig };
+export type { RetryWrapperConfig };
 export default retryWrapper;
