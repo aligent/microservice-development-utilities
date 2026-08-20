@@ -33,13 +33,13 @@
     "directory": "packages/microservice-util-lib"
   },
   "dependencies": {
+    "fast-xml-parser": "5.11.0",
     "openapi-fetch": "0.17.0",
     "openapi-typescript-helpers": "0.1.0",
-    "fast-xml-parser": "5.10.1",
     "path-expression-matcher": "1.6.2"
   },
   "peerDependencies": {
-    "@aws-lambda-powertools/logger": "^2.0.0"
+    "@aws-lambda-powertools/logger": "^2.34.0"
   },
   "author": "Aligent",
   "license": "MIT"
