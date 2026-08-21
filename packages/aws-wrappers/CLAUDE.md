@@ -23,7 +23,7 @@ packages/aws-wrappers/src/
 └── index.ts                # named exports of every *Service class
 ```
 
-One folder per service, lowercase. `testing/` is the one non-service folder: it backs the `./testing` subpath export and is deliberately **not** re-exported from `index.ts` — see "Build layout" below. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
+One folder per service, lowercase. `testing/` is the one non-service folder: it backs the `./testing` subpath export and is deliberately **not** re-exported from `index.ts` — see "The `createMockService` helper" below. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
 
 ## Build layout
 
@@ -219,6 +219,55 @@ Once the change is in and tests pass, ask the user whether to run the `code-revi
 - Error assertions: `await expect(fn()).rejects.toThrow(...)`. Do **not** use the `try / catch + // eslint-disable-next-line no-empty` pattern that exists in older `microservice-util-lib` tests.
 
 - Coverage gate is 80% workspace-global on lines / branches / functions / statements. For thin pass-through methods, a one-shot "verify the SDK command was sent" test is enough — these are visually verifiable but still need to keep the gate green.
+
+## The `createMockService` helper (`src/testing/`)
+
+`createMockService` is published from the `./testing` subpath for **consumers** to stub a `*Service` in their own unit tests. This package's own tests do **not** use it and must not be migrated to it: they test wrapper logic — chunking, pagination, JSON round-tripping, log redaction — against a mocked SDK client, which is precisely the layer this helper stubs past. Adopting it internally would delete real coverage.
+
+The decisions below are locked in. Each one looks like something worth tidying up and isn't.
+
+### It must stay off the main entry, and the module must stay import-free
+
+Consumers bundle this package into AWS Lambda handlers; testing happens only locally and in CI. So:
+
+- **Never re-export `createMockService` from `src/index.ts`.** A convenience re-export puts test scaffolding into every consumer's Lambda bundle.
+- **`src/testing/` must import nothing** — no service, no AWS SDK, no test framework, not even for a type. It is what keeps the two rollup entries chunk-disjoint; a single import from a service creates a shared chunk that the main entry and the testing entry both pull in, which is the same leak by another route.
+
+`rollup.config.mjs` carries the testing module as a second entry in the shared base options (not a third `withNx` invocation), and `package.json` `exports` has a `./testing` block mirroring the `.` block's per-format `types` / `default` pairs. That block is the highest-risk part of the setup: a subtly wrong entry fails only for consumers on `Node16` / `NodeNext` resolution and not in this repo's own typecheck, so read it against the `.` block rather than trusting a green local build.
+
+### The internal cast is unavoidable
+
+The helper returns its Proxy through a single `as unknown as`. Every service declares `private readonly client` / `private readonly logger`; `private` fields are **nominal** in TypeScript, so no structurally-constructed value is assignable to the class type, however complete it is. Concentrating that one cast in reviewed library code is the entire point of the helper — consumer test suites then contain none.
+
+Removing the cast requires changing what consumers depend on, not how the helper is written. The known-correct alternative is to extract and export a public `*ServiceInterface` per service and have consumers type their dependencies against the interface rather than the class. It was deliberately deferred: it changes consumer *code* rather than only consumer *tests*, and it doubles the package's exported type surface. Widening or dropping the `private` modifiers to suit a test helper is not an option — it weakens the production API to serve tests.
+
+### Throwing on property access, not on call
+
+The Proxy's `get` trap throws `<ClassName>.<method> was accessed but not mocked` as soon as an unmocked method is *read*, before any call. This fails at the earliest possible point, and — more importantly — the `undefined` fallback for keys that are *not* methods of the class is what keeps probe properties safe. `then` (so `await`-ing the mock does not throw), `Symbol.toStringTag`, `toJSON`, inspection symbols, and whatever a test framework's error serialiser reaches for all resolve harmlessly. An allowlist of such keys was rejected: it is guaranteed to be incomplete, and every gap surfaces as a mystery failure unrelated to the test under way.
+
+Related, and equally deliberate:
+
+- Method discovery inspects property **descriptors** rather than reading properties, so a prototype getter is never invoked — reading one would execute consumer code with `this` bound to the Proxy. Accessor properties are therefore neither mockable nor throwable.
+- Discovery walks the prototype chain up to but excluding `Object.prototype`, so inheritance in a consumer's own class works even though the eight services don't use it.
+- `constructor` is excluded from the throwable set; TypeScript `private` methods are left in it — they're real prototype properties at runtime, and "not mocked" is a reasonable message for a consumer who reached one.
+- `has` and `ownKeys` traps exist so `in` and `Object.keys` answer against the class surface rather than the raw overrides object.
+- A plain `Error` is thrown, not an exported error class. It is a diagnostic for a broken test, not a control-flow signal.
+
+### Signature
+
+```ts
+createMockService<T extends object, O extends Partial<T>>(service: { prototype: T }, overrides: O): T & O
+```
+
+The class is passed as a **runtime value** and that is load-bearing for the *types*, not for ergonomics. TypeScript has no partial type-argument inference, so a `createMockService<S3Service>({ ... })` form would fix `T` explicitly and thereby suppress inference of `O` — losing the caller's spy typing (and `.mock` access) on overridden keys, which cannot be recovered any other way in a framework-agnostic helper. Anyone "simplifying" this to a type-only generic should re-derive that first. The token is typed `{ prototype: T }` rather than a construct signature because the helper never constructs the class; stating only the capability consumed also accepts abstract classes and classes with required constructor arguments.
+
+The return type is the plain intersection `T & O`, and it has to be. The tidier-looking `Omit<T, keyof O> & O` — which would type an overridden key as *only* the caller's mock rather than as both the mock and the real method — cannot work here: `Omit` is a mapped type, mapped types drop `private` members, so the result loses `client` / `logger` and is no longer assignable to the service class. That defeats the helper's main purpose. The cost is two-armed hover text on an overridden key; the caller's spy type is still first in the intersection, so `.mock` resolves.
+
+The helper never imports a test framework — callers supply their own spies. Auto-stubbing unmocked methods with no-op spies was rejected: it needs a runner as a peer dependency, and it turns "I forgot to mock this" into a test that passes for the wrong reason.
+
+### Tests
+
+`src/testing/testing.test.ts` covers observable behaviour only — what the returned value does when accessed, called, inspected or enumerated — never the traps or the discovery mechanism. Negative **type** cases (typo'd override key, wrong-shaped override) are `// @ts-expect-error` assertions in the same file, verified by the `typecheck` target via `tsconfig.spec.json`. That type checking is half the helper's value, so keep those assertions when refactoring. A `*.test-d.ts` file was rejected because it would require enabling `test.typecheck` in the repo-wide base Vitest config to serve one file.
 
 ## Out of scope
 
