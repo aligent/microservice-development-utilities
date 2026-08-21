@@ -19,6 +19,16 @@
         "default": "./cjs/index.cjs"
       }
     },
+    "./testing": {
+      "import": {
+        "types": "./esm/src/testing/testing.d.ts",
+        "default": "./esm/testing.mjs"
+      },
+      "require": {
+        "types": "./cjs/src/testing/testing.d.ts",
+        "default": "./cjs/testing.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "files": [

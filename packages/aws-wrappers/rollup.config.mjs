@@ -2,6 +2,9 @@ import { withNx } from '@nx/rollup/with-nx.js';
 
 const baseOptions = {
     main: './src/index.ts',
+    // Test-only scaffolding, published as the `./testing` subpath so it stays
+    // unreachable from the main entry a consumer bundles into a Lambda.
+    additionalEntryPoints: ['./src/testing/testing.ts'],
     tsConfig: './tsconfig.lib.json',
     compiler: 'tsc',
     assets: [],
