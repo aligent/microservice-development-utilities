@@ -4,13 +4,7 @@
 
 # @aligent/aws-wrappers
 
-## Classes
+## Modules
 
-- [DynamoDBService](classes/DynamoDBService.md)
-- [S3Service](classes/S3Service.md)
-- [SchedulerService](classes/SchedulerService.md)
-- [SecretsManagerService](classes/SecretsManagerService.md)
-- [SNSService](classes/SNSService.md)
-- [SQSService](classes/SQSService.md)
-- [SSMService](classes/SSMService.md)
-- [StepFunctionsService](classes/StepFunctionsService.md)
+- [index](index/modules.md)
+- [testing/testing](testing/testing/modules.md)

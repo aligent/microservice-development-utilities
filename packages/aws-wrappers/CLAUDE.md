@@ -19,10 +19,11 @@ packages/aws-wrappers/src/
 ├── <service>/
 │   ├── <service>.ts        # the *Service class
 │   └── <service>.test.ts   # co-located tests
+├── testing/                # test-only helpers, published as the `./testing` subpath
 └── index.ts                # named exports of every *Service class
 ```
 
-One folder per service, lowercase. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
+One folder per service, lowercase. `testing/` is the one non-service folder: it backs the `./testing` subpath export and is deliberately **not** re-exported from `index.ts` — see "Build layout" below. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
 
 ## Build layout
 
@@ -32,10 +33,12 @@ The package is **dual-published** as both CommonJS and ES modules via `@nx/rollu
 dist/
 ├── cjs/                # CommonJS build (format: 'cjs', entryFileNames: '[name].cjs')
 │   ├── index.cjs
+│   ├── testing.cjs     # `./testing` subpath entry
 │   ├── src/            # per-module .d.ts tree
 │   └── package.json    # {"type":"commonjs"} sidecar, auto-written by withNx
 ├── esm/                # ES modules build (format: 'esm', entryFileNames: '[name].mjs')
 │   ├── index.mjs
+│   ├── testing.mjs     # `./testing` subpath entry
 │   ├── src/            # per-module .d.ts tree
 │   └── package.json    # {"type":"module"} sidecar, auto-written by withNx
 ├── package.json        # publishable manifest, `exports` map routes consumers
