@@ -78,15 +78,40 @@ describe('createMockService', () => {
         expect(() => mock.constructor).not.toThrow();
     });
 
-    it('reports the class methods and the overrides for `in` and Object.keys', () => {
+    it('reports the class methods and the overrides for `in`', () => {
         const mock = createMockService(Example, { greet: vi.fn() });
 
         expect('greet' in mock).toBe(true);
         expect('farewell' in mock).toBe(true);
         expect('inheritedMethod' in mock).toBe(true);
         expect('notAMethod' in mock).toBe(false);
-        expect(Object.keys(mock).sort()).toEqual(['farewell', 'greet', 'inheritedMethod']);
-        expect(Object.getOwnPropertyDescriptor(mock, 'notAMethod')).toBeUndefined();
+    });
+
+    it('enumerates only the overrides, so spreading and serialising are safe', () => {
+        const mock = createMockService(Example, { greet: vi.fn() });
+
+        expect(Object.keys(mock)).toEqual(['greet']);
+        expect(() => ({ ...mock })).not.toThrow();
+        expect(() => JSON.stringify({ mock })).not.toThrow();
+    });
+
+    it('deep-equals against an unmocked method without throwing', () => {
+        const mock = createMockService(Example, { greet: vi.fn() });
+
+        expect({ mock, n: 1 }).toEqual({ mock, n: 1 });
+        expect({ mock, n: 1 }).not.toEqual({ mock, n: 2 });
+    });
+
+    it('throws for a class method that shadows one of Object.prototype', () => {
+        class Shadow {
+            toString(): string {
+                return 'Shadow#custom';
+            }
+        }
+
+        const mock = createMockService(Shadow, {});
+
+        expect(() => mock.toString).toThrow('Shadow.toString was accessed but not mocked');
     });
 
     it('falls back to a generic name when the prototype carries no constructor', () => {

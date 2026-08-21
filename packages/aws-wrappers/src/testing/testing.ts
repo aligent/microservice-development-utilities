@@ -28,12 +28,15 @@ function collectMethodNames(prototype: object): Set<string> {
  *
  * Accessing a method of the class that was not overridden throws immediately,
  * naming the service and the method, rather than failing later as
- * `is not a function`. Any other key falls through to the overrides object —
- * so `toString`, `valueOf` and `constructor` resolve from `Object.prototype`
- * as usual, and anything else is `undefined`. That fallback is what keeps
- * probe properties safe: `then` (so awaiting the mock does not throw),
- * `Symbol.toStringTag`, inspection symbols, and whatever a test framework's
- * error serialiser reaches for.
+ * `is not a function`. Any key that is neither an override nor a method of the
+ * class falls through to the overrides object — so `toString`, `valueOf` and
+ * `constructor` resolve from `Object.prototype` as usual, and anything else is
+ * `undefined`. That fallback is what keeps probe properties safe: `then` (so
+ * awaiting the mock does not throw), `Symbol.toStringTag`, inspection symbols,
+ * and whatever a test framework's error serialiser reaches for.
+ *
+ * Only the overrides are enumerable, so spreading, serialising or deep-equalling
+ * an object that holds the mock does not trip the throw.
  *
  * The helper imports no test framework: callers supply their own spies, and
  * overridden keys keep the caller's spy type so `.mock` resolves through the
@@ -73,26 +76,17 @@ export function createMockService<T extends object, O extends Partial<T>>(
 
     const mock = new Proxy(overrides, {
         get(target, key, receiver) {
-            if (Reflect.has(target, key)) return Reflect.get(target, key, receiver);
+            // `hasOwn`, not `has`: a class method that shadows one of
+            // `Object.prototype`'s (`toString`, `valueOf`, …) must still throw
+            // rather than be served silently from the prototype chain.
+            if (Object.hasOwn(target, key)) return Reflect.get(target, key, receiver);
             if (isUnmockedMethod(key)) {
                 throw new Error(`${className ?? 'Service'}.${key} was accessed but not mocked`);
             }
-            return undefined;
+            return Reflect.get(target, key, receiver);
         },
         has(target, key) {
             return Reflect.has(target, key) || isUnmockedMethod(key);
-        },
-        ownKeys(target) {
-            return [...new Set([...Reflect.ownKeys(target), ...methodNames])];
-        },
-        getOwnPropertyDescriptor(target, key) {
-            const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
-            if (descriptor !== undefined) return descriptor;
-            if (!isUnmockedMethod(key)) return undefined;
-            // Enumerable and configurable so `Object.keys` reports the method
-            // without violating the proxy invariants for a key the target
-            // does not own.
-            return { configurable: true, enumerable: true, value: undefined, writable: false };
         },
     });
 
