@@ -57,6 +57,12 @@ describe('service generator', () => {
         );
     });
 
+    it('should reject a name that attempts to traverse outside the services directory', async () => {
+        const options: ServiceGeneratorSchema = { name: '../../outside-workspace' };
+
+        await expect(serviceGenerator(tree, options)).rejects.toThrow(/Invalid service name/);
+    });
+
     it('should add the service to application bundleDependencies', async () => {
         const options: ServiceGeneratorSchema = { name: 'test' };
 
