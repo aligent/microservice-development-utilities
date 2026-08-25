@@ -295,6 +295,47 @@ describe('generateOauthParams', () => {
         expect(result).toEqual(expected);
     });
 
+    it('resolves every occurrence of a repeated path placeholder in the signed URL', async () => {
+        // A path template that references the same param twice (e.g. a nested
+        // resource shape like /accounts/{id}/orders/{id}/items) must have
+        // *every* occurrence substituted before it's used to build the OAuth
+        // signature base string — otherwise the signature is computed for a
+        // URL that was never actually requested.
+        const request: MiddlewareCallbackParams['request'] = {
+            ...baseRequest,
+            url: 'accounts/{id}/orders/{id}',
+            clone: () => ({ ...request }),
+        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
+        const params: MiddlewareCallbackParams['params'] = { path: { id: '123' } };
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA1',
+            credentials: () => new Promise(res => res(credentialsWithoutToken)),
+        };
+
+        let signedBaseString: string | undefined;
+        const originalCreateHmac = crypto.createHmac;
+        vi.spyOn(crypto, 'createHmac').mockImplementation((algorithm, key) => {
+            const hmac = originalCreateHmac(algorithm, key);
+            const originalUpdate = hmac.update.bind(hmac);
+            hmac.update = ((data: crypto.BinaryLike) => {
+                signedBaseString = data.toString();
+                return originalUpdate(data);
+            }) as typeof hmac.update;
+            return hmac;
+        });
+
+        await generateOauthParams(request, options, params, config);
+
+        expect(signedBaseString).toBeDefined();
+        const decodedBaseString = decodeURIComponent(signedBaseString ?? '');
+
+        // Both occurrences of `{id}` must be resolved, matching the URL that
+        // is actually requested.
+        expect(decodedBaseString).toContain('accounts/123/orders/123');
+        expect(decodedBaseString).not.toContain('{id}');
+    });
+
     it('generate correct HMAC-SHA256 signature to simple GET request with query parameters that contains space character', async () => {
         const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
         const options: MiddlewareCallbackParams['options'] = { ...baseOptions };

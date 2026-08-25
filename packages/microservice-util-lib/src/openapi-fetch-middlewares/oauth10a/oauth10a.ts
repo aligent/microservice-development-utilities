@@ -105,7 +105,7 @@ function combineUrlAndPathParams(url: string, pathParams?: Record<string, unknow
     }
 
     for (const [key, value] of Object.entries(pathParams)) {
-        url = url.replace(`{${key}}`, String(value));
+        url = url.replaceAll(`{${key}}`, String(value));
     }
 
     return url;
