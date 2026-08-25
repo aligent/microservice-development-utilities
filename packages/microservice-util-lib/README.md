@@ -16,8 +16,10 @@ const client = createClient<paths>({
   baseUrl,
   fetch: retryFetch({ retries: 3, retryDelay: 'exponential' }),
 });
-client.use(throwOnNotOk(), logMiddleware('MyApi'));
+client.use(throwOnNotOk(), logMiddleware('MyApi', logger));
 ```
+
+`logMiddleware` requires a `LoggerInterface` instance from `@aws-lambda-powertools/logger` (or similar logger interfaces). This produces structured JSON logs and avoids the `[Object] [Object]` problem that `console.log` has with nested objects.
 
 The fetch implementation is optional and defaults to the global `fetch`. Pass one when the client needs a specific transport:
 
@@ -32,8 +34,8 @@ It is resolved on each attempt rather than captured when you call `retryFetch`, 
 **Ordering matters here.** openapi-fetch runs `onResponse` in *reverse* registration order, so middleware registered after `throwOnNotOk()` runs before it and still observes the failing response:
 
 ```ts
-client.use(throwOnNotOk(), logMiddleware('MyApi')); // logs the 500, then throws
-client.use(logMiddleware('MyApi'), throwOnNotOk()); // throws first; the 500 is never logged
+client.use(throwOnNotOk(), logMiddleware('MyApi', logger)); // logs the 500, then throws
+client.use(logMiddleware('MyApi', logger), throwOnNotOk()); // throws first; the 500 is never logged
 ```
 
 Retried requests do not re-enter `onRequest`. The request is cloned per attempt, so headers already applied survive and a body-bearing request can be sent more than once, but anything that must be recomputed per attempt — OAuth 1.0a signatures, HMAC-over-body, short-lived bearer tokens — needs the `onRetry` callback, which can return a replacement `Request`.
@@ -54,16 +56,16 @@ Two things worth taking from it: `calculateDelay(1, 100)` returns `150`, the del
 
 ### Migrating from `retryMiddleware`
 
-`retryMiddleware` is deprecated. It retried inside its own `onResponse` hook, so retried responses re-entered the chain past any middleware registered after it — response-transforming middleware silently skipped them, returning a body in the wrong shape rather than an error.
+`retryMiddleware` was removed in v2. It retried inside its own `onResponse` hook, so retried responses re-entered the chain past any middleware registered after it — response-transforming middleware silently skipped them, returning a body in the wrong shape rather than an error.
 
 ```ts
 // Before — xmlToJsonMiddleware never sees a retried response
 const client = createClient<paths>({ baseUrl });
-client.use(retryMiddleware({ throwOnNotOk: true }), xmlToJsonMiddleware());
+client.use(retryMiddleware({ throwOnNotOk: true }), parseXmlResponse());
 
 // After — every attempt flows through the whole chain
 const client = createClient<paths>({ baseUrl, fetch: retryFetch() });
-client.use(throwOnNotOk(), xmlToJsonMiddleware());
+client.use(throwOnNotOk(), parseXmlResponse());
 ```
 
 Config mapping:
@@ -78,9 +80,82 @@ Config mapping:
 
 One behavioural difference to check when migrating: under `retryMiddleware`, supplying `retryOn` replaced the status check *and* left network errors retrying through a separate path. Under `retryFetch`, `retryOn` is an allow-list of statuses only — network errors continue to go through `retryCondition`, and `idempotentOnly` applies to the `retryOn` path too. A `POST` returning a listed status is therefore no longer retried unless you set `idempotentOnly: false`.
 
-## Deprecations
+## Request Timeout
 
-`fetchSsmParams` and `S3Dao` are deprecated in favour of `SSMService` and
+`requestTimeout` adds an `AbortSignal.timeout` to each request via `onRequest`. If the caller already supplies a signal (e.g. for Lambda lifetime), both signals are composed with `AbortSignal.any` so that whichever fires first aborts the request.
+
+```ts
+client.use(requestTimeout(5000));
+```
+
+**Interaction with `retryFetch`:** Because `requestTimeout` runs once in `onRequest` before the request reaches `retryFetch`, and `Request.clone()` preserves the original signal, the timeout acts as a **single deadline across all retry attempts** — not a per-attempt limit. A `TimeoutError` is not classified as a network error, so `retryFetch` will not retry it.
+
+If you need a per-attempt timeout, wrap the base fetch instead:
+
+```ts
+const timeoutFetch: typeof fetch = (input, init) => {
+  const request = new Request(input, init);
+  const signal = AbortSignal.any([request.signal, AbortSignal.timeout(5000)]);
+  return fetch(new Request(request, { signal }));
+};
+
+const client = createClient<paths>({
+  baseUrl,
+  fetch: retryFetch(timeoutFetch, { retries: 3 }),
+});
+```
+
+## XML Response Parsing
+
+`parseXmlResponse` converts XML responses to JSON in `onResponse`, so every downstream layer works with a single body format. Only `application/xml`, `text/xml`, and `+xml` subtypes are converted — `application/xhtml+xml` and non-XML responses pass through untouched.
+
+```ts
+client.use(parseXmlResponse());
+```
+
+The optional `ExpressionSet` parameter controls array normalisation. XML has no way to distinguish a one-element list from a scalar, so `fast-xml-parser` collapses single-child elements to a plain value by default. Pass an `ExpressionSet` with jPath patterns for nodes that should always be arrays:
+
+```ts
+import { Expression, ExpressionSet } from 'path-expression-matcher';
+
+const expressions = new ExpressionSet();
+expressions.add(new Expression('Root.Items.Item'));
+
+client.use(parseXmlResponse(expressions));
+```
+
+> **Note:** `fast-xml-parser` does not validate XML. A non-XML document served with an XML content-type may parse to `{}`. Register `logMiddleware` before `parseXmlResponse` to capture the raw response for debugging.
+
+## Middleware Ordering
+
+openapi-fetch runs `onRequest` hooks in registration order and `onResponse` hooks in **reverse** registration order. A typical registration:
+
+```ts
+const client = createClient<paths>({
+  baseUrl,
+  fetch: retryFetch({ retries: 3 }),
+});
+client.use(
+  requestTimeout(30_000),   // onRequest: adds deadline signal
+  throwOnNotOk(),           // onResponse (last): throws on non-2xx
+  parseXmlResponse(),       // onResponse: XML → JSON before throwOnNotOk inspects the body
+  logMiddleware('MyApi', logger),   // onResponse (first): logs the raw response before any transformation
+);
+```
+
+The `onResponse` execution order for the example above is: `logMiddleware` → `parseXmlResponse` → `throwOnNotOk`.
+
+## Peer Dependencies
+
+This package requires `@aws-lambda-powertools/logger` (^2.0.0) as a peer dependency for the `logMiddleware` function. Install it alongside this package:
+
+```sh
+npm install @aws-lambda-powertools/logger
+```
+
+## Removed in v2
+
+`fetchSsmParams` and `S3Dao` were removed in v2 in favour of `SSMService` and
 `S3Service` from [`@aligent/aws-wrappers`](../aws-wrappers/README.md), which add
 Powertools structured logging and X-Ray tracing by default.
 
@@ -152,28 +227,31 @@ for (const Key of keys) {
 
 ## Build
 
-This library is written in typescript and can be built using the NPM script:
+The package is dual-published as both CommonJS and ES modules via `@nx/rollup`.
 
 ```sh
-npm install
-npm run build
+npx nx build microservice-util-lib
 ```
 
-## Installation
+The build produces:
 
-You can locally install this package to your NPM projects by pulling this repo,
-building it, then running:
-
-```sh
-npm install --save ./path/to/this/project
+```
+dist/
+├── cjs/          # CommonJS (index.cjs)
+├── esm/          # ES modules (index.mjs)
+├── package.json  # publishable manifest with exports map
+├── README.md
+└── docs/
 ```
 
-from your project root.
+ESM consumers get tree-shakeable imports; CJS consumers continue to work unchanged via the conditional `exports` map.
 
 ## Testing & Linting
 
-Vitest tests, linting & type-checking can be run with
+Vitest tests, linting & type-checking can be run from the repo root:
 
 ```sh
 npm run test
+npm run lint
+npm run check-types
 ```

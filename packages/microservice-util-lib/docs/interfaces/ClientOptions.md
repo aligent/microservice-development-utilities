@@ -6,7 +6,7 @@
 
 # Interface: ClientOptions
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:4
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:4
 
 Options for each client instance
 
@@ -22,7 +22,7 @@ Options for each client instance
 
 > `optional` **baseUrl?**: `string`
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:6
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:6
 
 set the common root URL for all API requests
 
@@ -48,7 +48,7 @@ Defined in: node\_modules/undici-types/fetch.d.ts:125
 
 > `optional` **bodySerializer?**: `BodySerializer`\<`unknown`\>
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:14
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:14
 
 global bodySerializer
 
@@ -102,7 +102,7 @@ Defined in: node\_modules/undici-types/fetch.d.ts:135
 
 > `optional` **fetch?**: (`input`) => `Promise`\<`Response`\>
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:8
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:8
 
 custom fetch (defaults to globalThis.fetch)
 
@@ -124,7 +124,7 @@ custom fetch (defaults to globalThis.fetch)
 
 > `optional` **headers?**: `HeadersOptions`
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:17
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:17
 
 ***
 
@@ -190,7 +190,7 @@ Defined in: node\_modules/undici-types/fetch.d.ts:130
 
 > `optional` **pathSerializer?**: `PathSerializer`
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:16
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:16
 
 global pathSerializer
 
@@ -202,7 +202,7 @@ global pathSerializer
 
 > `optional` **querySerializer?**: `QuerySerializer`\<`unknown`\> \| `QuerySerializerOptions`
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:12
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:12
 
 global querySerializer
 
@@ -256,7 +256,7 @@ Defined in: node\_modules/undici-types/fetch.d.ts:132
 
 > `optional` **Request?**: *typeof* `Request`
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:10
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:10
 
 custom Request (defaults to globalThis.Request)
 
@@ -268,7 +268,7 @@ custom Request (defaults to globalThis.Request)
 
 > `optional` **requestInitExt?**: `Record`\<`string`, `unknown`\>
 
-Defined in: node\_modules/openapi-fetch/dist/index.d.cts:19
+Defined in: node\_modules/openapi-fetch/dist/index.d.mts:19
 
 RequestInit extension object to pass as 2nd argument to fetch when supported (defaults to undefined)
 

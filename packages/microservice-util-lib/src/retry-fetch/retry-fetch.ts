@@ -3,8 +3,8 @@ import type {
     RetryConditionFn,
     RetryContext,
     RetryDelayFn,
-} from '../openapi-fetch-middlewares/types/retry';
-import { isNetworkError } from '../openapi-fetch-middlewares/utils/is-network-error';
+} from '../openapi-fetch-middlewares/types/retry.js';
+import { isNetworkError } from '../openapi-fetch-middlewares/utils/is-network-error.js';
 
 const IDEMPOTENT_HTTP_METHODS: readonly string[] = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
 

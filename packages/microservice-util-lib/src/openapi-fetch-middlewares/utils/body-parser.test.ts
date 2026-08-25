@@ -24,13 +24,13 @@ describe('parseBody', () => {
             expect(result).toEqual(body);
         });
 
-        it('should default to application/json when contentType is null', async () => {
+        it('should fall back to text when contentType is null', async () => {
             const body = { key: 'value' };
             const response = new Response(JSON.stringify(body));
 
             const result = await parseBody(response, null);
 
-            expect(result).toEqual(body);
+            expect(result).toBe(JSON.stringify(body));
         });
     });
 
@@ -132,12 +132,12 @@ describe('parseBody', () => {
     });
 
     describe('empty body', () => {
-        it('should return "null" when body is null', async () => {
+        it('should return null when body is null', async () => {
             const response = new Response(null);
 
             const result = await parseBody(response, 'application/json');
 
-            expect(result).toBe('null');
+            expect(result).toBeNull();
         });
     });
 
@@ -164,7 +164,7 @@ describe('parseBody', () => {
 
             const result = await parseBody(response, 'application/json');
 
-            expect(result).toMatch(/\[Unable to parse application\/json body:/);
+            expect(result).toMatch(/\[Unable to parse body:/);
         });
     });
 

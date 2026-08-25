@@ -244,12 +244,6 @@ function exponentialJitter(baseDelay: number, maxDelay: number): (attempt: numbe
     return attempt => Math.random() * Math.min(maxDelay, baseDelay * 2 ** attempt);
 }
 
-/**
- * @deprecated Renamed to {@link RetryWrapperConfig}. The old name collided with the retry
- * middleware's own config, which forced it to be re-exported as `RetryMiddlewareConfig`.
- */
-type RetryConfig = RetryWrapperConfig;
-
 export { exponentialJitter };
-export type { RetryConfig, RetryWrapperConfig };
+export type { RetryWrapperConfig };
 export default retryWrapper;

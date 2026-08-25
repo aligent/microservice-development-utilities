@@ -8,7 +8,7 @@
 
 > **throwOnNotOk**(): `Middleware`
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts:20](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts#L20)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts:20](https://github.com/aligent/microservice-development-utilities/blob/bdd7e82de06e0611b27ae79005e5208ce3f07b51/packages/microservice-util-lib/src/openapi-fetch-middlewares/throw-on-not-ok.ts#L20)
 
 Throws an [HttpResponseError](../classes/HttpResponseError.md) when a response has a non-OK status (i.e. not 2xx).
 
@@ -29,5 +29,5 @@ The middleware for throwing on non-OK responses.
 
 ```ts
 // logMiddleware logs the 500, then throwOnNotOk raises it to the caller
-client.use(throwOnNotOk(), logMiddleware('MyApi'));
+client.use(throwOnNotOk(), logMiddleware('MyApi', logger));
 ```

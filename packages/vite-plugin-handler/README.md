@@ -65,26 +65,7 @@ handlerBundle('src/runtime/handlers', {
 ## Behaviour
 
 - Automatically skips handler environment creation when running under **vitest** (`VITEST=true`), so tests run without interference.
-- Strips built-in Vite plugins that don't apply to Node.js bundling:
-
-  | Plugin | Why removed |
-  |---|---|
-  | `vite:watch-package-data` | Watches `package.json` for HMR — no HMR in builds |
-  | `vite:modulepreload-polyfill` | Browser `<link rel=modulepreload>` — no browser |
-  | `vite:html-inline-proxy` | Inline scripts in HTML — no HTML |
-  | `vite:css` | CSS parsing/transforms — no CSS |
-  | `vite:css-post` | CSS post-processing — no CSS |
-  | `vite:css-analysis` | CSS dependency analysis — no CSS |
-  | `vite:wasm-helper` | WASM loading for browsers |
-  | `vite:worker` | Web Workers — no browser |
-  | `vite:worker-import-meta-url` | Web Worker URL resolution — no browser |
-  | `vite:asset` | Static asset handling (images, fonts) — no static assets |
-  | `vite:asset-import-meta-url` | `new URL('asset', import.meta.url)` for assets |
-  | `vite:build-html` | HTML entry processing — no HTML |
-  | `vite:client-inject` | HMR client injection — no HMR |
-  | `vite:forward-console` | Forwards console to Vite overlay — dev server only |
-  | `vite:terser` | Terser minifier — minification is disabled |
-  | `vite:ssr-manifest` | SSR manifest generation — not doing SSR |
+- Sets `checks: { pluginTimings: false }` to silence misleading `[PLUGIN_TIMINGS]` warnings. This does **not** remove any plugins — it only suppresses the timing diagnostic. Vite 8's per-environment plugin resolution re-adds built-in plugins after config resolution, so plugins that do no meaningful work for Lambda bundles still appear in timing reports. See [Rolldown docs](https://rolldown.rs/options/checks#plugintimings) for details.
 - Conditionally injects shims via `renderChunk` only when the bundled output actually references the corresponding identifiers:
 
   | Shim | Trigger | Purpose |

@@ -8,13 +8,13 @@
 
 > **resignOauth10aRequest**(`request`, `config`): `Promise`\<`Request`\>
 
-Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts:292](https://github.com/aligent/microservice-development-utilities/blob/e4e27a03012ecfd974f8553d44397f5e77d9c177/packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts#L292)
+Defined in: [packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts:346](https://github.com/aligent/microservice-development-utilities/blob/bdd7e82de06e0611b27ae79005e5208ce3f07b51/packages/microservice-util-lib/src/openapi-fetch-middlewares/oauth10a/oauth10a.ts#L346)
 
 Standalone function that re-signs a `Request` with fresh OAuth 1.0a credentials.
 This function derives all information (URL, method, query params, body)
 directly from the `Request` object, without requiring openapi-fetch middleware context.
 
-Designed for use with the retry middleware's `onRetry` hook to regenerate
+Designed for use with [retryFetch](retryFetch.md)'s `onRetry` hook to regenerate
 OAuth 1.0a signatures on retried requests.
 
 ## Parameters
@@ -40,7 +40,9 @@ The request with a fresh `Authorization` header.
 ## Example
 
 ```ts
-client.use(retryMiddleware({
-    onRetry: ({ request }) => resignOauth10aRequest(request, config),
-}));
+const client = createClient({
+    fetch: retryFetch({
+        onRetry: ({ request }) => resignOauth10aRequest(request, config),
+    }),
+});
 ```
