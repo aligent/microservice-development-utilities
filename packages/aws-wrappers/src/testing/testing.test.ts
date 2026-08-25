@@ -130,6 +130,15 @@ describe('createMockService', () => {
         expect(s3).toBeDefined();
     });
 
+    it('rejects an unknown override key against a real service, not just the fixture class', () => {
+        createMockService(S3Service, {
+            getJsonObject: vi.fn(),
+
+            // @ts-expect-error `getJsonObejct` is not a public S3Service member
+            getJsonObejct: vi.fn(),
+        });
+    });
+
     it('rejects an override key that is not on the class', () => {
         // @ts-expect-error `greeet` is not a method of `Example`
         createMockService(Example, { greeet: vi.fn() });
