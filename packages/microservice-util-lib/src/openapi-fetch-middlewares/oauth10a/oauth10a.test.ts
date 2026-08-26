@@ -295,6 +295,48 @@ describe('generateOauthParams', () => {
         expect(result).toEqual(expected);
     });
 
+    it('resolves every occurrence of a repeated path placeholder in the signed URL', async () => {
+        // Some multi-store commerce APIs repeat the store code both as a URL
+        // prefix and again within a nested resource segment, e.g.
+        // /{storeCode}/V1/stores/{storeCode}/config. Every occurrence of the
+        // placeholder must be substituted before it's used to build the OAuth
+        // signature base string — otherwise the signature is computed for a
+        // URL that was never actually requested.
+        const request: MiddlewareCallbackParams['request'] = {
+            ...baseRequest,
+            url: '{storeCode}/V1/stores/{storeCode}/config',
+            clone: () => ({ ...request }),
+        };
+        const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
+        const params: MiddlewareCallbackParams['params'] = { path: { storeCode: 'default' } };
+        const config: OAuth10a = {
+            algorithm: 'HMAC-SHA1',
+            credentials: () => new Promise(res => res(credentialsWithoutToken)),
+        };
+
+        let signedBaseString: string | undefined;
+        const originalCreateHmac = crypto.createHmac;
+        vi.spyOn(crypto, 'createHmac').mockImplementation((algorithm, key) => {
+            const hmac = originalCreateHmac(algorithm, key);
+            const originalUpdate = hmac.update.bind(hmac);
+            hmac.update = ((data: crypto.BinaryLike) => {
+                signedBaseString = data.toString();
+                return originalUpdate(data);
+            }) as typeof hmac.update;
+            return hmac;
+        });
+
+        await generateOauthParams(request, options, params, config);
+
+        expect(signedBaseString).toBeDefined();
+        const decodedBaseString = decodeURIComponent(signedBaseString ?? '');
+
+        // Both occurrences of `{storeCode}` must be resolved, matching the
+        // URL that is actually requested.
+        expect(decodedBaseString).toContain('default/V1/stores/default/config');
+        expect(decodedBaseString).not.toContain('{storeCode}');
+    });
+
     it('generate correct HMAC-SHA256 signature to simple GET request with query parameters that contains space character', async () => {
         const request: MiddlewareCallbackParams['request'] = { ...baseRequest };
         const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
