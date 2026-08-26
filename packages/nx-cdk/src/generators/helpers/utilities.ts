@@ -332,3 +332,22 @@ export function removeTsConfigReference(tree: Tree, referencePath: string) {
 export function splitInputName(name: string) {
     return name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1));
 }
+
+const SAFE_SERVICE_NAME = /^[a-z0-9-]+$/;
+
+/**
+ * Validates that a service name is safe to use when building filesystem
+ * paths. `Tree` does not sandbox `..` segments, so an unvalidated name
+ * (e.g. "../../etc") can escape the services directory during file
+ * generation or deletion.
+ *
+ * @throws {Error} If the name contains anything other than lowercase
+ * alphanumeric characters and dashes.
+ */
+export function assertValidServiceName(name: string): void {
+    if (!SAFE_SERVICE_NAME.test(name)) {
+        throw new Error(
+            `Invalid service name "${name}". Service names must contain only lowercase alphanumeric characters and dashes.`
+        );
+    }
+}

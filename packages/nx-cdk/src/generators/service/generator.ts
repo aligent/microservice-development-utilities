@@ -4,6 +4,7 @@ import { MAIN_APPLICATION_NAME, SERVICES_FOLDER } from '../constants';
 import {
     addBundleDependency,
     addServiceStackToMainApplication,
+    assertValidServiceName,
     constructProjectTsConfigFiles,
     splitInputName,
 } from '../helpers/utilities';
@@ -26,6 +27,8 @@ function addTsConfigReference(tree: Tree, referencePath: string) {
 }
 
 export async function serviceGenerator(tree: Tree, options: ServiceGeneratorSchema) {
+    assertValidServiceName(options.name);
+
     const projectRoot = `${SERVICES_FOLDER}/${options.name}`;
     const nameParts = splitInputName(options.name);
 

@@ -197,6 +197,12 @@ describe('remove generator', () => {
         ).rejects.toThrow(/Service "non-existent" does not exist/);
     });
 
+    it('should reject a name that attempts to traverse outside the services directory', async () => {
+        await expect(
+            removeGenerator(tree, { name: '../../outside-workspace', forceRemove: true })
+        ).rejects.toThrow(/Invalid service name/);
+    });
+
     it('should proceed when service has no dependents and forceRemove is false', async () => {
         vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
             nodes: {},

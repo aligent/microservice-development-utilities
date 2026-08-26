@@ -1,6 +1,7 @@
 import { createProjectGraphAsync, formatFiles, Tree, updateJson } from '@nx/devkit';
 import { MAIN_APPLICATION_NAME, SERVICES_FOLDER, SERVICES_SCOPE } from '../constants';
 import {
+    assertValidServiceName,
     removeBundleDependency,
     removeServiceFromMainApplication,
     removeTsConfigReference,
@@ -9,6 +10,8 @@ import { RemoveGeneratorSchema } from './schema';
 
 export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema) {
     const { name, forceRemove } = options;
+
+    assertValidServiceName(name);
 
     const projectRoot = `${SERVICES_FOLDER}/${name}`;
     const projectName = `${SERVICES_SCOPE}/${name}`;
