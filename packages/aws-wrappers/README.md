@@ -272,7 +272,8 @@ const ssm = new SSMService();
 const apiKey = await ssm.getParameter('/myapp/api-key');
 
 // Supply an alias-to-path map — the result is keyed by the aliases so the
-// SSM path is only mentioned at the call site.
+// SSM path is only mentioned at the call site. Auto-chunks past 10 aliases
+// (the SDK's per-request cap on GetParameters).
 const { host, port } = await ssm.getParameters({
     host: '/myapp/host',
     port: '/myapp/port',

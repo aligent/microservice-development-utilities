@@ -127,7 +127,7 @@ Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` 
 
 - **Auto-pagination, flat array**: `S3.listObjects` / `getAllObjects` / `emptyBucket`, `SSM.getParametersByPath`, `SFN.listExecutions`. Used when the result set is bounded in practice.
 - **Generator pagination, yield items**: `DynamoDB.paginateItems` / `paginateScan`. Used when the result set is potentially unbounded — peak memory stays bounded by one page.
-- **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
+- **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10), `SSM.getParameters` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
 
 ### Opt-in payload truncation
 
