@@ -97,6 +97,96 @@ describe('DynamoDBService', () => {
         });
     });
 
+    describe('batchGet', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('returns immediately when there are no UnprocessedKeys', async () => {
+            ddbMock.on(BatchGetCommand).resolves({ Responses: { [TableName]: [{ pk: 'a' }] } });
+            const service = buildService();
+
+            const result = await service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'a' }] } },
+            });
+
+            expect(result.Responses).toEqual({ [TableName]: [{ pk: 'a' }] });
+            expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(1);
+        });
+
+        it('retries UnprocessedKeys and merges Responses across attempts', async () => {
+            ddbMock
+                .on(BatchGetCommand)
+                .resolvesOnce({
+                    Responses: { [TableName]: [{ pk: 'a' }] },
+                    UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'b' }] } },
+                })
+                .resolves({ Responses: { [TableName]: [{ pk: 'b' }] } });
+            const service = buildService();
+
+            const promise = service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'a' }, { pk: 'b' }] } },
+            });
+
+            await vi.runAllTimersAsync();
+            const result = await promise;
+
+            expect(result.Responses).toEqual({ [TableName]: [{ pk: 'a' }, { pk: 'b' }] });
+            const calls = ddbMock.commandCalls(BatchGetCommand);
+            expect(calls).toHaveLength(2);
+            expect(calls[1]?.args[0].input.RequestItems).toEqual({
+                [TableName]: { Keys: [{ pk: 'b' }] },
+            });
+        });
+
+        it('throws after MAX_ATTEMPTS when UnprocessedKeys never clear', async () => {
+            ddbMock.on(BatchGetCommand).resolves({
+                UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'c' }] } },
+            });
+            const service = buildService();
+
+            const promise = service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'c' }] } },
+            });
+
+            const expectation = expect(promise).rejects.toThrow('batchGet failed after 5 attempts');
+            await vi.runAllTimersAsync();
+            await expectation;
+
+            expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(5);
+        });
+
+        it('emits a logger.warn line with the retried table names', async () => {
+            ddbMock
+                .on(BatchGetCommand)
+                .resolvesOnce({
+                    UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'd' }] } },
+                })
+                .resolves({ Responses: { [TableName]: [{ pk: 'd' }] } });
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            const promise = service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'd' }] } },
+            });
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(warnSpy).toHaveBeenCalledWith('Retrying unprocessed DynamoDB items', {
+                attempt: 1,
+                tables: [TableName],
+            });
+        });
+    });
+
     describe('pass-through commands', () => {
         it('getItem returns the unmarshalled Item', async () => {
             ddbMock.on(GetCommand).resolves({ Item: { pk: 'a', value: 1 } });

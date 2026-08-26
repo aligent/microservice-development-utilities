@@ -149,7 +149,7 @@ If you find yourself adding truncation to a third method, raise it with the user
   - Methods that return a single item or yield items (`paginateItems`, `paginateScan`): `AsyncGenerator<T>`.
   - Methods that return the full command output (`query`, `scan`): preserve the output and generically type only the data-bearing field (`Items?: T[]`).
   - Key-bearing methods (`getItem`, `updateItem`, `deleteItem`) take two generics — `K extends Record<string, unknown>` for the partition / sort key shape, `R extends Record<string, unknown>` for the return type. The input is threaded through `WithTypedKey<TInput, K>` so the SDK input is preserved with the typed `Key` substituted.
-  - `batchGet` is intentionally **not** generic — multi-table `Responses` can't be soundly described by a single `T`. Document this in TSDoc whenever the method is touched.
+  - `batchGet` is intentionally **not** generic — multi-table `Responses` can't be soundly described by a single `T`. Document this in TSDoc whenever the method is touched. It also retries `UnprocessedKeys` with jittered exponential backoff (mirroring `batchWrite`'s `UnprocessedItems` retry), merging `Responses` across attempts and throwing after the final attempt if keys remain unprocessed.
   - All generics default to `Record<string, unknown>` so callers can omit them.
 
 ## Adding a new service

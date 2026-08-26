@@ -34,6 +34,8 @@ import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
+const BATCH_GET_MAX_ATTEMPTS = 5;
+const BATCH_GET_BASE_DELAY_MS = 200;
 
 /**
  * Fields safe to log at INFO. Omits `Key` (may carry customer IDs / tenant IDs).
@@ -126,8 +128,8 @@ const SCAN_SAFE_FIELDS: ReadonlyArray<keyof ScanCommandInput> = [
 ];
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const backoffDelay = (attempt: number) => {
-    const exp = BATCH_WRITE_BASE_DELAY_MS * 2 ** attempt;
+const backoffDelay = (attempt: number, baseDelayMs: number) => {
+    const exp = baseDelayMs * 2 ** attempt;
     return exp + Math.random() * exp;
 };
 
@@ -307,7 +309,10 @@ export class DynamoDBService {
     }
 
     /**
-     * Batch-get items from one or more DynamoDB tables.
+     * Batch-get items from one or more DynamoDB tables, retrying
+     * `UnprocessedKeys` with jittered exponential backoff. Up to 5 attempts
+     * (200ms base delay). Throws when keys remain unprocessed after the final
+     * attempt. `Responses` are merged across attempts, keyed by table name.
      *
      * Note: this method is intentionally **not** generic. `BatchGet`'s
      * `Responses` field is a multi-table `Record<string, item[]>` whose item
@@ -323,7 +328,27 @@ export class DynamoDBService {
         this.logger.info('Batch getting DynamoDB items', {
             input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
         });
-        return this.client.send(new BatchGetCommand(input));
+
+        let current = input;
+        const mergedResponses: Record<string, Array<Record<string, unknown>>> = {};
+        for (let attempt = 0; attempt < BATCH_GET_MAX_ATTEMPTS; attempt++) {
+            const response = await this.client.send(new BatchGetCommand(current));
+            for (const [table, items] of Object.entries(response.Responses ?? {})) {
+                mergedResponses[table] = [...(mergedResponses[table] ?? []), ...items];
+            }
+            const unprocessed = response.UnprocessedKeys;
+            if (!unprocessed || Object.keys(unprocessed).length === 0) {
+                return { ...response, Responses: mergedResponses };
+            }
+            this.logger.warn('Retrying unprocessed DynamoDB items', {
+                attempt: attempt + 1,
+                tables: Object.keys(unprocessed),
+            });
+            if (attempt < BATCH_GET_MAX_ATTEMPTS - 1)
+                await sleep(backoffDelay(attempt, BATCH_GET_BASE_DELAY_MS));
+            current = { ...input, RequestItems: unprocessed };
+        }
+        throw new Error(`batchGet failed after ${BATCH_GET_MAX_ATTEMPTS} attempts`);
     }
 
     /**
@@ -349,7 +374,8 @@ export class DynamoDBService {
                 attempt: attempt + 1,
                 tables: Object.keys(unprocessed),
             });
-            if (attempt < BATCH_WRITE_MAX_ATTEMPTS - 1) await sleep(backoffDelay(attempt));
+            if (attempt < BATCH_WRITE_MAX_ATTEMPTS - 1)
+                await sleep(backoffDelay(attempt, BATCH_WRITE_BASE_DELAY_MS));
             current = { ...input, RequestItems: unprocessed };
         }
         throw new Error(`batchWrite failed after ${BATCH_WRITE_MAX_ATTEMPTS} attempts`);
