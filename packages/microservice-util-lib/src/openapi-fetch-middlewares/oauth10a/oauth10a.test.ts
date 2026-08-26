@@ -296,18 +296,19 @@ describe('generateOauthParams', () => {
     });
 
     it('resolves every occurrence of a repeated path placeholder in the signed URL', async () => {
-        // A path template that references the same param twice (e.g. a nested
-        // resource shape like /accounts/{id}/orders/{id}/items) must have
-        // *every* occurrence substituted before it's used to build the OAuth
+        // Some multi-store commerce APIs repeat the store code both as a URL
+        // prefix and again within a nested resource segment, e.g.
+        // /{storeCode}/V1/stores/{storeCode}/config. Every occurrence of the
+        // placeholder must be substituted before it's used to build the OAuth
         // signature base string — otherwise the signature is computed for a
         // URL that was never actually requested.
         const request: MiddlewareCallbackParams['request'] = {
             ...baseRequest,
-            url: 'accounts/{id}/orders/{id}',
+            url: '{storeCode}/V1/stores/{storeCode}/config',
             clone: () => ({ ...request }),
         };
         const options: MiddlewareCallbackParams['options'] = { ...baseOptions };
-        const params: MiddlewareCallbackParams['params'] = { path: { id: '123' } };
+        const params: MiddlewareCallbackParams['params'] = { path: { storeCode: 'default' } };
         const config: OAuth10a = {
             algorithm: 'HMAC-SHA1',
             credentials: () => new Promise(res => res(credentialsWithoutToken)),
@@ -330,10 +331,10 @@ describe('generateOauthParams', () => {
         expect(signedBaseString).toBeDefined();
         const decodedBaseString = decodeURIComponent(signedBaseString ?? '');
 
-        // Both occurrences of `{id}` must be resolved, matching the URL that
-        // is actually requested.
-        expect(decodedBaseString).toContain('accounts/123/orders/123');
-        expect(decodedBaseString).not.toContain('{id}');
+        // Both occurrences of `{storeCode}` must be resolved, matching the
+        // URL that is actually requested.
+        expect(decodedBaseString).toContain('default/V1/stores/default/config');
+        expect(decodedBaseString).not.toContain('{storeCode}');
     });
 
     it('generate correct HMAC-SHA256 signature to simple GET request with query parameters that contains space character', async () => {
