@@ -37,7 +37,10 @@ import {
 } from './openapi-fetch-middlewares/utils/http-response-error.js';
 import remap, { ObjectMap, Remap } from './remap/remap.js';
 import { RetryFetchConfig, retryFetch } from './retry-fetch/retry-fetch.js';
-import retryWrapper, { RetryWrapperConfig } from './retry-wrapper/retry-wrapper.js';
+import retryWrapper, {
+    RetryWrapperConfig,
+    exponentialJitter,
+} from './retry-wrapper/retry-wrapper.js';
 
 export type {
     ApiKey,
@@ -64,6 +67,7 @@ export {
     chunkBy,
     createErrorThrowingClient,
     createXmlParser,
+    exponentialJitter,
     getAwsIdFromArn,
     hasDefinedProperties,
     isHttpResponseError,

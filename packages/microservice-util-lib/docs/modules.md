@@ -36,6 +36,7 @@
 - [chunkBy](functions/chunkBy.md)
 - [createErrorThrowingClient](functions/createErrorThrowingClient.md)
 - [createXmlParser](functions/createXmlParser.md)
+- [exponentialJitter](functions/exponentialJitter.md)
 - [getAwsIdFromArn](functions/getAwsIdFromArn.md)
 - [hasDefinedProperties](functions/hasDefinedProperties.md)
 - [isHttpResponseError](functions/isHttpResponseError.md)
