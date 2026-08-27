@@ -14,6 +14,8 @@ import {
 import xray from 'aws-xray-sdk-core';
 import { filterFieldsForLogLevel } from '../util/redact.js';
 
+const GET_PARAMETERS_LIMIT = 10;
+
 /**
  * Fields safe to log at INFO level for `putParameter`. Omits `Value` (the
  * parameter content itself).
@@ -89,6 +91,11 @@ export class SSMService {
      * });
      * ```
      *
+     * The AWS SSM `GetParameters` API caps requests at
+     * `GET_PARAMETERS_LIMIT` (10) names per call, so this method auto-chunks
+     * the underlying parameter names and sends one request per chunk,
+     * merging the results before building the alias-keyed return value.
+     *
      * @param aliases - Record mapping each desired local alias to its SSM
      * parameter name (or ARN).
      * @returns A record keyed by the same aliases, mapping each to the
@@ -99,15 +106,19 @@ export class SSMService {
         aliases: Record<K, string>
     ): Promise<Record<K, string | undefined>> {
         this.logger.info('Fetching SSM parameters', { input: { aliases } });
-        const response = await this.client.send(
-            new GetParametersCommand({
-                Names: Object.values(aliases),
-                WithDecryption: true,
-            })
-        );
+        const names = Object.values(aliases) as string[];
         const byPath = new Map<string, string | undefined>();
-        for (const parameter of response.Parameters ?? []) {
-            if (parameter.Name !== undefined) byPath.set(parameter.Name, parameter.Value);
+        for (let i = 0; i < names.length; i += GET_PARAMETERS_LIMIT) {
+            const chunk = names.slice(i, i + GET_PARAMETERS_LIMIT);
+            const response = await this.client.send(
+                new GetParametersCommand({
+                    Names: chunk,
+                    WithDecryption: true,
+                })
+            );
+            for (const parameter of response.Parameters ?? []) {
+                if (parameter.Name !== undefined) byPath.set(parameter.Name, parameter.Value);
+            }
         }
         const result = {} as Record<K, string | undefined>;
         for (const alias of Object.keys(aliases) as K[]) {

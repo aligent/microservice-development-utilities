@@ -79,6 +79,55 @@ describe('SSMService', () => {
 
             expect(result).toEqual({ alpha: 'val', beta: 'val' });
         });
+
+        it('chunks more than 10 aliases into multiple GetParametersCommand calls and merges the results', async () => {
+            const aliases = Object.fromEntries(
+                Array.from({ length: 12 }, (_, i) => [`alias${i}`, `/app/param${i}`])
+            ) as Record<string, string>;
+
+            ssmMock.on(GetParametersCommand).callsFake(input => ({
+                Parameters: (input.Names ?? []).map((name: string) => ({
+                    Name: name,
+                    Value: name === '/app/param5' ? undefined : `value-${name}`,
+                })),
+            }));
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters(aliases);
+
+            const calls = ssmMock.commandCalls(GetParametersCommand);
+            expect(calls.length).toBeGreaterThan(1);
+
+            for (let i = 0; i < 12; i++) {
+                if (i === 5) {
+                    expect(result[`alias${i}`]).toBeUndefined();
+                } else {
+                    expect(result[`alias${i}`]).toBe(`value-/app/param${i}`);
+                }
+            }
+        });
+
+        it('logs the full alias set once, not once per chunk', async () => {
+            const aliases = Object.fromEntries(
+                Array.from({ length: 12 }, (_, i) => [`alias${i}`, `/app/param${i}`])
+            ) as Record<string, string>;
+
+            ssmMock.on(GetParametersCommand).resolves({ Parameters: [] });
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const infoSpy = vi.spyOn(logger, 'info');
+            const service = new SSMService({ client: new SSMClient({}), logger });
+
+            await service.getParameters(aliases);
+
+            const fetchCalls = infoSpy.mock.calls.filter(
+                ([message]) => message === 'Fetching SSM parameters'
+            );
+            expect(fetchCalls).toHaveLength(1);
+            expect((fetchCalls[0]?.[1] as { input: { aliases: unknown } }).input.aliases).toEqual(
+                aliases
+            );
+        });
     });
 
     describe('putParameter', () => {

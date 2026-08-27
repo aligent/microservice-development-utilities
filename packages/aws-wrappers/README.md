@@ -159,7 +159,7 @@ for await (const item of ddb.paginateItems<{ pk: string }>({
 
 `Limit` on `paginateItems` / `paginateScan` is applied by DynamoDB per request, and both methods walk every page until `LastEvaluatedKey` is exhausted. Passing `Limit: 10` therefore yields *every* matching item in pages of 10, not the first 10. Because both return an `AsyncGenerator`, `break` calls its `return()`, which unwinds the pagination and issues no further requests — that is how you bound the number of items. `Limit` is still the right knob for tuning per-request consumed capacity and page memory; it just doesn't stop the walk.
 
-`batchGet` is **not** generic — its `Responses` field is a multi-table record whose item shapes can differ per table, so no single generic can soundly describe it. Callers should narrow the result type at the call site.
+`batchGet` is **not** generic — its `Responses` field is a multi-table record whose item shapes can differ per table, so no single generic can soundly describe it. Callers should narrow the result type at the call site. Like `batchWrite`, it retries non-empty `UnprocessedKeys` with jittered exponential backoff (5 attempts, 200ms base), merging `Responses` across attempts and throwing if keys remain unprocessed after the final attempt.
 
 ## Secrets Manager
 
@@ -272,7 +272,8 @@ const ssm = new SSMService();
 const apiKey = await ssm.getParameter('/myapp/api-key');
 
 // Supply an alias-to-path map — the result is keyed by the aliases so the
-// SSM path is only mentioned at the call site.
+// SSM path is only mentioned at the call site. Auto-chunks past 10 aliases
+// (the SDK's per-request cap on GetParameters).
 const { host, port } = await ssm.getParameters({
     host: '/myapp/host',
     port: '/myapp/port',
