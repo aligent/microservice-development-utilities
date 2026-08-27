@@ -2,13 +2,29 @@
 
 This is a CDK service generated using `@aligent/nx-cdk` for Nx.
 
+## Overview
+
+<!-- Very brief explanation of what this service does -->
+
 ## Architecture
 
-<!-- Add your architecture documentation here -->
+<!-- What systems this service integrates with and how -->
 
-# Technical Decisions
+```mermaid
+graph LR
+    A[System A]
+    INT[INT]
+    B[System B]
+    A-->INT-->B
+```
 
-<!-- Add your notes and technical decisions here -->
+## Technical Decisions
+
+<!-- Why an approach was chosen over alternatives -->
+
+## Infrastructure
+
+<!-- What AWS resources the CDK stack provisions (queues, buckets, tables, etc.) -->
 
 ## Development
 
@@ -23,6 +39,16 @@ yarn nx check-types <%= name %>
 ```bash
 yarn nx test <%= name %>
 ```
+
+### Deploy to Playground
+
+```bash
+yarn pg:deploy dev/<%= name %>
+```
+
+## Configuration & Secrets
+
+This service requires the following parameters to be present in AWS SSM Parameter Store or Secrets Manager **before deployment**.
 
 ## Deployment
 
