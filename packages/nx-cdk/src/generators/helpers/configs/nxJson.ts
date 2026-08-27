@@ -44,7 +44,7 @@ export const NX_JSON: NxJsonConfiguration = {
             outputs: ['{projectRoot}/out-tsc'],
         },
         cdk: {
-            dependsOn: [{ target: 'build', params: 'forward', projects: `${SERVICES_SCOPE}/*` }],
+            dependsOn: [{ target: 'build', params: 'ignore', projects: `${SERVICES_SCOPE}/*` }],
         },
     },
 } as const;
