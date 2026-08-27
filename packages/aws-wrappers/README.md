@@ -352,6 +352,68 @@ await truncSns.publish({ TopicArn, Message: huge, Subject: long });
 await truncSns.publish({ TopicArn, Message: huge }, { truncate: false });
 ```
 
+## Testing
+
+When you unit-test code that takes a wrapper as a dependency, you usually want to assert that *your* code called the right method with the right arguments — not to exercise the wrapper's chunking, pagination or JSON round-tripping, which this package already covers with its own tests against a mocked SDK client.
+
+`createMockService` builds a stand-in for a service class from an object of method overrides. It ships from the `@aligent/aws-wrappers/testing` subpath — it is deliberately not exported from the package root, so test scaffolding can never be reached from the module your Lambda bundles.
+
+```ts
+// report-handler.ts
+import type { S3Service } from '@aligent/aws-wrappers';
+
+export async function reportHandler({ s3 }: { s3: S3Service }) {
+    const report = await s3.getJsonObject<{ total: number }>({
+        Bucket: 'reports',
+        Key: 'daily.json',
+    });
+
+    return { statusCode: 200, body: `Total: ${report?.total ?? 0}` };
+}
+```
+
+```ts
+// report-handler.test.ts
+import { S3Service } from '@aligent/aws-wrappers';
+import { createMockService } from '@aligent/aws-wrappers/testing';
+import { expect, it, vi } from 'vitest';
+import { reportHandler } from './report-handler.js';
+
+it('reads the daily report from S3', async () => {
+    const getJsonObject = vi.fn().mockResolvedValue({ total: 42 });
+    const s3 = createMockService(S3Service, { getJsonObject });
+
+    const result = await reportHandler({ s3 });
+
+    expect(getJsonObject).toHaveBeenCalledWith({ Bucket: 'reports', Key: 'daily.json' });
+    expect(result.body).toBe('Total: 42');
+});
+```
+
+- **No cast at the call site.** The returned value is accepted wherever the real class is expected.
+- **Override keys are type-checked** against the class's public surface, so a misspelled key is a compile error rather than a green test that exercised nothing. For a non-generic method you can type the spy — `vi.fn<SQSService['sendMessage']>()` — to have its shape checked against the real method too.
+- **Only mock what the code under test calls.** Accessing any other method of the class throws `S3Service.headObject was accessed but not mocked`, naming both the service and the method, instead of failing later as `is not a function`.
+- **Bring your own spies.** The helper imports no test framework — `vi.fn()`, `jest.fn()` or a hand-rolled closure all work, and overridden keys keep your spy's type, so `s3.getJsonObject.mock.calls` typechecks through the returned object.
+
+### Overriding a generic method
+
+Several methods are generic in their return type — `S3Service.getJsonObject` / `putJsonObject` / `getAllObjects`, `DynamoDBService.putItem` / `query` / `scan`, `SecretsManagerService.getJsonSecret` and `SSMService.getParameters`. An override has to satisfy the generic signature, so a plain non-generic function is rejected:
+
+```ts
+// Error: '{ total: number }' is not assignable to 'T'
+const getJsonObject = async () => ({ total: 42 });
+```
+
+An untyped `vi.fn()` is the easy path and is what the example above uses — `Mock`'s call signature is loose enough to satisfy the constraint. Otherwise make the override generic:
+
+```ts
+const getJsonObject = async <T>() => ({ total: 42 }) as T;
+```
+
+Note that the typed-spy form does **not** work here: `vi.fn<S3Service['getJsonObject']>()` produces a `Mock` that erases the type parameter and is no longer assignable to the generic signature. Reach for a typed spy on non-generic methods only.
+
+The helper is generic over any class, so it works for all eight wrappers and for your own service classes too.
+
 ## Build / test
 
 ```sh
