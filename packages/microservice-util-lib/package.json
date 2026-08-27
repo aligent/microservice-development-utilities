@@ -1,6 +1,6 @@
 {
   "name": "@aligent/microservice-util-lib",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A set of utility functions for Aligent Microservices",
   "engines": {
     "node": ">=18"
