@@ -29,6 +29,9 @@
         },
         {
             "path": "./packages/vite-plugin-handler"
+        },
+        {
+            "path": "./packages/lambda-test-utils"
         }
     ]
 }

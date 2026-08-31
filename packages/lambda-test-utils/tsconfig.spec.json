@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./out-tsc/vitest",
+        // Mirrors `tsconfig.lib.json` — see the comment there.
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "types": ["vitest/globals", "vitest/importMeta", "vite/client", "node", "vitest"]
+    },
+    "include": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.d.ts"],
+    "references": [
+        {
+            "path": "./tsconfig.lib.json"
+        }
+    ]
+}
