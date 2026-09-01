@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import type { Logger } from 'vite';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { handlerBundle } from './handler-bundle.js';
 
 vi.mock('node:fs', () => ({
@@ -9,6 +10,24 @@ vi.mock('node:fs', () => ({
         return [`${base}/create.ts`, `${base}/get.ts`];
     }),
 }));
+
+const { baseLoggerMock, createLoggerMock } = vi.hoisted(() => {
+    const baseLoggerMock = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        warnOnce: vi.fn(),
+        error: vi.fn(),
+        clearScreen: vi.fn(),
+        hasErrorLogged: vi.fn(),
+        hasWarned: false,
+    };
+    return { baseLoggerMock, createLoggerMock: vi.fn(() => baseLoggerMock) };
+});
+
+vi.mock('vite', async importOriginal => {
+    const actual = await importOriginal<typeof import('vite')>();
+    return { ...actual, createLogger: createLoggerMock };
+});
 
 const HANDLERS_PATH = '/project/src/handlers';
 
@@ -367,6 +386,80 @@ describe('handlerBundle', () => {
             expect(buildFn).toHaveBeenCalledTimes(2);
             // With concurrency 1, calls happen sequentially
             expect(callOrder).toEqual([0, 1]);
+        });
+    });
+
+    describe('quiet logging', () => {
+        function getCustomLogger(options?: Parameters<typeof handlerBundle>[1]) {
+            const plugin = handlerBundle(HANDLERS_PATH, options);
+            const result = callConfigHook(plugin) as Record<string, unknown>;
+            return result['customLogger'] as Logger | undefined;
+        }
+
+        beforeEach(() => {
+            baseLoggerMock.info.mockClear();
+            baseLoggerMock.warn.mockClear();
+            baseLoggerMock.error.mockClear();
+            createLoggerMock.mockClear();
+        });
+
+        it('provides a customLogger by default', () => {
+            expect(getCustomLogger()).toBeDefined();
+        });
+
+        it('does not provide a customLogger when quiet is false', () => {
+            expect(getCustomLogger({ quiet: false })).toBeUndefined();
+        });
+
+        it('keeps the build-start line for handler environments', () => {
+            const logger = getCustomLogger();
+            logger?.info('vite v8.1.0 building handler_create environment for production...', {
+                environment: 'handler_create',
+            });
+            expect(baseLoggerMock.info).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps the built-in-time line for handler environments', () => {
+            const logger = getCustomLogger();
+            logger?.info('✓ built in 123ms', { environment: 'handler_create' });
+            expect(baseLoggerMock.info).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps the size/gzip summary line for handler environments', () => {
+            const logger = getCustomLogger();
+            logger?.info('dist/create/index.mjs  2.00 kB │ gzip: 1.00 kB', {
+                environment: 'handler_create',
+            });
+            expect(baseLoggerMock.info).toHaveBeenCalledTimes(1);
+        });
+
+        it('drops per-module/per-chunk progress noise for handler environments', () => {
+            const logger = getCustomLogger();
+            logger?.info('transforming...', { environment: 'handler_create' });
+            logger?.info('✓ 12 modules transformed.', { environment: 'handler_create' });
+            logger?.info('rendering chunks...', { environment: 'handler_create' });
+            logger?.info('computing gzip size...', { environment: 'handler_create' });
+            expect(baseLoggerMock.info).not.toHaveBeenCalled();
+        });
+
+        it('passes through info messages for non-handler environments untouched', () => {
+            const logger = getCustomLogger();
+            logger?.info('transforming...', { environment: 'other_env' });
+            expect(baseLoggerMock.info).toHaveBeenCalledTimes(1);
+        });
+
+        it('passes through info messages with no environment tag', () => {
+            const logger = getCustomLogger();
+            logger?.info('some top-level message');
+            expect(baseLoggerMock.info).toHaveBeenCalledTimes(1);
+        });
+
+        it('delegates warn/error calls unchanged regardless of environment', () => {
+            const logger = getCustomLogger();
+            logger?.warn('careful', { environment: 'handler_create' });
+            logger?.error('boom', { environment: 'handler_create' });
+            expect(baseLoggerMock.warn).toHaveBeenCalledTimes(1);
+            expect(baseLoggerMock.error).toHaveBeenCalledTimes(1);
         });
     });
 

@@ -2,8 +2,16 @@ import MagicString from 'magic-string';
 import { globSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
-import type { BuildEnvironment, EnvironmentOptions, Plugin, ViteBuilder } from 'vite';
-import { type ConditionalShim, resolveShims } from './shim.js';
+import {
+    createLogger,
+    type BuildEnvironment,
+    type EnvironmentOptions,
+    type Logger,
+    type LogOptions,
+    type Plugin,
+    type ViteBuilder,
+} from 'vite';
+import { resolveShims, type ConditionalShim } from './shim.js';
 
 export interface HandlerBundleOptions {
     /** Max concurrent environment builds (default: Infinity) */
@@ -16,12 +24,38 @@ export interface HandlerBundleOptions {
     /** Extra Rolldown module type overrides (default: {}) */
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     moduleTypes?: {};
+    /** Suppress noisy per-module/per-chunk build output for handler environments,
+     *  keeping only the build-start, build-summary, and size/gzip lines (default: true) */
+    quiet?: boolean;
 }
 
 const ENV_PREFIX = 'handler';
 
 // Native .node addons (e.g. cpu-features, sharp) cannot be bundled
 const NATIVE_NODE_ADDONS = /\.node$/;
+
+// Info-level lines to keep for handler environments; everything else (Rolldown's
+// per-module/per-chunk progress output) is dropped to reduce noise with many handlers.
+const KEEP_LOG_PATTERNS = [/^vite v[\d.]+ building /, /✓ built in /, /gzip:/];
+
+/**
+ * Wraps a Vite logger so `info` messages tagged with a handler environment are
+ * filtered down to the build-start, build-summary, and size/gzip lines.
+ */
+function createQuietLogger(base: Logger): Logger {
+    return {
+        ...base,
+        info(msg: string, options?: LogOptions) {
+            if (
+                options?.environment?.startsWith(`${ENV_PREFIX}_`) &&
+                !KEEP_LOG_PATTERNS.some(pattern => pattern.test(msg))
+            ) {
+                return;
+            }
+            base.info(msg, options);
+        },
+    };
+}
 
 /**
  * Creates a Vite environment configuration for each handler file, producing
@@ -102,7 +136,7 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  * the given subpath. Each handler is bundled as an ESM Node.js entry point.
  *
  * @param handlersPath - Path to the handler directory, resolved relative to Vite's `config.root` (falling back to `process.cwd()`).
- * @param options - Optional configuration for concurrency, shims, and module types.
+ * @param options - Optional configuration for concurrency, shims, module types, and log verbosity.
  *
  * @example
  * ```ts
@@ -111,7 +145,7 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  * import { handlerBundle } from '@aligent/vite-plugin-handler';
  *
  * export default defineConfig({
- *   plugins: [handlerBundle('src/handlers', { concurrency: 4 })],
+ *   plugins: [handlerBundle('src/handlers', { concurrency: 4, quiet: false })],
  * });
  * ```
  */
@@ -130,8 +164,10 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
                 throw new Error('Invalid handler path: path traversal ("..") is not allowed');
             }
 
-            const concurrency = options.concurrency ?? Infinity;
-            const handlersDir = resolve(config.root || process.cwd(), handlersPath);
+            const { customLogger, logLevel, root } = config;
+            const { concurrency = Infinity, quiet = true } = options;
+
+            const handlersDir = resolve(root || process.cwd(), handlersPath);
             const environments = buildHandlerEnvironments(handlersDir, options);
 
             if (!environments) {
@@ -139,8 +175,11 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
                 return;
             }
 
+            const quietLogger = createQuietLogger(customLogger ?? createLogger(logLevel));
+
             return {
                 environments,
+                ...(quiet ? { customLogger: quietLogger } : {}),
                 builder: {
                     buildApp: (builder: ViteBuilder) =>
                         buildHandlersConcurrently(builder, concurrency),

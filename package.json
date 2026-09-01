@@ -10,6 +10,7 @@
     "lint:all": "nx run-many -t lint",
     "check-types": "nx affected -t typecheck",
     "check-types:all": "nx run-many -t typecheck",
+    "code-audit": "nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache",
     "prepare": "[ -d .git ] && git config core.hooksPath '.git-hooks' || true",
     "release-plan": "nx release plan"
   },
