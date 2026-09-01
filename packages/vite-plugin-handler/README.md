@@ -34,6 +34,7 @@ export default defineConfig({
 | `shims` | `boolean \| ConditionalShim[]` | `true` | Controls conditional shims. `true` uses the built-in shims, `false` disables all shims, or pass a `ConditionalShim[]` to replace the built-ins with your own. |
 | `external` | `(string \| RegExp)[]` | `[]` | Additional modules to exclude from the bundle, appended to Node.js built-ins. |
 | `moduleTypes` | `Record<string, string>` | `{}` | Extra Rolldown module type overrides (e.g. `{ '.graphql': 'text' }`). |
+| `quiet` | `boolean` | `true` | Suppresses noisy per-module/per-chunk build output for handler environments, keeping only the build-start, build-summary, and size/gzip lines. Pass `false` to restore full Vite/Rolldown build output. |
 
 ```js
 handlerBundle('src/runtime/handlers', {
@@ -41,6 +42,7 @@ handlerBundle('src/runtime/handlers', {
     shims: false,
     external: ['@aws-sdk/client-s3', /^@smithy\//],
     moduleTypes: { '.graphql': 'text' },
+    quiet: false,
 });
 ```
 
@@ -65,6 +67,7 @@ handlerBundle('src/runtime/handlers', {
 ## Behaviour
 
 - Automatically skips handler environment creation when running under **vitest** (`VITEST=true`), so tests run without interference.
+- **Quieter build output by default** (`quiet: true`). With many handlers, Vite/Rolldown's per-environment `transforming...`, `✓ N modules transformed.`, `rendering chunks...`, and `computing gzip size...` lines add up fast. This plugin installs a `customLogger` that filters those out per handler environment, keeping only the build-start line, the final size/gzip line, and the `✓ built in ...` line. Warnings, errors, and output from any non-handler environment are never touched. If your `vite.config` already sets its own `customLogger`, this plugin wraps it rather than replacing it. Pass `quiet: false` to disable filtering entirely.
 - Sets `checks: { pluginTimings: false }` to silence misleading `[PLUGIN_TIMINGS]` warnings. This does **not** remove any plugins — it only suppresses the timing diagnostic. Vite 8's per-environment plugin resolution re-adds built-in plugins after config resolution, so plugins that do no meaningful work for Lambda bundles still appear in timing reports. See [Rolldown docs](https://rolldown.rs/options/checks#plugintimings) for details.
 - Conditionally injects shims via `renderChunk` only when the bundled output actually references the corresponding identifiers:
 
