@@ -1,0 +1,50 @@
+{
+    "name": "lambda-test-utils",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "library",
+    "sourceRoot": "packages/lambda-test-utils/src",
+    "targets": {
+        "build": {
+            "dependsOn": ["package-dist"]
+        },
+        "package-dist": {
+            "dependsOn": ["typedoc"],
+            "executor": "nx:run-commands",
+            "outputs": [
+                "{projectRoot}/dist/package.json",
+                "{projectRoot}/dist/README.md",
+                "{projectRoot}/dist/docs"
+            ],
+            "inputs": [
+                "{projectRoot}/package.json",
+                "{projectRoot}/README.md",
+                "{projectRoot}/docs/**/*"
+            ],
+            "cache": true,
+            "options": {
+                "cwd": "{projectRoot}",
+                "parallel": false,
+                "commands": [
+                    "mkdir -p dist",
+                    "cp package.json dist/package.json",
+                    "cp README.md dist/README.md",
+                    "rm -rf dist/docs && cp -R docs dist/docs"
+                ]
+            }
+        },
+        "typedoc": {
+            "executor": "nx:run-commands",
+            "options": {
+                "cwd": "{projectRoot}",
+                "color": true,
+                "command": "typedoc --options ./typedoc.config.mjs"
+            }
+        },
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "{projectRoot}/dist"
+            }
+        }
+    },
+    "tags": ["library"]
+}

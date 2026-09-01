@@ -7,6 +7,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 - [App Builder Util Lib](/packages/appbuilder-util-lib/README.md)
 - [AWS Wrappers](/packages/aws-wrappers/README.md)
 - [Create Workspace](/packages/create-workspace/README.md)
+- [Lambda Test Utils](/packages/lambda-test-utils/README.md)
 - [Microservice Util Lib](/packages/microservice-util-lib/README.md)
 - [Nx App Builder](/packages/nx-appbuilder/README.md)
 - [Nx CDK](/packages/nx-cdk/README.md)
@@ -45,6 +46,7 @@ microservice-development-utilities/
 │   ├── appbuilder-util-lib/    # Adobe App Builder utility library
 │   ├── aws-wrappers/           # Opinionated AWS SDK wrappers with logging + X-Ray
 │   ├── create-workspace/       # Workspace scaffolding tool
+│   ├── lambda-test-utils/      # Test utilities for API Gateway Lambda handlers
 │   ├── microservice-util-lib/  # Utility library for microservices
 │   ├── nx-appbuilder/          # Nx plugin with generators for Adobe App Builder apps
 │   ├── nx-cdk/                 # Nx plugin for CDK project generation
