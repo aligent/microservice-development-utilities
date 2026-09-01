@@ -1,6 +1,6 @@
 {
   "name": "@aligent/lambda-test-utils",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Test utilities for asserting API Gateway Lambda handler input/output without a real HTTP layer",
   "engines": {
     "node": ">=18"
