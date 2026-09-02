@@ -131,12 +131,12 @@ describe('createMockService', () => {
     });
 
     it('rejects an unknown override key against a real service, not just the fixture class', () => {
-        createMockService(S3Service, {
-            getJsonObject: vi.fn(),
-
-            // @ts-expect-error `getJsonObejct` is not a public S3Service member
-            getJsonObejct: vi.fn(),
-        });
+        // A valid key alongside the typo would defeat this check: `Partial<T>` is
+        // a "weak type" (all properties optional), and TypeScript only flags
+        // excess properties on a weak type when none of the literal's keys
+        // overlap with it. One valid key is enough to make it accept the typo too.
+        // @ts-expect-error `getJsonObejct` is not a public S3Service member
+        createMockService(S3Service, { getJsonObejct: vi.fn() });
     });
 
     it('rejects an override key that is not on the class', () => {

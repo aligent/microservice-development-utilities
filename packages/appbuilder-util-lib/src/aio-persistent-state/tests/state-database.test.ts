@@ -278,4 +278,112 @@ describe('delete()', () => {
         expect(mockDeleteOne).toHaveBeenCalledTimes(1);
         expect(mockDeleteOne).toHaveBeenCalledWith({ _id: '123' });
     });
+
+    test('should throw when delete fails', async () => {
+        const testError = new Error('Delete failed');
+        mockStateDelete.mockRejectedValueOnce(testError);
+
+        const client = createDatabaseStorageClient({
+            key: 'testKey',
+            dbCollection: 'books',
+            dbDocumentId: '123',
+        });
+
+        await expect(client.delete()).rejects.toThrow('Delete failed');
+    });
+});
+
+describe('lazy SDK initialisation', () => {
+    test('should reset cached State promise and retry after an initialisation failure', async () => {
+        vi.resetModules();
+
+        const initError = new Error('State init failed');
+        const initState = vi.fn().mockRejectedValueOnce(initError).mockResolvedValue({
+            delete: mockStateDelete,
+            get: mockStateGet,
+            put: mockStatePut,
+        });
+
+        vi.doMock('@adobe/aio-lib-state', () => ({ init: initState }));
+        vi.doMock('@adobe/aio-lib-db', () => ({
+            init: () =>
+                Promise.resolve({
+                    connect: () => ({
+                        collection: vi.fn().mockResolvedValue({
+                            deleteOne: mockDeleteOne,
+                            findOne: mockFindOne,
+                            replaceOne: mockReplaceOne,
+                        }),
+                    }),
+                }),
+        }));
+
+        const { createDatabaseStorageClient: freshCreate } = await import('../state-database.js');
+        const client = freshCreate({
+            key: 'retryKey',
+            dbCollection: 'books',
+            dbDocumentId: '123',
+        });
+
+        mockStateGet.mockResolvedValueOnce(undefined);
+        mockFindOne.mockResolvedValueOnce(null);
+
+        await expect(client.get()).rejects.toThrow('State init failed');
+        expect(initState).toHaveBeenCalledTimes(1);
+
+        const result = await client.get();
+        expect(result).toBeUndefined();
+        expect(initState).toHaveBeenCalledTimes(2);
+
+        vi.doUnmock('@adobe/aio-lib-state');
+        vi.doUnmock('@adobe/aio-lib-db');
+    });
+
+    test('should reset cached Database promise and retry after an initialisation failure', async () => {
+        vi.resetModules();
+
+        const initError = new Error('Db init failed');
+        const initDb = vi
+            .fn()
+            .mockRejectedValueOnce(initError)
+            .mockResolvedValue({
+                connect: () => ({
+                    collection: vi.fn().mockResolvedValue({
+                        deleteOne: mockDeleteOne,
+                        findOne: mockFindOne,
+                        replaceOne: mockReplaceOne,
+                    }),
+                }),
+            });
+
+        vi.doMock('@adobe/aio-lib-state', () => ({
+            init: () =>
+                Promise.resolve({
+                    delete: mockStateDelete,
+                    get: mockStateGet,
+                    put: mockStatePut,
+                }),
+        }));
+        vi.doMock('@adobe/aio-lib-db', () => ({ init: initDb }));
+
+        const { createDatabaseStorageClient: freshCreate } = await import('../state-database.js');
+        const client = freshCreate({
+            key: 'retryKey',
+            dbCollection: 'books',
+            dbDocumentId: '123',
+        });
+
+        mockStateGet.mockResolvedValue(undefined);
+        mockFindOne.mockResolvedValueOnce(null);
+
+        await expect(client.get()).rejects.toThrow('Db init failed');
+        expect(initDb).toHaveBeenCalledTimes(1);
+
+        const result = await client.get();
+        expect(result).toBeUndefined();
+        expect(initDb).toHaveBeenCalledTimes(2);
+
+        vi.doUnmock('@adobe/aio-lib-state');
+        vi.doUnmock('@adobe/aio-lib-db');
+    });
 });
