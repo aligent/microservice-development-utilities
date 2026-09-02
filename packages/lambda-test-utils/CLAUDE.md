@@ -62,7 +62,7 @@ The `Handler` type from `@types/aws-lambda` allows either a returned `Promise` o
 4. **Add a named export to `src/index.ts`.**
 5. **Add tests** covering the default-construction path and any override behaviour. The workspace coverage gate is 80% global; this package currently sits at 100%, so a new export without tests will fail the gate.
 6. **Update the package `README.md`** with a usage example — this package is consumed by other teams writing Lambda tests, so the README is the primary discoverability surface.
-7. **Run** `npx nx run lambda-test-utils:lint --fix`, `:typecheck`, `:test --coverage`.
+7. **Run** `yarn nx run lambda-test-utils:lint --fix`, `:typecheck`, `:test --coverage`.
 
 ## Testing notes
 

@@ -25,21 +25,24 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm'
+          cache: 'yarn'
           registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: ⚙️ Check for version plan
-        run: npx nx release plan:check --verbose
+        run: yarn nx release plan:check --verbose
 
       - name: 📝 Release new version (skip publish)
-        run: npx nx release --skip-publish --verbose
+        run: yarn nx release --skip-publish --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -95,6 +95,6 @@ Two ways to avoid it:
 ## Testing & Linting
 
 ```sh
-npm run test
-npm run lint
+yarn test
+yarn lint
 ```

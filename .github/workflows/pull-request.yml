@@ -23,23 +23,26 @@ jobs:
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Derive appropriate SHAs for base and head for `nx affected` commands
         uses: nrwl/nx-set-shas@dbe0650947e5f2c81f59190a38512cf49126fe6b # v4
 
       - name: ⚙️ Run Tests
-        run: npx nx affected -t lint test --parallel=2
+        run: yarn nx affected -t lint test --parallel=2
 
       - name: ⚙️ Run Build
-        run: npx nx affected -t build
+        run: yarn nx affected -t build
 
       - name: ⚙️ Run release plan check
-        run: npx nx release plan:check --verbose
+        run: yarn nx release plan:check --verbose

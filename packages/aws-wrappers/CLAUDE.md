@@ -162,14 +162,14 @@ Walk through these in order. Each step is small; nothing is automatable enough t
 1. **Confirm scope with the user.** Run the questions in the next section before writing code. Don't infer the answers from the SDK.
 2. **Install the SDK client** as a runtime dependency of the package:
    ```sh
-   npm install --workspace=@aligent/aws-wrappers @aws-sdk/client-<service>
+   yarn workspace @aligent/aws-wrappers add @aws-sdk/client-<service>
    ```
    Never hand-edit `package.json`. ESLint's `@nx/dependency-checks` rule will flag unused deps via `--fix` if you install too early — install per-service as you implement.
 3. **Create the folder**: `packages/aws-wrappers/src/<service>/`, with `<service>.ts` and `<service>.test.ts`.
 4. **Implement the class** following the locked-in conventions above. Mirror the structure of an existing service of similar shape — `SecretsManagerService` is the simplest skeleton; `DynamoDBService` is the most complex.
 5. **Add tests with `aws-sdk-client-mock`**. Default-construction test (`expect(() => new XService()).not.toThrow()`) plus targeted coverage on non-trivial methods. For any method that uses an SDK paginator (`paginate*`), pass a real client instance via the constructor — see "Testing notes" below.
 6. **Add a named export to `src/index.ts`** in alphabetical order.
-7. **Run** `npx nx run aws-wrappers:lint --fix`, `:typecheck`, `:test --coverage`, `:typedoc`. The 80% workspace coverage threshold is enforced.
+7. **Run** `yarn nx run aws-wrappers:lint --fix`, `:typecheck`, `:test --coverage`, `:typedoc`. The 80% workspace coverage threshold is enforced.
 8. **Update the package `README.md`** with a worked example under a new `## <Service Name>` section.
 9. **Commit** with the active ticket prefix.
 10. **Ask the user whether to run the `code-reviewer` sub-agent** over the change before opening the PR. The reviewer catches drift from the locked-in conventions (logging shape, generics, pagination/chunking patterns) and the kinds of defensive-coverage gaps the workspace gate doesn't enforce. Surface its punch list to the user — don't auto-apply fixes.
