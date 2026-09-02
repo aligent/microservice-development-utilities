@@ -9,7 +9,7 @@ tmp
 **/out-tsc
 coverage
 .build
-**/docs
+**/docs/*
 !**/docs/modules.md
 
 # Dependencies
