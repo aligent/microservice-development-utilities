@@ -67,14 +67,13 @@ This monorepo uses [Nx](https://nx.dev) for task orchestration.
 To test packages locally before publishing, you can use the local `verdaccio` registry. For more information about Verdaccio, check out [their documentation](https://verdaccio.org/docs/what-is-verdaccio).
 
 ```bash
-# Start local registry
-yarn nx start-local-registry microservice-development-utilities
+# Start local registry (keep this running in its own terminal)
+yarn nx local-registry microservice-development-utilities
 
 # In another terminal, publish packages locally
 yarn nx release publish
 
-# Stop local registry when done
-yarn nx stop-local-registry microservice-development-utilities
+# Stop the local registry with Ctrl+C — it restores the npm/yarn registry config automatically
 ```
 
 ## Adding New Packages

@@ -25,14 +25,14 @@
   },
   "devDependencies": {
     "@aligent/ts-code-standards": "^4.2.0",
-    "@nx/devkit": "22.7.6",
-    "@nx/eslint": "22.7.6",
-    "@nx/eslint-plugin": "22.7.6",
-    "@nx/js": "22.7.6",
-    "@nx/plugin": "22.7.6",
-    "@nx/rollup": "22.7.6",
-    "@nx/vitest": "22.7.6",
-    "@nx/web": "22.7.6",
+    "@nx/devkit": "23.1.2",
+    "@nx/eslint": "23.1.2",
+    "@nx/eslint-plugin": "23.1.2",
+    "@nx/js": "23.1.2",
+    "@nx/plugin": "23.1.2",
+    "@nx/rollup": "23.1.2",
+    "@nx/vitest": "23.1.2",
+    "@nx/web": "23.1.2",
     "@smithy/util-stream": "^3.2.1",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.41",
@@ -41,7 +41,7 @@
     "@vitest/coverage-v8": "4.1.8",
     "@vitest/ui": "4.1.8",
     "aws-sdk-client-mock": "^4.1.0",
-    "create-nx-workspace": "22.7.6",
+    "create-nx-workspace": "23.1.2",
     "eslint": "^9.39.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -49,17 +49,17 @@
     "jiti": "2.7.0",
     "jsonc-eslint-parser": "^2.4.1",
     "magic-string": "^0.30.21",
-    "nx": "22.7.6",
+    "nx": "23.1.2",
     "openapi-fetch": "0.17.0",
     "openapi-typescript-helpers": "0.1.0",
     "path-expression-matcher": "1.6.2",
     "prettier": "^3.8.4",
     "prompts": "^2.4.2",
-    "rollup": "^4.62.0",
+    "rollup": "4.63.1",
     "tslib": "^2.8.1",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.12.0",
-    "typescript": "^5.9.3",
+    "typescript": "6.0.3",
     "verdaccio": "6.7.2",
     "vite": "^8.0.14",
     "vitest": "4.1.8",
@@ -83,22 +83,13 @@
     "projectType": "application",
     "includedScripts": [],
     "targets": {
-      "start-local-registry": {
-        "executor": "nx:run-commands",
+      "local-registry": {
+        "executor": "@nx/js:verdaccio",
         "options": {
-          "commands": [
-            "verdaccio --listen 4873 --config .verdaccio/config.yml",
-            "npm set registry http://localhost:4873/ --location project"
-          ]
-        }
-      },
-      "stop-local-registry": {
-        "executor": "nx:run-commands",
-        "options": {
-          "commands": [
-            "npm set registry https://registry.npmjs.org/ --location project",
-            "kill $(lsof -t -i:4873)"
-          ]
+          "port": 4873,
+          "config": ".verdaccio/config.yml",
+          "storage": "tmp/local-registry/storage",
+          "location": "project"
         }
       }
     }

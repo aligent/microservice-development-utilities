@@ -4,9 +4,7 @@
   "description": "A command line tool for creating new workspace",
   "type": "commonjs",
   "main": "./bin/index.js",
-  "bin": {
-    "create-workspace": "./bin/index.js"
-  },
+  "bin": "./bin/index.js",
   "typings": "./bin/index.d.ts",
   "repository": {
     "type": "git",
@@ -17,7 +15,8 @@
     "@nx/devkit": "22.7.5",
     "create-nx-workspace": "22.7.5",
     "prompts": "^2.4.2",
-    "yargs": "^18.0.0"
+    "yargs": "^18.0.0",
+    "tslib": "^2.8.1"
   },
   "author": "Aligent",
   "license": "MIT"

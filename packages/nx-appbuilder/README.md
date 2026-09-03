@@ -253,7 +253,7 @@ npm install --save-dev /absolute/path/to/packages/nx-appbuilder
 npx nx g @aligent/nx-appbuilder:app my-app
 ```
 
-Or use the local Verdaccio registry — see the root `CLAUDE.md` for the `nx start-local-registry` workflow.
+Or use the local Verdaccio registry — see the root `README.md` for the `nx local-registry` workflow.
 
 ## License
 

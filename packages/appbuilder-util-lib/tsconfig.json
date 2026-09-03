@@ -1,11 +1,6 @@
 {
-    "extends": "@aligent/ts-code-standards/tsconfigs-base",
-    "compilerOptions": {
-        "composite": true,
-        "declaration": true
-    },
-    "files": [],
-    "include": [],
+    "extends": "@aligent/ts-code-standards/tsconfigs-extend",
+    "include": ["src/**/*.ts", "tests/**/*.ts"],
     "references": [
         {
             "path": "./tsconfig.lib.json"
