@@ -61,7 +61,10 @@
         },
         "nx-release-publish": {
             "dependsOn": ["build"],
-            "inputs": ["production", "^production"]
+            "inputs": ["production", "^production"],
+            "options": {
+                "registry": "https://registry.npmjs.org"
+            }
         }
     },
     "release": {
