@@ -55,6 +55,9 @@
             "inputs": ["production", "^production"],
             "outputs": ["{options.outputPath}"]
         },
+        "typedoc": {
+            "dependsOn": ["typecheck"]
+        },
         "@nx/vitest:test": {
             "cache": true,
             "inputs": ["default", "^production"]

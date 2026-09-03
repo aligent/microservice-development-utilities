@@ -39,7 +39,7 @@ jobs:
         uses: nrwl/nx-set-shas@dbe0650947e5f2c81f59190a38512cf49126fe6b # v4
 
       - name: ⚙️ Run Tests
-        run: yarn nx affected -t lint test --parallel=2
+        run: yarn nx affected -t typecheck lint test --parallel=2
 
       - name: ⚙️ Run Build
         run: yarn nx affected -t build
