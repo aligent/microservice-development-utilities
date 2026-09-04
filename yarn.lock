@@ -167,8 +167,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/create-workspace@workspace:packages/create-workspace"
   dependencies:
-    "@nx/devkit": "npm:22.7.5"
-    create-nx-workspace: "npm:22.7.5"
+    "@nx/devkit": "npm:23.1.2"
+    create-nx-workspace: "npm:23.1.2"
     prompts: "npm:^2.4.2"
     tslib: "npm:^2.8.1"
     yargs: "npm:^18.0.0"
@@ -252,7 +252,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/nx-appbuilder@workspace:packages/nx-appbuilder"
   dependencies:
-    "@nx/devkit": "npm:22.7.5"
+    "@nx/devkit": "npm:23.1.2"
     enquirer: "npm:2.4.1"
     tslib: "npm:^2.8.1"
   languageName: unknown
@@ -262,7 +262,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/nx-cdk@workspace:packages/nx-cdk"
   dependencies:
-    "@nx/devkit": "npm:22.7.5"
+    "@nx/devkit": "npm:23.1.2"
     ts-morph: "npm:^27.0.2"
     tslib: "npm:^2.8.1"
   languageName: unknown
@@ -272,7 +272,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aligent/nx-openapi@workspace:packages/nx-openapi"
   dependencies:
-    "@nx/devkit": "npm:22.7.5"
+    "@nx/devkit": "npm:23.1.2"
     "@redocly/openapi-core": "npm:^1.34.2"
     enquirer: "npm:2.4.1"
     openapi-typescript: "npm:7.13.0"
@@ -3078,23 +3078,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nx/devkit@npm:22.7.5":
-  version: 22.7.5
-  resolution: "@nx/devkit@npm:22.7.5"
-  dependencies:
-    "@zkochan/js-yaml": "npm:0.0.7"
-    ejs: "npm:5.0.1"
-    enquirer: "npm:~2.3.6"
-    minimatch: "npm:10.2.5"
-    semver: "npm:^7.6.3"
-    tslib: "npm:^2.3.0"
-    yargs-parser: "npm:21.1.1"
-  peerDependencies:
-    nx: ">= 21 <= 23 || ^22.0.0-0"
-  checksum: 10c0/ece4144a2543e499f24f183fafa974afcc3293281d1651fe037b9be2543ea10422d6526506474c29dc25d7ce92477d69dfcd2bf5b2b5b6e73db18981e5f2fb38
-  languageName: node
-  linkType: hard
-
 "@nx/devkit@npm:23.1.2":
   version: 23.1.2
   resolution: "@nx/devkit@npm:23.1.2"
@@ -4389,13 +4372,13 @@ __metadata:
   linkType: hard
 
 "@smithy/node-http-handler@npm:^4.11.3":
-  version: 4.12.0
-  resolution: "@smithy/node-http-handler@npm:4.12.0"
+  version: 4.11.3
+  resolution: "@smithy/node-http-handler@npm:4.11.3"
   dependencies:
     "@smithy/core": "npm:^3.33.3"
     "@smithy/types": "npm:^4.17.2"
     tslib: "npm:^2.6.2"
-  checksum: 10c0/cfab0ad6945b1a954ba55ad89bf431041ae3dc86edf3ce28d82d5b917035c5932d89d02bc51ef430c9d37b9aa23d11e368ffc5b258c49e5de4c6c055ae04ad1c
+  checksum: 10c0/b1ec5956281d7ab5a5d1d4ca890b5d9f84f6540bb80c07e5b0eb31426bad27ff03ae56851e95c3fc8efb52ac9d432df86f9735e1be01db7ecdd1559a85683589
   languageName: node
   linkType: hard
 
@@ -6227,17 +6210,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:1.16.0":
-  version: 1.16.0
-  resolution: "axios@npm:1.16.0"
-  dependencies:
-    follow-redirects: "npm:^1.16.0"
-    form-data: "npm:^4.0.5"
-    proxy-from-env: "npm:^2.1.0"
-  checksum: 10c0/1c91a5221b77b76072026b4cc95ecdf38f7c3e33e63423abec09a85e6e9a12279637dcc9ac2ba1fc333e0c447fb3b0f46d7965acb5d7cea02d188e9c6d425c0b
-  languageName: node
-  linkType: hard
-
 "axios@npm:1.18.1":
   version: 1.18.1
   resolution: "axios@npm:1.18.1"
@@ -7161,25 +7133,6 @@ __metadata:
     path-type: "npm:^4.0.0"
     yaml: "npm:^1.10.0"
   checksum: 10c0/b923ff6af581638128e5f074a5450ba12c0300b71302398ea38dbeabd33bbcaa0245ca9adbedfcf284a07da50f99ede5658c80bb3e39e2ce770a99d28a21ef03
-  languageName: node
-  linkType: hard
-
-"create-nx-workspace@npm:22.7.5":
-  version: 22.7.5
-  resolution: "create-nx-workspace@npm:22.7.5"
-  dependencies:
-    axios: "npm:1.16.0"
-    chalk: "npm:^4.1.0"
-    enquirer: "npm:~2.3.6"
-    flat: "npm:^5.0.2"
-    open: "npm:^8.4.0"
-    ora: "npm:5.3.0"
-    tmp: "npm:~0.2.1"
-    tslib: "npm:^2.3.0"
-    yargs: "npm:^17.6.2"
-  bin:
-    create-nx-workspace: ./bin/index.js
-  checksum: 10c0/6a8cac3d9686c414f5ed3d5ae9db3efb14dc5d93733d4d062e53aad553eb35ea833689804ecb192376a39b0b693a5fcbb9de8687c7528c5e0bcd01fa4af77d0e
   languageName: node
   linkType: hard
 
@@ -8665,7 +8618,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"form-data@npm:4.0.6, form-data@npm:^4.0.6, form-data@npm:~4.0.4":
+"form-data@npm:4.0.6, form-data@npm:^4.0.5, form-data@npm:^4.0.6, form-data@npm:~4.0.4":
   version: 4.0.6
   resolution: "form-data@npm:4.0.6"
   dependencies:
@@ -10901,7 +10854,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"log-symbols@npm:4.1.0, log-symbols@npm:^4.0.0, log-symbols@npm:^4.1.0":
+"log-symbols@npm:4.1.0, log-symbols@npm:^4.1.0":
   version: 4.1.0
   resolution: "log-symbols@npm:4.1.0"
   dependencies:
@@ -11903,22 +11856,6 @@ __metadata:
     type-check: "npm:^0.4.0"
     word-wrap: "npm:^1.2.5"
   checksum: 10c0/4afb687a059ee65b61df74dfe87d8d6815cd6883cb8b3d5883a910df72d0f5d029821f37025e4bccf4048873dbdb09acc6d303d27b8f76b1a80dd5a7d5334675
-  languageName: node
-  linkType: hard
-
-"ora@npm:5.3.0":
-  version: 5.3.0
-  resolution: "ora@npm:5.3.0"
-  dependencies:
-    bl: "npm:^4.0.3"
-    chalk: "npm:^4.1.0"
-    cli-cursor: "npm:^3.1.0"
-    cli-spinners: "npm:^2.5.0"
-    is-interactive: "npm:^1.0.0"
-    log-symbols: "npm:^4.0.0"
-    strip-ansi: "npm:^6.0.0"
-    wcwidth: "npm:^1.0.1"
-  checksum: 10c0/30d5f3218eb75b0a2028c5fb9aa88e83e38a2f1745ab56839abb06c3ba31bae35f768f4e72c4f9e04e2a66be6a898e9312e8cf85c9333e1e3613eabb8c7cdf57
   languageName: node
   linkType: hard
 
@@ -14092,7 +14029,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tmp@npm:0.2.7, tmp@npm:~0.2.1, tmp@npm:~0.2.7":
+"tmp@npm:0.2.7, tmp@npm:~0.2.7":
   version: 0.2.7
   resolution: "tmp@npm:0.2.7"
   checksum: 10c0/59eb55584f2f07210d3231b6a1f6b5c2b9794d8a7b509c8ee867ed2acad6d2245ee2448b7937b676ffbff3155a70077edde8a69f9d7cf0f90c86a62e8910c357
