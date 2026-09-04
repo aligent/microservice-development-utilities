@@ -12,7 +12,7 @@ Documentation on each function can be found [here](docs/modules.md)
 This library is written in typescript and can be built using:
 
 ```sh
-npx nx build appbuilder-util-lib
+yarn nx build appbuilder-util-lib
 ```
 
 ## Installation
@@ -26,6 +26,6 @@ npm install @aligent/appbuilder-util-lib
 Vitest tests, linting & type-checking can be run with
 
 ```sh
-npx nx test appbuilder-util-lib
-npx nx lint appbuilder-util-lib
+yarn nx test appbuilder-util-lib
+yarn nx lint appbuilder-util-lib
 ```

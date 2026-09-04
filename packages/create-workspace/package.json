@@ -4,9 +4,7 @@
   "description": "A command line tool for creating new workspace",
   "type": "commonjs",
   "main": "./bin/index.js",
-  "bin": {
-    "create-workspace": "./bin/index.js"
-  },
+  "bin": "./bin/index.js",
   "typings": "./bin/index.d.ts",
   "repository": {
     "type": "git",

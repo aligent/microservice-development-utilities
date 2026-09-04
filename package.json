@@ -11,7 +11,7 @@
     "check-types": "nx affected -t typecheck",
     "check-types:all": "nx run-many -t typecheck",
     "code-audit": "nx run-many -t lint typecheck test --configuration coverage --skip-nx-cache",
-    "prepare": "[ -d .git ] && git config core.hooksPath '.git-hooks' || true",
+    "postinstall": "[ -d .git ] && git config core.hooksPath '.git-hooks' && chmod +x .git-hooks/* || true",
     "release-plan": "nx release plan"
   },
   "repository": {
@@ -62,11 +62,15 @@
     "typescript": "^5.9.3",
     "verdaccio": "6.7.2",
     "vite": "^8.0.14",
-    "vitest": "^4.1.7",
+    "vitest": "4.1.8",
     "yargs": "^18.0.0"
   },
-  "overrides": {
-    "lodash": "4.17.23"
+  "resolutions": {
+    "axios": "^1.18.0",
+    "lodash": "4.18.1"
+  },
+  "engines": {
+    "node": ">=24.14.1"
   },
   "author": "Aligent",
   "license": "MIT",
@@ -74,6 +78,7 @@
     "packages/*",
     "tools/*"
   ],
+  "packageManager": "yarn@4.18.0+sha512.fcb8716fe7cd0eece141ffc18b92193a9df9204c1ba83189c288835223fc0bbe64af473bab0d5e9927a7daeb5caf2bb07eb2787cc9338ca040ea125f2a1f2f7e",
   "nx": {
     "name": "microservice-development-utilities",
     "projectType": "application",

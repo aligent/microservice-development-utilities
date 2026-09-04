@@ -121,8 +121,8 @@ This package is written in TypeScript and built using Nx.
 ### Build
 
 ```sh
-npm install
-npm run build
+yarn install
+yarn build
 ```
 
 ### Testing & Linting
@@ -130,7 +130,7 @@ npm run build
 Run tests, linting, and type-checking:
 
 ```sh
-npm run test
+yarn test
 ```
 
 ## License
