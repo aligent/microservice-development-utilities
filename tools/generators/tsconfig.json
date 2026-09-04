@@ -2,9 +2,12 @@
     "extends": "@aligent/ts-code-standards/tsconfigs-base",
     "compilerOptions": {
         "composite": true,
-        "declaration": true
+        "declaration": true,
+        "rootDir": ".",
+        "outDir": "dist",
+        "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+        "types": ["node"]
     },
-    "files": [],
-    "include": ["**/*.ts"],
+    "include": ["package/**/*.ts"],
     "references": []
 }
