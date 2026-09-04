@@ -1,5 +1,5 @@
 {
-    "extends": "@aligent/ts-code-standards/tsconfigs-base",
+    "extends": "@aligent/ts-code-standards/tsconfigs-extend",
     "compileOnSave": false,
     "files": [],
     "references": [

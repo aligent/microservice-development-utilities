@@ -1,4 +1,4 @@
-import { withNx } from '@nx/rollup/with-nx.js';
+import { withNx } from '@nx/rollup/with-nx';
 
 const baseOptions = {
     main: './src/index.ts',
