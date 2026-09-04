@@ -13,21 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Fetch target
-        run: git fetch origin ${{ env.BASE_REF  }}
+        run: git fetch origin ${{ env.BASE_REF }}
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
 
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Configure Dependency Cache
+        uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
@@ -36,10 +42,10 @@ jobs:
         run: yarn install --immutable
 
       - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        uses: nrwl/nx-set-shas@dbe0650947e5f2c81f59190a38512cf49126fe6b # v4
+        uses: nrwl/nx-set-shas@v5
 
-      - name: ⚙️ Run Tests
-        run: yarn nx affected -t lint test --parallel=2
+      - name: 🧪 Run Lint, Type Check & Tests
+        run: yarn nx affected -t typecheck lint test --parallel=3
 
       - name: ⚙️ Run Build
         run: yarn nx affected -t build
