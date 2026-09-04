@@ -42,7 +42,7 @@ jobs:
         run: yarn install --immutable
 
       - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        uses: nrwl/nx-set-shas@v5
+        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5
 
       - name: 🧪 Run Lint, Type Check & Tests
         run: yarn nx affected -t typecheck lint test --parallel=3
