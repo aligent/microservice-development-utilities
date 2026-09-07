@@ -145,6 +145,43 @@ client.use(
 
 The `onResponse` execution order for the example above is: `logMiddleware` → `parseXmlResponse` → `throwOnNotOk`.
 
+## Error Handling
+
+`throwOnNotOk()` throws an `HttpResponseError` for non-2xx responses, with the request and response bodies pre-read so they're available for logging even after the stream is consumed. Use `isHttpResponseError` to narrow a caught error and inspect it:
+
+```ts
+try {
+  await client.GET('/resource');
+} catch (error) {
+  if (isHttpResponseError(error)) {
+    console.log(`Request failed with status ${error.status}`);
+    console.log(`URL: ${error.request.url}`);
+  }
+}
+```
+
+The `TBody` type parameter narrows `error.response.body` for TypeScript, but **it is not runtime-checked on its own** — an error response can have an empty or unexpected body (e.g. a 401 with no body), so destructuring straight off a type-parameter-only narrow can throw. Pass a second `isBody` argument — a `(body: unknown) => body is TBody` type guard — to have `isHttpResponseError` also validate the body shape at runtime and fail closed instead:
+
+```ts
+interface ApiError {
+  code: string;
+  message: string;
+}
+
+const isApiError = (body: unknown): body is ApiError =>
+  typeof body === 'object' &&
+  body !== null &&
+  'code' in body &&
+  'message' in body;
+
+if (isHttpResponseError<ApiError>(error, isApiError)) {
+  // error.response.body.code is safe to read here even if the response body was empty or malformed
+  console.log(error.response.body.code);
+}
+```
+
+`isBody` accepts any matching type guard, so you can hand-write one or adapt a validator from a schema library (e.g. a Zod schema's `.safeParse(body).success`, or an ArkType type's `.allows(body)`).
+
 ## Peer Dependencies
 
 This package requires `@aws-lambda-powertools/logger` (^2.0.0) as a peer dependency for the `logMiddleware` function. Install it alongside this package:
