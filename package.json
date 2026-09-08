@@ -62,8 +62,7 @@
     "typescript": "^5.9.3",
     "verdaccio": "6.7.2",
     "vite": "^8.0.14",
-    "vitest": "4.1.8",
-    "yargs": "^18.0.0"
+    "vitest": "4.1.8"
   },
   "resolutions": {
     "axios": "^1.18.0",
