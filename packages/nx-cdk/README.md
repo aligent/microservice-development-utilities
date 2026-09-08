@@ -6,13 +6,19 @@ The `@aligent/nx-cdk` package provides Nx generators for AWS CDK development. It
 
 ### Preset Generator
 
-The preset generator initializes a new CDK project with a complete workspace structure, including configuration files, build tools, and an application scaffold.
+The preset generator initializes a new CDK project with a complete workspace structure, including configuration files, build tools, and an application scaffold. It is invoked indirectly via either `@aligent/create-workspace` (the Aligent-flavoured wrapper) or vanilla `create-nx-workspace`.
 
 #### Usage
 
 ```bash
+# Recommended: the Aligent wrapper. Requires corepack to be enabled.
+npx @aligent/create-workspace@latest --preset=@aligent/nx-cdk
+
+# Or directly via create-nx-workspace (will prompt for nodeVersion if omitted):
 npx create-nx-workspace@latest --preset=@aligent/nx-cdk
 ```
+
+> The `@aligent/create-workspace` wrapper calls `create-nx-workspace` under the hood, prompts for the preset's options (workspace name, target Node.js version), and removes the npm-bootstrap artefacts (`package-lock.json`, `node_modules`, `.nx`) afterwards so the workspace is ready for `yarn install`.
 
 #### Options
 
