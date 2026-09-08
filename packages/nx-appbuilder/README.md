@@ -215,7 +215,7 @@ my-workspace/
 ### Building
 
 ```bash
-npx nx build nx-appbuilder
+yarn nx build nx-appbuilder
 ```
 
 The `@nx/js:tsc` build executor compiles `src/**/*.ts` to `dist/src/` and copies the templates under `src/generators/<gen>/files/` verbatim. Template files use the `.template` suffix (e.g. `app.commerce.config.ts.template`) so they aren't picked up by lint or `tsc`; `@nx/devkit`'s `generateFiles` strips the suffix at generation time.
@@ -238,9 +238,9 @@ Three pins are coupled and should move together:
 ### Running tests / lint / type-check
 
 ```bash
-npx nx test nx-appbuilder
-npx nx lint nx-appbuilder
-npx nx typecheck nx-appbuilder
+yarn nx test nx-appbuilder
+yarn nx lint nx-appbuilder
+yarn nx typecheck nx-appbuilder
 ```
 
 ### Local testing

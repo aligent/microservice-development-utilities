@@ -267,7 +267,7 @@ for (const Key of keys) {
 The package is dual-published as both CommonJS and ES modules via `@nx/rollup`.
 
 ```sh
-npx nx build microservice-util-lib
+yarn nx build microservice-util-lib
 ```
 
 The build produces:
@@ -288,7 +288,7 @@ ESM consumers get tree-shakeable imports; CJS consumers continue to work unchang
 Vitest tests, linting & type-checking can be run from the repo root:
 
 ```sh
-npm run test
-npm run lint
-npm run check-types
+yarn test
+yarn lint
+yarn check-types
 ```

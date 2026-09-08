@@ -12,10 +12,10 @@ Generates a new package in the monorepo with all the necessary boilerplate files
 
 ```bash
 # To generate a new package, run this command and follow the prompt
-npx nx g @tools/generators:package
+yarn nx g @tools/generators:package
 
 # Preview changes without writing files
-npx nx g @tools/generators:package --dry-run
+yarn nx g @tools/generators:package --dry-run
 ```
 
 #### Options
@@ -62,7 +62,7 @@ To create additional generators:
 
 4. Run your generator:
    ```bash
-   npx nx g @tools/generators:my-generator
+   yarn nx g @tools/generators:my-generator
    ```
 
 ## Template Files

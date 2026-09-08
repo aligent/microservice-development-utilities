@@ -9,6 +9,8 @@ tmp
 **/out-tsc
 coverage
 .build
+**/docs/*
+!**/docs/modules.md
 
 # Dependencies
 node_modules
@@ -55,3 +57,20 @@ Thumbs.db
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 tsconfig.tsbuildinfo
+
+# Package manager
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+!.yarn
+!.yarn/patches
+!.yarn/plugins
+!.yarn/plugins/*
+!.yarn/plugins/**/*
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+!.yarnrc.yml
+!yarn.lock

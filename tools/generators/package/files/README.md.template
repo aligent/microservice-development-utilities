@@ -7,8 +7,8 @@
 This library is written in TypeScript and can be built using:
 
 ```sh
-npm install
-npm run build
+yarn install
+yarn build
 ```
 
 ## Installation
@@ -24,5 +24,5 @@ npm install --save <%= scopedName %>
 Tests, linting & type-checking can be run with:
 
 ```sh
-npm run test
+yarn test
 ```

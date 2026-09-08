@@ -87,8 +87,8 @@ handlerBundle('src/runtime/handlers', {
 
 ```sh
 # Build
-npx nx build vite-plugin-handler
+yarn nx build vite-plugin-handler
 
 # Test
-npx nx test vite-plugin-handler
+yarn nx test vite-plugin-handler
 ```

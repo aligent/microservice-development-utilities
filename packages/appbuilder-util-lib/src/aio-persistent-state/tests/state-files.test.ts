@@ -229,4 +229,94 @@ describe('delete()', () => {
         expect(mockFilesDelete).toHaveBeenCalledTimes(1);
         expect(mockFilesDelete).toHaveBeenCalledWith(`${key}.json`);
     });
+
+    test('should throw when delete fails', async () => {
+        const testError = new Error('Delete failed');
+        mockStateDelete.mockRejectedValueOnce(testError);
+
+        const key = 'testKey';
+        const client = createFileStorageClient({ key });
+
+        await expect(client.delete()).rejects.toThrow('Delete failed');
+    });
+});
+
+describe('lazy SDK initialisation', () => {
+    test('should reset cached State promise and retry after an initialisation failure', async () => {
+        vi.resetModules();
+
+        const initError = new Error('State init failed');
+        const initState = vi.fn().mockRejectedValueOnce(initError).mockResolvedValue({
+            delete: mockStateDelete,
+            get: mockStateGet,
+            put: mockStatePut,
+        });
+
+        vi.doMock('@adobe/aio-lib-state', () => ({ init: initState }));
+        vi.doMock('@adobe/aio-lib-files', () => ({
+            init: () =>
+                Promise.resolve({
+                    delete: mockFilesDelete,
+                    read: mockFilesRead,
+                    write: mockFilesWrite,
+                }),
+        }));
+
+        const { createFileStorageClient: freshCreate } = await import('../state-files.js');
+        const client = freshCreate({ key: 'retryKey' });
+
+        mockStateGet.mockResolvedValueOnce(undefined);
+        const fileNotFoundError = new Error('File not found');
+        (fileNotFoundError as NodeJS.ErrnoException).code = 'ERROR_FILE_NOT_EXISTS';
+        mockFilesRead.mockRejectedValueOnce(fileNotFoundError);
+
+        await expect(client.get()).rejects.toThrow('State init failed');
+        expect(initState).toHaveBeenCalledTimes(1);
+
+        const result = await client.get();
+        expect(result).toBeUndefined();
+        expect(initState).toHaveBeenCalledTimes(2);
+
+        vi.doUnmock('@adobe/aio-lib-state');
+        vi.doUnmock('@adobe/aio-lib-files');
+    });
+
+    test('should reset cached Files promise and retry after an initialisation failure', async () => {
+        vi.resetModules();
+
+        const initError = new Error('Files init failed');
+        const initFiles = vi.fn().mockRejectedValueOnce(initError).mockResolvedValue({
+            delete: mockFilesDelete,
+            read: mockFilesRead,
+            write: mockFilesWrite,
+        });
+
+        vi.doMock('@adobe/aio-lib-state', () => ({
+            init: () =>
+                Promise.resolve({
+                    delete: mockStateDelete,
+                    get: mockStateGet,
+                    put: mockStatePut,
+                }),
+        }));
+        vi.doMock('@adobe/aio-lib-files', () => ({ init: initFiles }));
+
+        const { createFileStorageClient: freshCreate } = await import('../state-files.js');
+        const client = freshCreate({ key: 'retryKey' });
+
+        mockStateGet.mockResolvedValue(undefined);
+        const fileNotFoundError = new Error('File not found');
+        (fileNotFoundError as NodeJS.ErrnoException).code = 'ERROR_FILE_NOT_EXISTS';
+        mockFilesRead.mockRejectedValueOnce(fileNotFoundError);
+
+        await expect(client.get()).rejects.toThrow('Files init failed');
+        expect(initFiles).toHaveBeenCalledTimes(1);
+
+        const result = await client.get();
+        expect(result).toBeUndefined();
+        expect(initFiles).toHaveBeenCalledTimes(2);
+
+        vi.doUnmock('@adobe/aio-lib-state');
+        vi.doUnmock('@adobe/aio-lib-files');
+    });
 });

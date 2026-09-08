@@ -418,7 +418,7 @@ The helper is generic over any class, so it works for all eight wrappers and for
 ## Build / test
 
 ```sh
-npm run build       # affected only
-npm run test
-npm run lint
+yarn build       # affected only
+yarn test
+yarn lint
 ```

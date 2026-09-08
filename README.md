@@ -19,7 +19,7 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 ## Prerequisites
 
 - Node.js (v22 or higher recommended)
-- npm (v10 or higher)
+- [Corepack](https://nodejs.org/api/corepack.html) enabled (`corepack enable`) — this workspace uses Yarn Berry, pinned via the `packageManager` field in `package.json`
 
 ## Getting Started
 
@@ -33,10 +33,10 @@ Aligent's monorepo for Microservice Development Utilities. For more details abou
 2. Install dependencies:
 
    ```bash
-   npm install
+   yarn install
    ```
 
-3. Git hooks will be automatically configured via the `prepare` script.
+3. Git hooks will be automatically configured via the `postinstall` script.
 
 ## Project Structure
 
@@ -59,63 +59,8 @@ microservice-development-utilities/
 
 This monorepo uses [Nx](https://nx.dev) for task orchestration.
 
-- **Affected commands** (`npm run build`, `npm test`, etc.) only run on packages that are affected by your changes since the last commit. This is faster and more efficient during development.
-- **All commands** (`npm run build:all`, `npm run test:all`, etc.) run on every package in the monorepo regardless of changes.
-
-### Build
-
-```bash
-# Build only affected packages
-npm run build
-
-# Build all packages
-npm run build:all
-```
-
-### Test
-
-```bash
-# Run tests on affected packages with coverage
-npm test
-
-# Run tests on all packages with coverage
-npm run test:all
-```
-
-### Lint
-
-```bash
-# Lint affected packages
-npm run lint
-
-# Lint all packages
-npm run lint:all
-```
-
-### Type Checking
-
-```bash
-# Type check affected packages
-npm run check-types
-
-# Type check all packages
-npm run check-types:all
-```
-
-## Working with Nx
-
-You can also run Nx commands directly:
-
-```bash
-# Run a specific task on a specific package
-npx nx build @aligent/microservice-util-lib
-
-# Run a task on all packages
-npx nx run-many -t build
-
-# View the project graph
-npx nx graph
-```
+- **Affected commands** (`yarn build`, `yarn test`, etc.) only run on packages that are affected by your changes since the last commit. This is faster and more efficient during development.
+- **All commands** (`yarn build:all`, `yarn test:all`, etc.) run on every package in the monorepo regardless of changes.
 
 ## Local Package Testing
 
@@ -123,13 +68,13 @@ To test packages locally before publishing, you can use the local `verdaccio` re
 
 ```bash
 # Start local registry
-npx nx start-local-registry microservice-development-utilities
+yarn nx start-local-registry microservice-development-utilities
 
 # In another terminal, publish packages locally
-npx nx release publish
+yarn nx release publish
 
 # Stop local registry when done
-npx nx stop-local-registry microservice-development-utilities
+yarn nx stop-local-registry microservice-development-utilities
 ```
 
 ## Adding New Packages
@@ -147,10 +92,10 @@ This monorepo includes a generator to create new packages with all the necessary
 
 ```bash
 # To generate a new package, run this command and follow the prompt
-npx nx g @tools/generators:package
+yarn nx g @tools/generators:package
 
 # Preview changes without writing files
-npx nx g @tools/generators:package --dry-run
+yarn nx g @tools/generators:package --dry-run
 ```
 
 For more details, see [tools/generators/README.md](/tools/generators/README.md).
@@ -167,7 +112,7 @@ Our release workflow uses [OIDC trusted publishing](https://docs.npmjs.com/trust
 
 To bootstrap a new package:
 
-- Build the package locally: `npx nx build <package-name>`
+- Build the package locally: `yarn nx build <package-name>`
 - From the package directory, log in to npm (npm login) with maintainer credentials and publish: `npm publish --access public`
 - Once the package exists on npm, future versions will be released automatically by the workflow.
 
@@ -181,7 +126,7 @@ To bootstrap a new package:
    - If not exists, create a new version plan. You can use the following command to generate a version plan based on your changes:
 
      ```bash
-     npm run release-plan
+     yarn release-plan
      ```
 
      Follow the prompts to select the type of change (patch, minor, major, etc.) and provide a description for each affected package. This will create a version plan file in the repository.
@@ -197,8 +142,6 @@ To bootstrap a new package:
 
 4. Once the "Publish" PR is approved, merge into `main`.
    - The `publish` workflow will build and publish the released packages to NPM.
-
-5. For First Releases only, you need to trigger the `publish` workflow manually (via Github Action UI) and pass in `--first-release` flag. For more information, please check Nx documentation on [Publishing First Releases](https://nx.dev/reference/core-api/nx/documents/release#publish)
 
 ## API Documentation
 
