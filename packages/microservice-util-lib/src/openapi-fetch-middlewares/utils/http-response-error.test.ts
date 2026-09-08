@@ -155,4 +155,67 @@ describe('isHttpResponseError', () => {
     it('should return false for objects with isHttpResponseError set to false', () => {
         expect(isHttpResponseError({ isHttpResponseError: false })).toBe(false);
     });
+
+    describe('with isBody validator', () => {
+        interface ApiError {
+            code: string;
+        }
+
+        const isApiError = (body: unknown): body is ApiError =>
+            typeof body === 'object' && body !== null && 'code' in body;
+
+        it('should return true when the body passes the validator', async () => {
+            const request = new Request('https://api.example.com/test', { method: 'GET' });
+            const response = new Response(JSON.stringify({ code: 'ERR_1' }), {
+                status: 500,
+                statusText: 'Internal Server Error',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            const error = await HttpResponseError.create<ApiError>(response, request);
+
+            expect(isHttpResponseError<ApiError>(error, isApiError)).toBe(true);
+        });
+
+        it('should return false when the body fails the validator', async () => {
+            const request = new Request('https://api.example.com/test', { method: 'GET' });
+            const response = new Response(null, {
+                status: 401,
+                statusText: 'Unauthorized',
+            });
+
+            const error = await HttpResponseError.create<ApiError>(response, request);
+
+            expect(isHttpResponseError<ApiError>(error, isApiError)).toBe(false);
+        });
+
+        it('should return false when body is missing on a duck-typed error', () => {
+            const fakeLike = { isHttpResponseError: true, message: 'fake' };
+
+            expect(isHttpResponseError<ApiError>(fakeLike, isApiError)).toBe(false);
+        });
+
+        it('should validate the body of a duck-typed error with a matching response.body', () => {
+            const fakeLike = {
+                isHttpResponseError: true,
+                response: { body: { code: 'ERR_1' } },
+            };
+
+            expect(isHttpResponseError<ApiError>(fakeLike, isApiError)).toBe(true);
+        });
+
+        it('should return false for a duck-typed error whose response is not an object', () => {
+            const fakeLike = { isHttpResponseError: true, response: 'not-an-object' };
+
+            expect(isHttpResponseError<ApiError>(fakeLike, isApiError)).toBe(false);
+        });
+
+        it('should return false for non-HttpResponseError values, without invoking the validator', () => {
+            const mockIsBody = vi.fn((): boolean => true);
+            const isBody = mockIsBody as unknown as (body: unknown) => body is ApiError;
+
+            expect(isHttpResponseError<ApiError>(new Error('regular error'), isBody)).toBe(false);
+            expect(mockIsBody).toHaveBeenCalledTimes(0);
+        });
+    });
 });
