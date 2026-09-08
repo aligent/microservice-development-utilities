@@ -1,6 +1,7 @@
 /** @type {Partial<import('typedoc').TypeDocOptions>} */
 const config = {
     plugin: ['typedoc-plugin-markdown'],
+    tsconfig: './tsconfig.lib.json',
     entryPoints: ['./src/index.ts'],
     out: 'docs',
     readme: 'none',

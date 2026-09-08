@@ -55,13 +55,19 @@
             "inputs": ["production", "^production"],
             "outputs": ["{options.outputPath}"]
         },
+        "typedoc": {
+            "dependsOn": ["typecheck"]
+        },
         "@nx/vitest:test": {
             "cache": true,
             "inputs": ["default", "^production"]
         },
         "nx-release-publish": {
             "dependsOn": ["build"],
-            "inputs": ["production", "^production"]
+            "inputs": ["production", "^production"],
+            "options": {
+                "registry": "https://registry.npmjs.org"
+            }
         }
     },
     "release": {
