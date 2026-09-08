@@ -137,10 +137,20 @@ export class HttpResponseError<TBody = unknown> extends Error {
  * Useful for narrowing error types in catch blocks.
  *
  * @typeParam TBody - Optional type parameter to narrow the response body.
- *   No runtime validation of the body shape is performed — this is purely
- *   a compile-time convenience for callers who know the expected body type.
+ *   Without `isBody`, no runtime validation of the body shape is performed —
+ *   `TBody` is purely a compile-time convenience and the body may not
+ *   actually match it (e.g. an error response with an empty or unexpected
+ *   body). Pass `isBody` when callers destructure the body so the guard
+ *   fails closed instead of throwing later.
  * @param error - The error to check.
- * @returns `true` if the error is an HttpResponseError.
+ * @param isBody - Optional runtime type guard run against `error.response.body`.
+ *   When provided, the function only returns `true` if the body also passes
+ *   this check. Accepts any `(body: unknown) => body is TBody` function, so
+ *   callers can pass a hand-written guard or adapt a validator from a schema
+ *   library (e.g. a Zod schema's `.safeParse(body).success`, or an ArkType
+ *   type's `.allows(body)`).
+ * @returns `true` if the error is an HttpResponseError (and, when `isBody`
+ *   is supplied, its response body passes that check).
  *
  * @example
  * ```ts
@@ -153,15 +163,60 @@ export class HttpResponseError<TBody = unknown> extends Error {
  *     }
  * }
  * ```
+ *
+ * @example Validating the body shape at runtime
+ * ```ts
+ * interface ApiError { code: string; message: string }
+ *
+ * const isApiError = (body: unknown): body is ApiError =>
+ *     typeof body === 'object' &&
+ *     body !== null &&
+ *     'code' in body &&
+ *     'message' in body;
+ *
+ * if (isHttpResponseError<ApiError>(error, isApiError)) {
+ *     // error.response.body.code is safe to read here
+ *     console.log(error.response.body.code);
+ * }
+ * ```
  */
 export function isHttpResponseError<TBody = unknown>(
-    error: unknown
+    error: unknown,
+    isBody?: (body: unknown) => body is TBody
 ): error is HttpResponseError<TBody> {
-    return (
+    const isHttpResponseErrorLike =
         error instanceof HttpResponseError ||
         (typeof error === 'object' &&
             error !== null &&
             'isHttpResponseError' in error &&
-            error.isHttpResponseError === true)
-    );
+            error.isHttpResponseError === true);
+
+    if (!isHttpResponseErrorLike) {
+        return false;
+    }
+
+    if (!isBody) {
+        return true;
+    }
+
+    return isBody(getResponseBody(error));
+}
+
+/**
+ * Safely reads `error.response.body` without assuming its shape — `error`
+ * may be a duck-typed object (matching only via the `isHttpResponseError`
+ * flag) whose `response` field could be anything, not just
+ * {@link HttpResponseData}.
+ */
+function getResponseBody(error: unknown): unknown {
+    if (typeof error !== 'object' || error === null || !('response' in error)) {
+        return undefined;
+    }
+
+    const { response } = error as { response: unknown };
+    if (typeof response !== 'object' || response === null || !('body' in response)) {
+        return undefined;
+    }
+
+    return (response as { body: unknown }).body;
 }
