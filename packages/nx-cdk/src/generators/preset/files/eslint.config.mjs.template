@@ -54,7 +54,7 @@ const eslintBaseConfig = [
     },
     {
         files: ['**/*.json'],
-        languageOptions: { parser: parseForESLint },
+        languageOptions: { parser: { parseForESLint } },
     },
 ];
 
