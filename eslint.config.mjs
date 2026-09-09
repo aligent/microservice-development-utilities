@@ -1,7 +1,7 @@
 import { eslintConfigs } from '@aligent/ts-code-standards';
 import nxEslintPlugin from '@nx/eslint-plugin';
 import eslintPluginImport from 'eslint-plugin-import';
-import jsonParser from 'jsonc-eslint-parser';
+import { parseForESLint } from 'jsonc-eslint-parser';
 
 const eslintBaseConfig = [
     ...eslintConfigs.base,
@@ -39,7 +39,7 @@ const eslintBaseConfig = [
     },
     {
         files: ['**/*.json'],
-        languageOptions: { parser: jsonParser },
+        languageOptions: { parser: { parseForESLint } },
     },
 ];
 
