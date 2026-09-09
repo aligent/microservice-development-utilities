@@ -1,5 +1,5 @@
 import nxEslintPlugin from '@nx/eslint-plugin';
-import jsonParser from 'jsonc-eslint-parser';
+import { parseForESLint } from 'jsonc-eslint-parser';
 import baseConfig from '../../eslint.config.mjs';
 
 export default [
@@ -10,12 +10,12 @@ export default [
         rules: {
             '@nx/dependency-checks': ['error', { ignoredFiles: ['{projectRoot}/*.{js,cjs,mjs}'] }],
         },
-        languageOptions: { parser: jsonParser },
+        languageOptions: { parser: { parseForESLint } },
     },
     {
         files: ['./package.json', './generators.json'],
         plugins: { '@nx': nxEslintPlugin },
         rules: { '@nx/nx-plugin-checks': 'error' },
-        languageOptions: { parser: jsonParser },
+        languageOptions: { parser: { parseForESLint } },
     },
 ];

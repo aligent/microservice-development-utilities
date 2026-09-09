@@ -33,7 +33,7 @@
     "directory": "packages/lambda-test-utils"
   },
   "dependencies": {
-    "@types/aws-lambda": "^8.10.162"
+    "@types/aws-lambda": "^8.10.163"
   },
   "author": "Aligent",
   "license": "MIT"
