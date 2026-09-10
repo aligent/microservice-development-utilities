@@ -1,6 +1,6 @@
 {
   "name": "@aligent/aws-wrappers",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing",
   "engines": {
     "node": ">=18"
