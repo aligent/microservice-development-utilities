@@ -6,6 +6,8 @@ API Gateway handlers tend to get skipped by unit tests because they're treated a
 
 Scope is limited to input/output assertions. Mocking side effects (S3, DynamoDB, etc.) stays the test author's responsibility, outside this harness. There's no real HTTP-layer emulation (no supertest / local server).
 
+If your handler talks to AWS, build its clients with [`@aligent/aws-wrappers`](../aws-wrappers) and stub them in your handler tests with that package's [`createMockService`](../aws-wrappers#testing) helper (`@aligent/aws-wrappers/testing`), alongside `invokeApiGatewayHandler` below.
+
 ## Installation
 
 ```sh
@@ -67,6 +69,30 @@ interface InvokedResponse {
 ```
 
 `json()` parses `body` as JSON and throws a clear error if the body isn't valid JSON.
+
+### Mocking AWS clients used by the handler
+
+`invokeApiGatewayHandler` only exercises input/output — it doesn't mock AWS side effects. Pair it with [`createMockService`](../aws-wrappers#testing) from `@aligent/aws-wrappers/testing` when the handler under test depends on an `aws-wrappers` `*Service`:
+
+```ts
+import { createMockService } from '@aligent/aws-wrappers/testing';
+import { S3Service } from '@aligent/aws-wrappers';
+import { invokeApiGatewayHandler } from '@aligent/lambda-test-utils';
+import { handler } from './create-order';
+
+it('creates an order and stores it in S3', async () => {
+    const putJsonObject = vi.fn().mockResolvedValue(undefined);
+    const s3 = createMockService(S3Service, { putJsonObject });
+
+    const response = await invokeApiGatewayHandler(
+        (event, context) => handler(event, context, { s3 }),
+        withJsonBody({ httpMethod: 'POST', path: '/orders' }, { sku: 'ABC-123', quantity: 2 })
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(putJsonObject).toHaveBeenCalledOnce();
+});
+```
 
 ### Testing handlers with module-scope config
 

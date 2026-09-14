@@ -8,6 +8,8 @@ API Gateway-attached Lambda handlers tend to get skipped by unit tests because t
 
 Scope is deliberately narrow: input/output assertions only. Mocking side effects (S3, DynamoDB, etc.) stays the test author's responsibility, outside this harness, and there is no real HTTP-layer emulation (no supertest / local server). See "Out of scope" below.
 
+Point handler authors at `@aligent/aws-wrappers` for constructing AWS clients and at its `createMockService` helper (`@aligent/aws-wrappers/testing`, documented under "The `createMockService` helper" in `packages/aws-wrappers/CLAUDE.md`) for stubbing them in tests written against this package — that's the recommended pairing, not a hand-rolled mock or `aws-sdk-client-mock` against the raw SDK client.
+
 ## Layout
 
 ```
@@ -73,6 +75,6 @@ The `Handler` type from `@types/aws-lambda` allows either a returned `Promise` o
 
 These were explicitly ruled out when the package was designed (MI-338) and should be raised with the user before being added:
 
-- Mocking side effects — S3, DynamoDB, or any other AWS SDK call a handler under test makes. That's the test author's own responsibility, using whatever mocking approach fits their handler (e.g. `aws-sdk-client-mock`).
+- Mocking side effects — S3, DynamoDB, or any other AWS SDK call a handler under test makes. That's the test author's own responsibility, outside this harness. If the handler was built with `@aligent/aws-wrappers`, use that package's `createMockService` helper; otherwise whatever mocking approach fits the handler (e.g. `aws-sdk-client-mock` against the raw SDK client).
 - Real HTTP-layer emulation (`supertest`, a local server, or similar) — this package only ever calls the handler function directly.
 - Event/context builders for non-API-Gateway trigger types (SQS, EventBridge, S3, etc.) — nothing in this package currently supports them; adding one is a scope change worth raising explicitly, not an obvious extension of the existing builders.
