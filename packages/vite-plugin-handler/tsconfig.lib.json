@@ -4,13 +4,10 @@
         "rootDir": "src",
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-        // `target` must be explicit here. The base config sets `module: Node16`,
-        // which implies `target: es2022`; overriding `module` below drops that
-        // implication, and TypeScript falls back to its ES5 default.
-        "target": "ES2022",
-        "module": "ESNext",
-        "moduleResolution": "Bundler",
-        "types": ["node"]
+        "types": ["node"],
+        // This package is built via plain `@nx/js:tsc`, so these must be overridden to
+        // emit real .js output — matching `"type": "module"` in package.json.
+        "emitDeclarationOnly": false
     },
     "include": ["src/**/*.ts"],
     "exclude": ["vitest.config.mjs", "src/**/*.spec.ts", "src/**/*.test.ts"]
