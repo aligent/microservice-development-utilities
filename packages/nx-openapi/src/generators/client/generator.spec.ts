@@ -232,7 +232,7 @@ describe('client generator', () => {
 
         const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
         expect(clientContent).toContain('logMiddleware');
-        expect(clientContent).toContain("logMiddleware('Test', logger)");
+        expect(clientContent).toContain("logMiddleware('Test', this.logger)");
     });
 
     it('should wire retries into the client fetch rather than the middleware chain', async () => {
@@ -268,7 +268,7 @@ describe('client generator', () => {
         // onResponse runs in reverse registration order, so logMiddleware must be
         // registered after throwOnNotOk to observe a failing response before the throw.
         const throwIndex = clientContent.indexOf('throwOnNotOk()');
-        const logIndex = clientContent.indexOf("logMiddleware('Test', logger)");
+        const logIndex = clientContent.indexOf("logMiddleware('Test', this.logger)");
         expect(throwIndex).toBeGreaterThanOrEqual(0);
         expect(logIndex).toBeGreaterThan(throwIndex);
     });
@@ -381,7 +381,6 @@ describe('client generator', () => {
 
             const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
             expect(clientContent).toContain('apiKeyAuthMiddleware');
-            expect(clientContent).toContain('fetchSsmParams');
         });
 
         it.each<{ authMethod: string; middlewareName: string }>([
@@ -406,20 +405,5 @@ describe('client generator', () => {
                 expect(clientContent).toContain(middlewareName);
             }
         );
-
-        it('should only include fetchSsmParams import for api-key auth method', async () => {
-            const options: ClientGeneratorSchema = {
-                name: 'test',
-                schemaPath: `${__dirname}/unit-test-schemas/valid.yaml`,
-                skipValidate: true,
-                override: false,
-                authMethod: 'basic',
-            };
-
-            await clientGenerator(tree, options);
-
-            const clientContent = tree.read('clients/src/test/client.ts', 'utf-8');
-            expect(clientContent).not.toContain('fetchSsmParams');
-        });
     });
 });

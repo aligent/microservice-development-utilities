@@ -118,7 +118,12 @@ export async function clientGenerator(tree: Tree, options: ClientGeneratorSchema
         );
 
         const clientFilePath = joinPathFragments(apiClientDest, 'client.ts');
-        applyAuthMethodConfiguration(tree, clientFilePath, resolvedAuthMethod, className);
+        applyAuthMethodConfiguration(
+            tree,
+            clientFilePath,
+            resolvedAuthMethod,
+            `${className}Client`
+        );
     }
 
     /**

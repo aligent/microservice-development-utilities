@@ -7,26 +7,40 @@
  * - For more information about openapi-fetch middlewares: https://openapi-ts.dev/openapi-fetch/middleware-auth#middleware
  */
 import {
+    createErrorThrowingClient,
     logMiddleware,
     retryFetch,
     throwOnNotOk,
+    type ClientOptions,
+    type ErrorThrowingClient,
 } from '@aligent/microservice-util-lib';
 import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
-import createClient, { Client, ClientOptions } from 'openapi-fetch';
-import { paths } from './generated-types';
+import type { components, paths } from './generated-types';
 
-export class <%= className %> {
-    public readonly client: Client<paths, `${string}/${string}`>;
+export type <%= className %> = components['schemas'];
+
+export class <%= className %>Client {
+    public readonly client: ErrorThrowingClient<paths>;
+    private readonly logger: LoggerInterface;
 
     constructor(options: ClientOptions, logger: LoggerInterface) {
+        this.logger = logger;
         /**
          * Retries wrap the client's fetch rather than being registered as middleware,
          * so every attempt's response flows through the whole middleware chain.
          * Pass `onRetry` if a request must be rebuilt per attempt, such as re-signing.
          */
-        this.client = createClient<paths>({
+        this.client = createErrorThrowingClient<paths>({
             ...options,
-            fetch: retryFetch(options.fetch),
+            fetch: retryFetch({
+                onRetry: ({ attempt, error, response }) => {
+                    const errMessage = error ? String(error) : 'Unknown Error';
+                    this.logger.info(`Retrying...${attempt} due to ${errMessage}`, {
+                        error,
+                        status: response?.statusText,
+                    });
+                },
+            }),
         });
 
         /**
@@ -34,12 +48,12 @@ export class <%= className %> {
          * - For requests, onRequest() will be called in the order registered
          * - For responses, onResponse() will be called in reverse order.
          *
-         * throwOnNotOk() is registered first so that logMiddleware, registered after
-         * it, still sees a failing response before it is thrown to the caller.
+         * throwOnNotOk() is registered first so that any other middleware registered
+         * after it, still sees a failing response before it is thrown to the caller.
          */
         this.client.use(
             throwOnNotOk(),
-            logMiddleware('<%= className %>', logger)
+            logMiddleware('<%= className %>', this.logger)
         );
     }
 }

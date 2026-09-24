@@ -1,87 +1,53 @@
 import { Tree } from '@nx/devkit';
-import { IndentationText, Project, QuoteKind, Scope } from 'ts-morph';
-
-interface MiddlewareConfig {
-    properties: string;
-}
+import { IndentationText, Project, QuoteKind, SyntaxKind } from 'ts-morph';
 
 interface AuthMethodConfig {
     middlewareName: string;
-    extraImports: string[];
-    classProperty: string | null;
-    constructorParam: string | null;
-    middlewareConfig: MiddlewareConfig;
+    helperFunction?: {
+        name: string;
+        body: string;
+    };
+    middlewareConfig: {
+        properties: string;
+    };
 }
 
 export const AUTH_CONFIGS: Record<string, AuthMethodConfig> = {
     'api-key': {
         middlewareName: 'apiKeyAuthMiddleware',
-        extraImports: ['fetchSsmParams'],
-        classProperty: 'private credential: string | null = null;',
-        constructorParam: 'credentialPath: string',
         middlewareConfig: {
-            properties: `header: 'X-Api-Key',
-                value: async () => {
-                    if (!this.credential) {
-                        const param = await fetchSsmParams(credentialPath);
-                        if (!param?.Value) {
-                            throw new Error('Unable to fetch API client credential');
-                        }
-
-                        this.credential = param.Value;
-                    }
-
-                    return this.credential;
-                },`,
+            properties: `header: 'X-Api-Key', value: 'your-api-key'`,
         },
     },
     'oauth1.0a': {
         middlewareName: 'oAuth10aAuthMiddleware',
-        extraImports: [],
-        classProperty: null,
-        constructorParam: null,
         middlewareConfig: {
-            properties: `algorithm: 'HMAC-SHA256',
-                credentials: async () => ({
-                    // TODO: Provide your OAuth 1.0a credentials
-                    consumerKey: 'your-consumer-key',
-                    consumerSecret: 'your-consumer-secret',
-                    token: 'your-token',
-                    tokenSecret: 'your-token-secret',
-                }),`,
+            properties: `algorithm: 'HMAC-SHA256', credentials: { consumerKey: 'your-consumer-key', consumerSecret: 'your-consumer-secret', token: 'your-token', tokenSecret: 'your-token-secret' }`,
         },
     },
     basic: {
         middlewareName: 'basicAuthMiddleware',
-        extraImports: [],
-        classProperty: null,
-        constructorParam: null,
         middlewareConfig: {
-            properties: `credentials: async () => ({
-                    // TODO: Provide your basic auth credentials
-                    username: 'your-username',
-                    password: 'your-password',
-                }),`,
+            properties: `credentials: { username: 'your-username', password: 'your-password' }`,
         },
     },
     'oauth2.0': {
         middlewareName: 'oAuth20AuthMiddleware',
-        extraImports: [],
-        classProperty: null,
-        constructorParam: null,
+        helperFunction: {
+            name: 'fetchAccessToken',
+            body: `// TODO: Send API call to get your OAuth 2.0 access token
+return 'your-access-token';`,
+        },
         middlewareConfig: {
-            properties: `token: async () => {
-                    // TODO: Send API call to get your OAuth 2.0 access token
-                    return 'your-access-token';
-                }`,
+            properties: `token: async () => fetchAccessToken(),`,
         },
     },
 } as const;
 
 /**
  * Applies auth method configuration to a generated client file using ts-morph.
- * This modifies the file in the Nx Tree to add auth-specific imports, properties,
- * constructor parameters, and middleware configuration.
+ * This modifies the file in the Nx Tree to add the auth middleware import, an
+ * optional top-level credential/token helper function, and middleware registration.
  *
  * @param tree - The Nx virtual file system tree
  * @param filePath - Path to the client.ts file in the tree
@@ -95,13 +61,11 @@ export function applyAuthMethodConfiguration(
     className: string
 ): void {
     const config = AUTH_CONFIGS[authMethod];
-
     if (!config) {
         throw new Error(`Unknown auth method: ${authMethod}`);
     }
 
     const fileContent = tree.read(filePath, 'utf-8');
-
     if (!fileContent) {
         throw new Error(`Unable to read file: ${filePath}`);
     }
@@ -116,76 +80,69 @@ export function applyAuthMethodConfiguration(
 
     const sourceFile = project.createSourceFile(filePath, fileContent);
 
+    let clientClass = sourceFile.getClass(className);
+    if (!clientClass) {
+        throw new Error(`Unable to find class: ${className}`);
+    }
+
     // Add imports to the @aligent/microservice-util-lib import declaration
     const utilLibImport = sourceFile.getImportDeclaration(
         decl => decl.getModuleSpecifierValue() === '@aligent/microservice-util-lib'
     );
 
     if (utilLibImport) {
-        for (const importName of config.extraImports) {
-            utilLibImport.addNamedImport(importName);
-        }
         utilLibImport.addNamedImport(config.middlewareName);
     }
 
-    // Get the client class
-    const clientClass = sourceFile.getClass(className);
-    if (!clientClass) {
-        throw new Error(`Unable to find class: ${className}`);
-    }
+    if (config.helperFunction) {
+        sourceFile.insertFunction(clientClass.getChildIndex(), {
+            isAsync: true,
+            name: config.helperFunction.name,
+            statements: config.helperFunction.body,
+        });
 
-    // Add class property if configured (insert before the 'client' property)
-    if (config.classProperty) {
-        const clientProperty = clientClass.getProperty('client');
-        if (clientProperty) {
-            const propertyIndex = clientProperty.getChildIndex();
-            clientClass.insertProperty(propertyIndex, {
-                name: 'credential',
-                type: 'string | null',
-                initializer: 'null',
-                scope: Scope.Private,
-            });
+        // Inserting a sibling statement forgets existing node
+        // references, so the class needs to be re-fetched.
+        clientClass = sourceFile.getClass(className);
+        if (!clientClass) {
+            throw new Error(`Unable to find class: ${className}`);
         }
     }
 
-    // Modify constructor to add parameter and middleware
     const constructor = clientClass.getConstructors()[0];
     if (!constructor) {
         throw new Error(`Unable to find constructor in class: ${className}`);
     }
 
-    // Add constructor parameter if configured
-    if (config.constructorParam) {
-        const parts = config.constructorParam.split(':');
-        const paramName = parts[0]?.trim() ?? '';
-        const paramType = parts[1]?.trim() ?? '';
-        constructor.addParameter({
-            name: paramName,
-            type: paramType,
-        });
-    }
-
-    // Build the middleware call
-    const middlewareCall = `this.client.use(
-            ${config.middlewareName}({
-                ${config.middlewareConfig.properties}
-            })
-        );`;
-
-    // Insert auth before the middleware registration. Anchored on the `use()` call
-    // itself rather than on any particular middleware — keying on a middleware name
-    // silently stopped matching when retry moved out of the chain.
     const statements = constructor.getStatements();
-    const useStatementIndex = statements.findIndex(statement =>
+    const useStatement = statements.find(statement =>
         /this\.client\.use\(/.test(statement.getText())
     );
 
-    if (useStatementIndex === -1) {
+    if (!useStatement) {
         throw new Error(`Unable to find a this.client.use(...) statement in class: ${className}`);
     }
 
-    constructor.insertStatements(useStatementIndex, middlewareCall);
+    const useCallExpression = useStatement
+        .getDescendantsOfKind(SyntaxKind.CallExpression)
+        .find(call => /this\.client\.use$/.test(call.getExpression().getText()));
 
-    // Write the modified content back to the tree
+    if (!useCallExpression) {
+        throw new Error(`Unable to find a this.client.use(...) statement in class: ${className}`);
+    }
+
+    // Add the auth middleware as an argument of the existing use() call, right
+    // after throwOnNotOk() so it still runs before logMiddleware() observes the
+    // response.
+    const existingArgs = useCallExpression.getArguments();
+    const throwOnNotOkIndex = existingArgs.findIndex(arg => /throwOnNotOk\(/.test(arg.getText()));
+    const insertIndex = throwOnNotOkIndex === -1 ? 0 : throwOnNotOkIndex + 1;
+
+    const middlewareArgument = `${config.middlewareName}({${config.middlewareConfig.properties}})`;
+
+    useCallExpression.insertArgument(insertIndex, middlewareArgument);
+
+    sourceFile.formatText();
+
     tree.write(filePath, sourceFile.getFullText());
 }

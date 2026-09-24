@@ -5,7 +5,7 @@ import { applyAuthMethodConfiguration } from './auth-configurations';
 const BASE_CLIENT = `import { logMiddleware, throwOnNotOk } from '@aligent/microservice-util-lib';
 export class TestClient {
     public readonly client: any;
-    constructor() {
+    constructor(options: ClientOptions, logger: LoggerInterface) {
         this.client.use(
             throwOnNotOk(),
             logMiddleware('test')
@@ -66,7 +66,7 @@ export class TestClient {
                 'client.ts',
                 `export class TestClient {
     public readonly client: any;
-    constructor() {
+    constructor(options: ClientOptions, logger: LoggerInterface) {
         this.client.use(
             throwOnNotOk()
         );
@@ -82,13 +82,13 @@ export class TestClient {
             );
         });
 
-        it('should insert middleware into a client that does not use retryMiddleware', () => {
+        it('should insert the auth middleware as an argument of the existing use() call, after throwOnNotOk()', () => {
             tree.write(
                 'client.ts',
                 `import { logMiddleware, throwOnNotOk } from '@aligent/microservice-util-lib';
 export class TestClient {
     public readonly client: any;
-    constructor() {
+    constructor(options: ClientOptions, logger: LoggerInterface) {
         this.client.use(
             throwOnNotOk(),
             logMiddleware('test')
@@ -101,10 +101,19 @@ export class TestClient {
             const content = tree.read('client.ts', 'utf-8');
 
             expect(content).toContain('basicAuthMiddleware({');
+            const useIndex = content?.indexOf('this.client.use(') ?? -1;
+            const throwIndex = content?.indexOf('throwOnNotOk()') ?? -1;
             const authIndex = content?.indexOf('basicAuthMiddleware({') ?? -1;
             const logIndex = content?.indexOf("logMiddleware('test')") ?? -1;
-            expect(authIndex).toBeGreaterThanOrEqual(0);
+
+            // All four still live inside the single this.client.use(...) call, in order.
+            expect(useIndex).toBeGreaterThanOrEqual(0);
+            expect(useIndex).toBeLessThan(throwIndex);
+            expect(throwIndex).toBeLessThan(authIndex);
             expect(authIndex).toBeLessThan(logIndex);
+
+            // No second this.client.use( statement was created.
+            expect(content?.split('this.client.use(').length).toBe(2);
         });
 
         it('should throw when no client.use statement is present to anchor against', () => {
@@ -125,72 +134,29 @@ export class TestClient {
         });
 
         describe('api-key auth method', () => {
-            it('should add fetchSsmParams and apiKeyAuthMiddleware imports', () => {
+            it('should add apiKeyAuthMiddleware import', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                expect(content).toContain('fetchSsmParams');
                 expect(content).toContain('apiKeyAuthMiddleware');
             });
 
-            it('should add credential class property before client property', () => {
+            it('should not add a helper function above the class', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                expect(content).toContain('private credential: string | null = null');
-                const credentialIndex = content!.indexOf('credential');
-                const clientIndex = content!.indexOf('client:');
-                expect(credentialIndex).toBeLessThan(clientIndex);
+                expect(content).not.toContain('async function');
             });
 
-            it('should add credentialPath constructor parameter', () => {
-                tree.write('client.ts', BASE_CLIENT);
-
-                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
-                const content = tree.read('client.ts', 'utf-8');
-                expect(content).toContain('credentialPath: string');
-            });
-
-            it('should insert apiKeyAuthMiddleware before the middleware registration', () => {
-                tree.write('client.ts', BASE_CLIENT);
-
-                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
-                const content = tree.read('client.ts', 'utf-8');
-                const apiKeyIndex = content!.indexOf('apiKeyAuthMiddleware({');
-                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
-                expect(apiKeyIndex).toBeGreaterThan(-1);
-                expect(apiKeyIndex).toBeLessThan(useIndex);
-            });
-
-            it('should include X-Api-Key header and fetchSsmParams in middleware config', () => {
+            it('should include a placeholder header and value in the middleware config', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
                 expect(content).toContain("header: 'X-Api-Key'");
-                expect(content).toContain('fetchSsmParams(credentialPath)');
-                expect(content).toContain('this.credential');
-            });
-
-            it('should skip adding credential property when client property is missing', () => {
-                tree.write(
-                    'client.ts',
-                    `import { throwOnNotOk } from '@aligent/microservice-util-lib';
-export class TestClient {
-    constructor() {
-        this.client.use(
-            throwOnNotOk()
-        );
-    }
-}`
-                );
-
-                applyAuthMethodConfiguration(tree, 'client.ts', 'api-key', 'TestClient');
-                const content = tree.read('client.ts', 'utf-8');
-                expect(content).toContain('apiKeyAuthMiddleware');
-                expect(content).not.toContain('private credential');
+                expect(content).toContain("value: 'your-api-key'");
             });
         });
 
@@ -203,34 +169,22 @@ export class TestClient {
                 expect(content).toContain('basicAuthMiddleware');
             });
 
-            it('should insert basicAuthMiddleware before the middleware registration', () => {
+            it('should not add a helper function above the class', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                const basicIndex = content!.indexOf('basicAuthMiddleware({');
-                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
-                expect(basicIndex).toBeGreaterThan(-1);
-                expect(basicIndex).toBeLessThan(useIndex);
+                expect(content).not.toContain('async function');
             });
 
-            it('should not add class property or constructor parameter', () => {
+            it('should include placeholder credentials in the middleware config', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                expect(content).not.toContain('private credential');
-                expect(content).not.toContain('credentialPath');
-            });
-
-            it('should include credentials config in middleware', () => {
-                tree.write('client.ts', BASE_CLIENT);
-
-                applyAuthMethodConfiguration(tree, 'client.ts', 'basic', 'TestClient');
-                const content = tree.read('client.ts', 'utf-8');
-                expect(content).toContain('credentials: async () =>');
-                expect(content).toContain('username:');
-                expect(content).toContain('password:');
+                expect(content).toContain('credentials: {');
+                expect(content).toContain("username: 'your-username'");
+                expect(content).toContain("password: 'your-password'");
             });
         });
 
@@ -243,32 +197,25 @@ export class TestClient {
                 expect(content).toContain('oAuth20AuthMiddleware');
             });
 
-            it('should insert oAuth20AuthMiddleware before the middleware registration', () => {
+            it('should add a top-level fetchAccessToken helper function above the class', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                const oauthIndex = content!.indexOf('oAuth20AuthMiddleware({');
-                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
-                expect(oauthIndex).toBeGreaterThan(-1);
-                expect(oauthIndex).toBeLessThan(useIndex);
+                expect(content).toContain('async function fetchAccessToken()');
+
+                const helperIndex = content?.indexOf('async function fetchAccessToken') ?? -1;
+                const classIndex = content?.indexOf('export class TestClient') ?? -1;
+                expect(helperIndex).toBeGreaterThanOrEqual(0);
+                expect(helperIndex).toBeLessThan(classIndex);
             });
 
-            it('should not add class property or constructor parameter', () => {
+            it('should call the extracted helper from the middleware config', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                expect(content).not.toContain('private credential');
-                expect(content).not.toContain('credentialPath');
-            });
-
-            it('should include token config in middleware', () => {
-                tree.write('client.ts', BASE_CLIENT);
-
-                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth2.0', 'TestClient');
-                const content = tree.read('client.ts', 'utf-8');
-                expect(content).toContain('token: async () =>');
+                expect(content).toContain('token: async () => fetchAccessToken()');
             });
         });
 
@@ -281,36 +228,24 @@ export class TestClient {
                 expect(content).toContain('oAuth10aAuthMiddleware');
             });
 
-            it('should insert oAuth10aAuthMiddleware before the middleware registration', () => {
+            it('should not add a helper function above the class', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
-                const oauthIndex = content!.indexOf('oAuth10aAuthMiddleware({');
-                const useIndex = content!.indexOf('this.client.use(\n            throwOnNotOk');
-                expect(oauthIndex).toBeGreaterThan(-1);
-                expect(oauthIndex).toBeLessThan(useIndex);
+                expect(content).not.toContain('async function');
             });
 
-            it('should not add class property or constructor parameter', () => {
-                tree.write('client.ts', BASE_CLIENT);
-
-                applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
-                const content = tree.read('client.ts', 'utf-8');
-                expect(content).not.toContain('private credential');
-                expect(content).not.toContain('credentialPath');
-            });
-
-            it('should include algorithm and credentials config in middleware', () => {
+            it('should include algorithm and placeholder credentials in the middleware config', () => {
                 tree.write('client.ts', BASE_CLIENT);
 
                 applyAuthMethodConfiguration(tree, 'client.ts', 'oauth1.0a', 'TestClient');
                 const content = tree.read('client.ts', 'utf-8');
                 expect(content).toContain("algorithm: 'HMAC-SHA256'");
-                expect(content).toContain('credentials: async () =>');
-                expect(content).toContain('consumerKey:');
-                expect(content).toContain('consumerSecret:');
-                expect(content).toContain('tokenSecret:');
+                expect(content).toContain('credentials: {');
+                expect(content).toContain("consumerKey: 'your-consumer-key'");
+                expect(content).toContain("consumerSecret: 'your-consumer-secret'");
+                expect(content).toContain("tokenSecret: 'your-token-secret'");
             });
         });
     });

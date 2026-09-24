@@ -1,1 +1,2 @@
-// When a client is generated, its added as an export to this index file. This makes sure that your entire application has access to all of your clients.
+/* eslint-disable no-barrel-files/no-barrel-files */
+/** When a client is generated, its added as an export to this index file. This makes sure that your entire application has access to all of your clients. */
