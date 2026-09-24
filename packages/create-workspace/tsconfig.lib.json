@@ -4,7 +4,12 @@
         "rootDir": "bin",
         "outDir": "dist",
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-        "types": ["node"]
+        "types": ["node"],
+        // This package is built via plain `@nx/js:tsc`, so these must be overridden to
+        // emit real CommonJS .js output — matching `"type": "commonjs"` in package.json.
+        "emitDeclarationOnly": false,
+        "module": "Node16",
+        "moduleResolution": "Node16"
     },
     "include": ["bin/**/*.ts"],
     "exclude": ["vitest.config.mjs", "bin/**/*.spec.ts", "bin/**/*.test.ts"]

@@ -65,7 +65,7 @@ The `package-dist` target (see `project.json`) copies the source `package.json`,
   ```
   When adding a new dependency, check its published format (`main` only, no `exports`, no `"type":"module"` → CJS-only) and prefer default import for those.
 - **No `__dirname` / `require` / `module.exports`** in source — those don't survive the ESM build.
-- **`tsconfig.lib.json` overrides `module: ESNext` / `moduleResolution: Bundler` / `checkJs: false`** from the `@aligent/ts-code-standards` base. Required by `@rollup/plugin-typescript` and by the rollup pipeline (rollup *is* the bundler, so `moduleResolution: Bundler` is the truthful setting). `tsconfig.spec.json` mirrors these overrides so the in-repo typecheck doesn't fire the dual-package hazard on its own source.
+- **`tsconfig.lib.json` overrides `target: ES2022` / `checkJs: false`** from the `@aligent/ts-code-standards` base. `module`/`moduleResolution` need no override — `tsconfigs-extend` already sets `ESNext`/`bundler`, which is exactly what `@rollup/plugin-typescript` needs since rollup *is* the bundler. `target` is pinned because `package.json` declares `engines.node: >=18`, and the inherited `target: "ESNext"` floats forward as TypeScript adds syntax — `ES2022` is the actual Node 18 compatibility guarantee, and it keeps class emission as real `class` syntax rather than ES5 IIFEs a bundler can't tree-shake. `tsconfig.spec.json` mirrors the `target` override so the in-repo typecheck doesn't diverge on `useDefineForClassFields`.
 
 ### Prefer Rollup for new dual-published packages in this monorepo
 
