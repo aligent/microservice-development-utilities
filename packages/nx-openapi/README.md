@@ -25,7 +25,7 @@ Run `nx g @aligent/nx-openapi:client` with optional flags:
 - `--skipValidate` If passed, this will skip schema pre-validation. Only do this if you have good reason to - not validating the schema beforehand may produce unpredictable results (either things may not generate at all or they may generate something that is incorrect).
 - `--override` Override the schema (and the generated type) of an existing client.
 - `--authMethod` **(required)** Authentication method for the generated client middleware. Available options:
-  - `api-key` - API key authentication (placeholder header/value for you to wire up)
+  - `api-key` - API key authentication (header/value)
   - `oauth1.0a` - OAuth 1.0a authentication
   - `basic` - Basic authentication (username/password)
   - `oauth2.0` - OAuth 2.0 token-based authentication
