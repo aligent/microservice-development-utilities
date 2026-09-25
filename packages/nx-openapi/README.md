@@ -25,7 +25,7 @@ Run `nx g @aligent/nx-openapi:client` with optional flags:
 - `--skipValidate` If passed, this will skip schema pre-validation. Only do this if you have good reason to - not validating the schema beforehand may produce unpredictable results (either things may not generate at all or they may generate something that is incorrect).
 - `--override` Override the schema (and the generated type) of an existing client.
 - `--authMethod` **(required)** Authentication method for the generated client middleware. Available options:
-  - `api-key` - API key authentication using SSM Parameter Store
+  - `api-key` - API key authentication (header/value)
   - `oauth1.0a` - OAuth 1.0a authentication
   - `basic` - Basic authentication (username/password)
   - `oauth2.0` - OAuth 2.0 token-based authentication
@@ -84,7 +84,7 @@ A `client` file that will contain boilerplate code to help you get started. The 
 - `throwOnNotOk` to surface non-2xx responses as `HttpResponseError`
 - `logMiddleware` for request/response logging, registered after `throwOnNotOk` so failures are logged before they throw
 - Authentication middleware configured based on the `--authMethod` flag:
-  - **api-key**: Configured to fetch credentials from AWS SSM Parameter Store
+  - **api-key**: Configured with a placeholder header/value for you to wire up
   - **oauth1.0a**: Configured with HMAC-SHA256 algorithm and placeholder credentials
   - **basic**: Configured with placeholder username/password credentials
   - **oauth2.0**: Configured with placeholder token and Bearer token type
