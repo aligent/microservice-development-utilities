@@ -16,6 +16,7 @@ import {
     RestApi,
 } from '@aws-sdk/client-api-gateway';
 import xray from 'aws-xray-sdk-core';
+import { collectItems } from '../util/pagination.js';
 
 /**
  * Read-only wrapper around the API Gateway (REST API, v1) control-plane client
@@ -46,7 +47,10 @@ export class APIGatewayService {
      */
     async getRestApis(input: GetRestApisCommandInput = {}): Promise<RestApi[]> {
         this.logger.info('Fetching REST APIs', { input });
-        return collectItems(paginateGetRestApis({ client: this.client }, input));
+        return collectItems(
+            paginateGetRestApis({ client: this.client }, input),
+            page => page.items
+        );
     }
 
     /**
@@ -55,7 +59,8 @@ export class APIGatewayService {
     async getApiKeys(input: Omit<GetApiKeysCommandInput, 'includeValues'> = {}): Promise<ApiKey[]> {
         this.logger.info('Fetching API keys', { input });
         return collectItems(
-            paginateGetApiKeys({ client: this.client }, { ...input, includeValues: true })
+            paginateGetApiKeys({ client: this.client }, { ...input, includeValues: true }),
+            page => page.items
         );
     }
 
@@ -77,14 +82,9 @@ export class APIGatewayService {
      */
     async getResources(input: GetResourcesCommandInput): Promise<Resource[]> {
         this.logger.info('Fetching REST API resources', { input });
-        return collectItems(paginateGetResources({ client: this.client }, input));
+        return collectItems(
+            paginateGetResources({ client: this.client }, input),
+            page => page.items
+        );
     }
-}
-
-async function collectItems<T>(pages: AsyncIterable<{ items?: T[] | undefined }>): Promise<T[]> {
-    const items: T[] = [];
-    for await (const page of pages) {
-        items.push(...(page.items ?? []));
-    }
-    return items;
 }

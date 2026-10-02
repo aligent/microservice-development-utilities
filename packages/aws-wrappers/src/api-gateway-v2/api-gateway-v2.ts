@@ -13,6 +13,7 @@ import {
     Route,
 } from '@aws-sdk/client-apigatewayv2';
 import xray from 'aws-xray-sdk-core';
+import { collectPages } from '../util/pagination.js';
 
 /**
  * Read-only wrapper around the API Gateway v2 (HTTP and WebSocket APIs)
@@ -43,8 +44,10 @@ export class APIGatewayV2Service {
      */
     async getApis(input: Omit<GetApisCommandInput, 'NextToken'> = {}): Promise<Api[]> {
         this.logger.info('Fetching APIs', { input });
-        return collectPages(NextToken =>
-            this.client.send(new GetApisCommand({ ...input, NextToken }))
+        return collectPages(
+            NextToken => this.client.send(new GetApisCommand({ ...input, NextToken })),
+            page => page.Items,
+            page => page.NextToken
         );
     }
 
@@ -62,23 +65,10 @@ export class APIGatewayV2Service {
      */
     async getRoutes(input: Omit<GetRoutesCommandInput, 'NextToken'>): Promise<Route[]> {
         this.logger.info('Fetching API routes', { input });
-        return collectPages(NextToken =>
-            this.client.send(new GetRoutesCommand({ ...input, NextToken }))
+        return collectPages(
+            NextToken => this.client.send(new GetRoutesCommand({ ...input, NextToken })),
+            page => page.Items,
+            page => page.NextToken
         );
     }
-}
-
-async function collectPages<T>(
-    fetchPage: (
-        nextToken?: string
-    ) => Promise<{ Items?: T[] | undefined; NextToken?: string | undefined }>
-): Promise<T[]> {
-    const items: T[] = [];
-    let nextToken: string | undefined;
-    do {
-        const page = await fetchPage(nextToken);
-        items.push(...(page.Items ?? []));
-        nextToken = page.NextToken;
-    } while (nextToken);
-    return items;
 }
