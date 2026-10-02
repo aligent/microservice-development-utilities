@@ -67,19 +67,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@adobe/aio-lib-db@npm:^0.1.0-beta.6":
-  version: 0.1.0-beta.8
-  resolution: "@adobe/aio-lib-db@npm:0.1.0-beta.8"
+"@adobe/aio-lib-db@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "@adobe/aio-lib-db@npm:1.0.4"
   dependencies:
     "@adobe/aio-lib-core-logging": "npm:^3.0.2"
     "@adobe/aio-lib-env": "npm:^3.0.1"
-    axios: "npm:^1.8.4"
+    axios: "npm:^1.15.0"
     bson: "npm:^6.10.3"
     dotenv: "npm:^17.0.0"
     http-cookie-agent: "npm:^6.0.8"
     js-yaml: "npm:^4.1.0"
     tough-cookie: "npm:^5.1.2"
-  checksum: 10c0/bb4e086828f50fdf84c77a4c7d54affb0a60fff81efe8aa0273d08c01b892e452bad878775cfc3b01eb83873ff15d723d819471ff249ac2ab35100b99abdc65b
+  checksum: 10c0/c4a2c6527b1bb9bfedd4aa0ebf1cdfbfafaf98123be9f437630d96fc7d1c0db925137ee2a0590f7205f0f30b1d672f3b4fc4545d906eeaba26239d7f31b75d53
   languageName: node
   linkType: hard
 
@@ -134,7 +134,7 @@ __metadata:
   resolution: "@aligent/appbuilder-util-lib@workspace:packages/appbuilder-util-lib"
   dependencies:
     "@adobe/aio-lib-core-logging": "npm:^3.0.2"
-    "@adobe/aio-lib-db": "npm:^0.1.0-beta.6"
+    "@adobe/aio-lib-db": "npm:^1.0.4"
     "@adobe/aio-lib-files": "npm:^4.1.2"
     "@adobe/aio-lib-state": "npm:^5.3.1"
     base64url: "npm:^3.0.1"
@@ -6338,7 +6338,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.8.4":
+"axios@npm:^1.15.0":
   version: 1.20.0
   resolution: "axios@npm:1.20.0"
   dependencies:
