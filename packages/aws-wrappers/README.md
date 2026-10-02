@@ -353,6 +353,32 @@ await truncSns.publish({ TopicArn, Message: huge, Subject: long });
 await truncSns.publish({ TopicArn, Message: huge }, { truncate: false });
 ```
 
+## API Gateway
+
+Read-only lookups against the control plane. `APIGatewayService` wraps REST APIs (v1); `APIGatewayV2Service` wraps HTTP and WebSocket APIs (v2). List methods are auto-paginated and return flat arrays.
+
+```ts
+import { APIGatewayService, APIGatewayV2Service } from '@aligent/aws-wrappers';
+
+const apiGateway = new APIGatewayService();
+
+const restApis = await apiGateway.getRestApis();
+// REST APIs expose their routes as resources; embed methods to see the verbs.
+const resources = await apiGateway.getResources({ restApiId, embed: ['methods'] });
+
+// API key values are always returned (includeValue(s) is baked in, no opt-out).
+const keys = await apiGateway.getApiKeys({ nameQuery: 'partner' });
+const key = await apiGateway.getApiKey({ apiKey: keyId }); // throws NotFoundException if missing
+
+const apiGatewayV2 = new APIGatewayV2Service();
+
+const apis = await apiGatewayV2.getApis();
+const routes = await apiGatewayV2.getRoutes({ ApiId });
+const route = await apiGatewayV2.getRoute({ ApiId, RouteId }); // throws NotFoundException if missing
+```
+
+API key values only ever appear in method output, which the wrappers never log.
+
 ## Testing
 
 When you unit-test code that takes a wrapper as a dependency, you usually want to assert that *your* code called the right method with the right arguments — not to exercise the wrapper's chunking, pagination or JSON round-tripping, which this package already covers with its own tests against a mocked SDK client.
@@ -413,7 +439,7 @@ const getJsonObject = async <T>() => ({ total: 42 }) as T;
 
 Note that the typed-spy form does **not** work here: `vi.fn<S3Service['getJsonObject']>()` produces a `Mock` that erases the type parameter and is no longer assignable to the generic signature. Reach for a typed spy on non-generic methods only.
 
-The helper is generic over any class, so it works for all eight wrappers and for your own service classes too.
+The helper is generic over any class, so it works for all wrappers and for your own service classes too.
 
 ## Build / test
 
