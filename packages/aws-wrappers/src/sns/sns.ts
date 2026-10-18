@@ -11,6 +11,7 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import xray from 'aws-xray-sdk-core';
+import { chunk } from '../util/chunk.js';
 import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
@@ -132,13 +133,12 @@ export class SNSService {
             input: logFullInput ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
         });
         const results: PublishBatchCommandOutput[] = [];
-        for (let i = 0; i < entries.length; i += PUBLISH_BATCH_LIMIT) {
-            const chunk = entries.slice(i, i + PUBLISH_BATCH_LIMIT);
+        for (const batch of chunk(entries, PUBLISH_BATCH_LIMIT)) {
             results.push(
                 await this.client.send(
                     new PublishBatchCommand({
                         ...input,
-                        PublishBatchRequestEntries: chunk,
+                        PublishBatchRequestEntries: batch,
                     })
                 )
             );
