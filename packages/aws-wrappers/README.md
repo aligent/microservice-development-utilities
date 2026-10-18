@@ -27,7 +27,7 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch` and `SQSService.deleteMessageBatch`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch` and `SNSService.publishBatch`.
 
 Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
 
@@ -372,7 +372,8 @@ const sns = new SNSService();
 
 await sns.publish({ TopicArn, Message: 'hello' });
 
-// publishBatch auto-chunks PublishBatchRequestEntries to the SNS-enforced 10-entry limit.
+// publishBatch auto-chunks PublishBatchRequestEntries to the SNS-enforced 10-entry limit
+// and throws a BatchOperationError if SNS rejects any entry — see "Batch semantics".
 await sns.publishBatch({ TopicArn, PublishBatchRequestEntries: bigEntryList });
 
 // Opt-in truncation — same shape as SQS. Truncates Message (256 KB byte-safe)

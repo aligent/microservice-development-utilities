@@ -11,6 +11,7 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import xray from 'aws-xray-sdk-core';
+import { throwIfAnyFailed } from '../util/batch-operation-error.js';
 import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
@@ -120,6 +121,13 @@ export class SNSService {
      * PublishBatch at 10 entries per request, so this method auto-chunks
      * the caller's `PublishBatchRequestEntries` and sends one request per
      * chunk, returning the array of outputs.
+     *
+     * Every chunk is sent before the outcome is judged. If SNS rejected any
+     * entry, a {@link BatchOperationError} is then thrown carrying the
+     * per-chunk results and the failed entries. Request-level SDK exceptions
+     * (throttling, access denied) propagate unchanged and immediately, so
+     * earlier chunks may already have been published.
+     *
      * @param input - PublishBatchCommandInput including TopicArn and entries.
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
@@ -143,6 +151,6 @@ export class SNSService {
                 )
             );
         }
-        return results;
+        return throwIfAnyFailed(this.logger, 'SNS publishBatch', results);
     }
 }

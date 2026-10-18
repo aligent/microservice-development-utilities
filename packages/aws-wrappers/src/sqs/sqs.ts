@@ -1,7 +1,6 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 import {
-    BatchResultErrorEntry,
     DeleteMessageBatchCommand,
     DeleteMessageBatchCommandInput,
     DeleteMessageBatchCommandOutput,
@@ -22,11 +21,7 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import xray from 'aws-xray-sdk-core';
-import {
-    BatchFailedEntry,
-    BatchOperationError,
-    distinctCodes,
-} from '../util/batch-operation-error.js';
+import { throwIfAnyFailed } from '../util/batch-operation-error.js';
 import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
@@ -137,32 +132,6 @@ export class SQSService {
     }
 
     /**
-     * SQS reports rejected entries under `Failed` on an otherwise successful
-     * response, so a resolved chunk does not mean every entry was accepted.
-     * Only id, code and message are copied out — never the entry itself — so
-     * neither the error nor the warning can leak a payload.
-     */
-    private throwIfAnyFailed<T extends { Failed: BatchResultErrorEntry[] | undefined }>(
-        operation: string,
-        results: T[]
-    ): T[] {
-        const failed: BatchFailedEntry[] = results.flatMap(result =>
-            (result.Failed ?? []).map(({ Id, Code, Message }) => ({
-                id: Id,
-                code: Code,
-                message: Message,
-            }))
-        );
-        if (failed.length === 0) return results;
-
-        this.logger.warn(`${operation} had rejected entries`, {
-            failedCount: failed.length,
-            codes: distinctCodes(failed),
-        });
-        throw new BatchOperationError(results, failed);
-    }
-
-    /**
      * Send a batch of messages to an SQS queue. The SQS API caps
      * SendMessageBatch at 10 entries per request, so this method auto-chunks
      * the caller's entries and sends one request per chunk.
@@ -191,7 +160,7 @@ export class SQSService {
                 await this.client.send(new SendMessageBatchCommand({ ...input, Entries: chunk }))
             );
         }
-        return this.throwIfAnyFailed('SQS sendMessageBatch', results);
+        return throwIfAnyFailed(this.logger, 'SQS sendMessageBatch', results);
     }
 
     /**
@@ -224,6 +193,6 @@ export class SQSService {
                 await this.client.send(new DeleteMessageBatchCommand({ ...input, Entries: chunk }))
             );
         }
-        return this.throwIfAnyFailed('SQS deleteMessageBatch', results);
+        return throwIfAnyFailed(this.logger, 'SQS deleteMessageBatch', results);
     }
 }

@@ -1,12 +1,15 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import {
     PublishBatchCommand,
+    PublishBatchCommandInput,
+    PublishBatchCommandOutput,
     PublishBatchRequestEntry,
     PublishCommand,
     SNSClient,
 } from '@aws-sdk/client-sns';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BatchOperationError } from '../util/batch-operation-error.js';
 import { SNSService } from './sns';
 
 const snsMock = mockClient(SNSClient);
@@ -107,6 +110,149 @@ describe('SNSService', () => {
             expect(emptyResult).toEqual([]);
             expect(undefinedResult).toEqual([]);
             expect(snsMock.commandCalls(PublishBatchCommand)).toHaveLength(0);
+        });
+
+        describe('partial failure', () => {
+            const TopicArn = 'arn:aws:sns:us-east-1:0:topic';
+            const service = () => new SNSService({ client: new SNSClient({}) });
+            const publish = (svc: SNSService, entryIds: string[]) =>
+                svc.publishBatch({
+                    TopicArn,
+                    PublishBatchRequestEntries: entryIds.map(Id => ({
+                        Id,
+                        Message: `secret-body-${Id}`,
+                        Subject: `secret-subject-${Id}`,
+                        MessageAttributes: { secret: { DataType: 'String', StringValue: Id } },
+                    })),
+                });
+
+            /**
+             * Answers every request the way SNS does: entries whose Id is in
+             * `failingIds` come back under `Failed`, the rest under `Successful`.
+             */
+            function rejectEntries(failingIds: string[]) {
+                snsMock.on(PublishBatchCommand).callsFake((input: PublishBatchCommandInput) => {
+                    const entryIds = (input.PublishBatchRequestEntries ?? []).map(
+                        entry => entry.Id ?? ''
+                    );
+                    return {
+                        Successful: entryIds
+                            .filter(id => !failingIds.includes(id))
+                            .map(Id => ({ Id, MessageId: `mid-${Id}` })),
+                        // Payload fields SNS does not echo today. They are here so the
+                        // redaction test fails if the wrapper ever copies a whole entry.
+                        Failed: entryIds
+                            .filter(id => failingIds.includes(id))
+                            .map(Id => ({
+                                Id,
+                                SenderFault: false,
+                                Code: 'InternalError',
+                                Message: `${Id} failed`,
+                                Subject: `secret-subject-${Id}`,
+                                MessageAttributes: `secret-attributes-${Id}`,
+                            })),
+                    };
+                });
+            }
+
+            async function batchFailure(
+                promise: Promise<unknown>
+            ): Promise<BatchOperationError<PublishBatchCommandOutput>> {
+                const error = await promise.then(
+                    () => undefined,
+                    (thrown: unknown) => thrown
+                );
+                if (!(error instanceof BatchOperationError)) {
+                    throw new Error(`Expected a BatchOperationError, got: ${String(error)}`);
+                }
+                return error;
+            }
+
+            const ids = (count: number): string[] =>
+                Array.from({ length: count }, (_, i) => `${i}`);
+
+            it('throws with the failed entry when one entry in a single chunk is rejected', async () => {
+                rejectEntries(['1']);
+
+                const error = await batchFailure(publish(service(), ids(3)));
+
+                expect(error.failed).toEqual([
+                    { id: '1', code: 'InternalError', message: '1 failed' },
+                ]);
+                expect(error.results).toHaveLength(1);
+                expect(error.results[0]).toMatchObject({
+                    Successful: [{ Id: '0' }, { Id: '2' }],
+                });
+            });
+
+            it('sends every chunk before throwing when failures land in different chunks', async () => {
+                rejectEntries(['2', '21']);
+
+                const error = await batchFailure(publish(service(), ids(23)));
+
+                expect(snsMock.commandCalls(PublishBatchCommand)).toHaveLength(3);
+                expect(error.failed.map(entry => entry.id)).toEqual(['2', '21']);
+                expect(error.results).toHaveLength(3);
+                expect(error.results[1]).toMatchObject({ Failed: [] });
+                expect(error.results.map(result => result.Successful?.length)).toEqual([9, 10, 2]);
+            });
+
+            it('throws with every entry listed when all entries are rejected', async () => {
+                rejectEntries(ids(12));
+
+                const error = await batchFailure(publish(service(), ids(12)));
+
+                expect(snsMock.commandCalls(PublishBatchCommand)).toHaveLength(2);
+                expect(error.failed.map(entry => entry.id)).toEqual(ids(12));
+                expect(error.results.map(result => result.Successful)).toEqual([[], []]);
+            });
+
+            it('returns the per-chunk outputs unchanged when no entry fails', async () => {
+                rejectEntries([]);
+
+                const results = await publish(service(), ids(12));
+
+                expect(results).toEqual([
+                    {
+                        Successful: ids(12)
+                            .slice(0, 10)
+                            .map(Id => ({ Id, MessageId: `mid-${Id}` })),
+                        Failed: [],
+                    },
+                    {
+                        Successful: ids(12)
+                            .slice(10)
+                            .map(Id => ({ Id, MessageId: `mid-${Id}` })),
+                        Failed: [],
+                    },
+                ]);
+            });
+
+            it('lets request-level SDK exceptions propagate unchanged', async () => {
+                snsMock.on(PublishBatchCommand).rejects(new Error('Rate exceeded'));
+
+                const outcome = publish(service(), ids(3));
+
+                await expect(outcome).rejects.toThrow('Rate exceeded');
+                await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
+            });
+
+            it('exposes no payload on the failed entries or in the warning at INFO level', async () => {
+                rejectEntries(['1']);
+                const logger = new Logger();
+                logger.setLogLevel('INFO');
+                const warnSpy = vi.spyOn(logger, 'warn');
+                const failingService = new SNSService({ client: new SNSClient({}), logger });
+
+                const error = await batchFailure(publish(failingService, ids(3)));
+
+                expect(error.failed[0]).not.toHaveProperty('Subject');
+                expect(error.failed[0]).not.toHaveProperty('MessageAttributes');
+                expect(JSON.stringify(error.failed)).not.toContain('secret');
+                expect(warnSpy).toHaveBeenCalledTimes(1);
+                const [, payload] = warnSpy.mock.calls[0] ?? [];
+                expect(payload).toEqual({ failedCount: 1, codes: ['InternalError'] });
+            });
         });
     });
 
