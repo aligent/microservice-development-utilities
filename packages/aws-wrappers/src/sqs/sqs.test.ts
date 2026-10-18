@@ -11,10 +11,63 @@ import {
 } from '@aws-sdk/client-sqs';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BatchOperationError } from '../util/batch-operation-error.js';
 import { SQSService } from './sqs';
 
 const sqsMock = mockClient(SQSClient);
 const QueueUrl = 'https://sqs.us-east-1.amazonaws.com/0/queue';
+
+type BatchEntry = { Id?: string };
+type BatchInput = { Entries?: BatchEntry[] };
+type BatchResult = { Successful?: BatchEntry[]; Failed?: BatchEntry[] };
+
+/**
+ * Answers every batch request the way SQS does: entries whose Id is in
+ * `failingIds` come back under `Failed`, the rest under `Successful`.
+ */
+function rejectEntries(failingIds: string[]) {
+    sqsMock.onAnyCommand().callsFake((input: BatchInput) => {
+        const entryIds = (input.Entries ?? []).map(entry => entry.Id ?? '');
+        return {
+            Successful: entryIds.filter(id => !failingIds.includes(id)).map(Id => ({ Id })),
+            // Payload fields SQS does not echo today. They are here so the redaction
+            // tests fail if the wrapper ever copies a whole failed entry.
+            Failed: entryIds
+                .filter(id => failingIds.includes(id))
+                .map(Id => ({
+                    Id,
+                    SenderFault: false,
+                    Code: 'InternalError',
+                    Message: `${Id} failed`,
+                    MessageBody: `secret-body-${Id}`,
+                    ReceiptHandle: `secret-handle-${Id}`,
+                })),
+        };
+    });
+}
+
+const ids = (count: number): string[] => Array.from({ length: count }, (_, i) => `${i}`);
+
+const batchMethods = [
+    {
+        method: 'sendMessageBatch',
+        payloadField: 'MessageBody',
+        send: (service: SQSService, entryIds: string[]) =>
+            service.sendMessageBatch({
+                QueueUrl,
+                Entries: entryIds.map(Id => ({ Id, MessageBody: `secret-body-${Id}` })),
+            }),
+    },
+    {
+        method: 'deleteMessageBatch',
+        payloadField: 'ReceiptHandle',
+        send: (service: SQSService, entryIds: string[]) =>
+            service.deleteMessageBatch({
+                QueueUrl,
+                Entries: entryIds.map(Id => ({ Id, ReceiptHandle: `secret-handle-${Id}` })),
+            }),
+    },
+];
 
 describe('SQSService', () => {
     afterEach(() => {
@@ -283,6 +336,101 @@ describe('SQSService', () => {
             const [, payload] = infoSpy.mock.calls[0] ?? [];
             const loggedInput = (payload as { input: object }).input;
             expect(loggedInput).toHaveProperty('Entries', [{ Id: '1', ReceiptHandle: 'handle' }]);
+        });
+    });
+
+    describe.each(batchMethods)('$method partial failure', ({ send, payloadField }) => {
+        const service = () => new SQSService({ client: new SQSClient({}) });
+
+        async function batchFailure(
+            promise: Promise<unknown>
+        ): Promise<BatchOperationError<BatchResult>> {
+            const error = await promise.then(
+                () => undefined,
+                (thrown: unknown) => thrown
+            );
+            if (!(error instanceof BatchOperationError)) {
+                throw new Error(`Expected a BatchOperationError, got: ${String(error)}`);
+            }
+            return error;
+        }
+
+        it('throws with the failed entry when one entry in a single chunk is rejected', async () => {
+            rejectEntries(['1']);
+
+            const error = await batchFailure(send(service(), ids(3)));
+
+            expect(error.failed).toEqual([{ id: '1', code: 'InternalError', message: '1 failed' }]);
+            expect(error.results).toHaveLength(1);
+            expect(error.results[0]).toMatchObject({ Successful: [{ Id: '0' }, { Id: '2' }] });
+        });
+
+        it('sends every chunk before throwing when failures land in different chunks', async () => {
+            rejectEntries(['2', '21']);
+
+            const error = await batchFailure(send(service(), ids(23)));
+
+            expect(sqsMock.calls()).toHaveLength(3);
+            expect(error.failed.map(entry => entry.id)).toEqual(['2', '21']);
+            expect(error.results).toHaveLength(3);
+            expect(error.results[1]).toMatchObject({ Failed: [] });
+            expect(error.results.map(result => result.Successful?.length)).toEqual([9, 10, 2]);
+        });
+
+        it('throws with every entry listed when all entries are rejected', async () => {
+            rejectEntries(ids(12));
+
+            const error = await batchFailure(send(service(), ids(12)));
+
+            expect(sqsMock.calls()).toHaveLength(2);
+            expect(error.failed.map(entry => entry.id)).toEqual(ids(12));
+            expect(error.results.map(result => result.Successful)).toEqual([[], []]);
+        });
+
+        it('returns the per-chunk outputs unchanged when no entry fails', async () => {
+            rejectEntries([]);
+
+            const results = await send(service(), ids(12));
+
+            expect(results).toEqual([
+                {
+                    Successful: ids(12)
+                        .slice(0, 10)
+                        .map(Id => ({ Id })),
+                    Failed: [],
+                },
+                {
+                    Successful: ids(12)
+                        .slice(10)
+                        .map(Id => ({ Id })),
+                    Failed: [],
+                },
+            ]);
+        });
+
+        it('lets request-level SDK exceptions propagate unchanged', async () => {
+            sqsMock.onAnyCommand().rejects(new Error('Rate exceeded'));
+
+            const outcome = send(service(), ids(3));
+
+            await expect(outcome).rejects.toThrow('Rate exceeded');
+            await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
+        });
+
+        it('exposes neither payload on the failed entries nor in the warning at INFO level', async () => {
+            rejectEntries(['1']);
+            const logger = new Logger();
+            logger.setLogLevel('INFO');
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const failingService = new SQSService({ client: new SQSClient({}), logger });
+
+            const error = await batchFailure(send(failingService, ids(3)));
+
+            expect(error.failed[0]).not.toHaveProperty(payloadField);
+            expect(JSON.stringify(error.failed)).not.toContain('secret');
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+            const [, payload] = warnSpy.mock.calls[0] ?? [];
+            expect(payload).toEqual({ failedCount: 1, codes: ['InternalError'] });
         });
     });
 });
