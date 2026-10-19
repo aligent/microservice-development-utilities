@@ -25,6 +25,34 @@ new XService({ logger?, client? })
 
 Every wrapper emits one `logger.info` line per SDK call with a per-method safe-field allowlist (omitting payloads, secret material, and PII recipient identifiers). Set `POWERTOOLS_LOG_LEVEL` to either `DEBUG` or `TRACE` to unlock the full SDK input in those log lines — useful for local development and incident triage. Both levels unlock because Powertools orders `TRACE` as more verbose than `DEBUG`; every level from `INFO` upwards redacts. See `packages/aws-wrappers/CLAUDE.md` for the per-method allowlists currently in force.
 
+### Batch semantics
+
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch` and `SQSService.deleteMessageBatch`.
+
+Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
+
+```ts
+import { BatchOperationError } from '@aligent/aws-wrappers';
+
+try {
+    await sqs.sendMessageBatch({ QueueUrl, Entries: entries });
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        // error.results — the raw SDK output of every chunk, including what succeeded
+        // error.failed  — [{ id, code, message }] for every rejected entry
+        const failedIds = new Set(error.failed.map(entry => entry.id));
+        await retry(entries.filter(entry => failedIds.has(entry.Id)));
+        return;
+    }
+    throw error;
+}
+```
+
+- `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload.
+- The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
+- A warning is logged with the failure count and error codes, and no payload, at every log level.
+- Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
+
 ### X-Ray outside Lambda
 
 X-Ray's middleware throws by default when no active segment exists, which is the case for CLI scripts and local development. Set the environment variable to silence the noise:
@@ -318,7 +346,8 @@ for (const message of messages) {
     }
 }
 
-// Batch methods auto-chunk Entries to the SQS-enforced 10-entry limit.
+// Batch methods auto-chunk Entries to the SQS-enforced 10-entry limit and throw
+// a BatchOperationError if SQS rejects any entry — see "Batch semantics".
 await sqs.sendMessageBatch({ QueueUrl, Entries: bigEntryList });
 await sqs.deleteMessageBatch({ QueueUrl, Entries: receiptEntries });
 ```

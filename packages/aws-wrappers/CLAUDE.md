@@ -20,7 +20,8 @@ packages/aws-wrappers/src/
 │   ├── <service>.ts        # the *Service class
 │   └── <service>.test.ts   # co-located tests
 ├── testing/                # test-only helpers, published as the `./testing` subpath
-└── index.ts                # named exports of every *Service class
+├── util/                   # internal helpers; only `BatchOperationError` is public
+└── index.ts                # named exports of every *Service class and `BatchOperationError`
 ```
 
 One folder per service, lowercase. `testing/` is the one non-service folder: it backs the `./testing` subpath export and is deliberately **not** re-exported from `index.ts` — see "The `createMockService` helper" below. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
@@ -131,6 +132,7 @@ Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` 
 - **Auto-pagination, flat array**: `S3.listObjects` / `getAllObjects` / `emptyBucket`, `SSM.getParametersByPath`, `SFN.listExecutions`. Used when the result set is bounded in practice.
 - **Generator pagination, yield items**: `DynamoDB.paginateItems` / `paginateScan`. Used when the result set is potentially unbounded — peak memory stays bounded by one page.
 - **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10), `SSM.getParameters` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
+- **Throw-after-all-chunks on rejected entries**: `SQS.sendMessageBatch` / `deleteMessageBatch` send every chunk, then throw one `BatchOperationError` (`src/util/batch-operation-error.ts`, exported from the main entry only) if any `Failed` entry came back. The error carries the per-chunk `results` and a `failed` list of `{ id, code, message }` — copy those three fields explicitly, never spread the SDK entry, so a payload can't leak into the error or the warning. Request-level SDK exceptions are deliberately **not** wrapped; each method's TSDoc says so. The SNS and S3 batch methods are to reuse this error rather than introduce their own.
 
 Flat-array pagination goes through `collectItems` / `collectPages` (`src/util/pagination.ts`) and chunking through `chunk` (`src/util/chunk.ts`) — don't hand-roll either loop in a service. Both are internal-only and not exported from `src/index.ts`. `S3.emptyBucket` and `S3.getAllObjects` are the deliberate exceptions to `collectItems`: they iterate the paginator directly because they act on each page as it arrives (`emptyBucket` deletes page by page to keep memory bounded; `getAllObjects` fetches each object body).
 

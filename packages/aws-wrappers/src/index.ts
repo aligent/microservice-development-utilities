@@ -8,3 +8,5 @@ export { StepFunctionsService } from './sfn/sfn.js';
 export { SNSService } from './sns/sns.js';
 export { SQSService } from './sqs/sqs.js';
 export { SSMService } from './ssm/ssm.js';
+export { BatchOperationError } from './util/batch-operation-error.js';
+export type { BatchFailedEntry } from './util/batch-operation-error.js';
