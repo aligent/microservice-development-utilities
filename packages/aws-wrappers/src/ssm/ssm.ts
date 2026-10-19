@@ -12,6 +12,8 @@ import {
     SSMClient,
 } from '@aws-sdk/client-ssm';
 import xray from 'aws-xray-sdk-core';
+import { chunk } from '../util/chunk.js';
+import { collectItems } from '../util/pagination.js';
 import { filterFieldsForLogLevel } from '../util/redact.js';
 
 const GET_PARAMETERS_LIMIT = 10;
@@ -108,11 +110,10 @@ export class SSMService {
         this.logger.info('Fetching SSM parameters', { input: { aliases } });
         const names = Object.values(aliases) as string[];
         const byPath = new Map<string, string | undefined>();
-        for (let i = 0; i < names.length; i += GET_PARAMETERS_LIMIT) {
-            const chunk = names.slice(i, i + GET_PARAMETERS_LIMIT);
+        for (const batch of chunk(names, GET_PARAMETERS_LIMIT)) {
             const response = await this.client.send(
                 new GetParametersCommand({
-                    Names: chunk,
+                    Names: batch,
                     WithDecryption: true,
                 })
             );
@@ -172,10 +173,6 @@ export class SSMService {
             { client: this.client },
             { Path: path, Recursive: recursive, WithDecryption: true }
         );
-        const parameters: Parameter[] = [];
-        for await (const page of paginator) {
-            parameters.push(...(page.Parameters ?? []));
-        }
-        return parameters;
+        return collectItems(paginator, page => page.Parameters);
     }
 }

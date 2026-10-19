@@ -32,6 +32,7 @@ import {
     UpdateScheduleCommandOutput,
 } from '@aws-sdk/client-scheduler';
 import xray from 'aws-xray-sdk-core';
+import { collectItems } from '../util/pagination.js';
 import { shouldLogFullInput } from '../util/redact.js';
 
 /**
@@ -144,11 +145,7 @@ export class SchedulerService {
     async listSchedules(input?: ListSchedulesCommandInput): Promise<ScheduleSummary[]> {
         this.logger.info('Listing schedules', { input });
         const paginator = paginateListSchedules({ client: this.client }, input ?? {});
-        const schedules: ScheduleSummary[] = [];
-        for await (const page of paginator) {
-            if (page.Schedules) schedules.push(...page.Schedules);
-        }
-        return schedules;
+        return collectItems(paginator, page => page.Schedules);
     }
 
     /**
@@ -193,10 +190,6 @@ export class SchedulerService {
     ): Promise<ScheduleGroupSummary[]> {
         this.logger.info('Listing schedule groups', { input });
         const paginator = paginateListScheduleGroups({ client: this.client }, input ?? {});
-        const groups: ScheduleGroupSummary[] = [];
-        for await (const page of paginator) {
-            if (page.ScheduleGroups) groups.push(...page.ScheduleGroups);
-        }
-        return groups;
+        return collectItems(paginator, page => page.ScheduleGroups);
     }
 }

@@ -16,6 +16,7 @@ import {
     StopExecutionCommandOutput,
 } from '@aws-sdk/client-sfn';
 import xray from 'aws-xray-sdk-core';
+import { collectItems } from '../util/pagination.js';
 import { filterFieldsForLogLevel } from '../util/redact.js';
 
 /**
@@ -60,11 +61,7 @@ export class StepFunctionsService {
     async listExecutions(input: ListExecutionsCommandInput): Promise<ExecutionListItem[]> {
         this.logger.info('Listing Step Functions executions', { input });
         const paginator = paginateListExecutions({ client: this.client }, input);
-        const executions: ExecutionListItem[] = [];
-        for await (const page of paginator) {
-            if (page.executions) executions.push(...page.executions);
-        }
-        return executions;
+        return collectItems(paginator, page => page.executions);
     }
 
     /**
