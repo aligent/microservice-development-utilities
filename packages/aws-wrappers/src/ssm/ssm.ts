@@ -12,11 +12,29 @@ import {
     SSMClient,
 } from '@aws-sdk/client-ssm';
 import xray from 'aws-xray-sdk-core';
+import { type BatchFailedEntry, throwIfAny } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
 import { collectItems } from '../util/pagination.js';
 import { filterFieldsForLogLevel } from '../util/redact.js';
 
 const GET_PARAMETERS_LIMIT = 10;
+
+/**
+ * One failed entry per alias whose path SSM reported as invalid, so two
+ * aliases sharing a missing path are both named.
+ */
+function missingParameters(
+    aliases: Record<string, string>,
+    invalidPaths: ReadonlySet<string>
+): BatchFailedEntry[] {
+    return Object.entries(aliases)
+        .filter(([, path]) => invalidPaths.has(path))
+        .map(([alias, path]) => ({
+            id: path,
+            code: 'ParameterNotFound',
+            message: `Parameter not found for alias "${alias}"`,
+        }));
+}
 
 /**
  * Fields safe to log at INFO level for `putParameter`. Omits `Value` (the
@@ -71,6 +89,9 @@ export class SSMService {
      * @param name - The parameter name (or ARN).
      * @returns The parameter value, or `undefined` if the parameter has no
      * value set.
+     * @throws When the parameter does not exist (the SDK's
+     * `ParameterNotFound`). {@link SSMService.getParameters} instead returns
+     * `undefined` for a missing parameter unless `required` is set.
      */
     async getParameter(name: string): Promise<string | undefined> {
         this.logger.info('Fetching SSM parameter', { input: { name } });
@@ -98,18 +119,30 @@ export class SSMService {
      * the underlying parameter names and sends one request per chunk,
      * merging the results before building the alias-keyed return value.
      *
+     * Unlike {@link SSMService.getParameter}, which throws when the parameter
+     * does not exist, a missing parameter here maps to `undefined` — so a
+     * typo'd path surfaces later as an undefined value. Pass
+     * `{ required: true }` to fail fast instead: every chunk is still sent,
+     * then a {@link BatchOperationError} is thrown whose `failed` entries
+     * carry each missing path as `id`, the code `ParameterNotFound`, and the
+     * alias in `message`. Request-level SDK exceptions are not wrapped.
+     *
      * @param aliases - Record mapping each desired local alias to its SSM
      * parameter name (or ARN).
+     * @param opts.required - Throw when any requested parameter does not
+     * exist. Defaults to `false`.
      * @returns A record keyed by the same aliases, mapping each to the
-     * parameter's value, or `undefined` when the parameter is missing or has
-     * no value.
+     * parameter's value, or `undefined` when the parameter is missing (unless
+     * `required` is set) or has no value.
      */
     async getParameters<K extends string>(
-        aliases: Record<K, string>
+        aliases: Record<K, string>,
+        opts?: { required?: boolean }
     ): Promise<Record<K, string | undefined>> {
         this.logger.info('Fetching SSM parameters', { input: { aliases } });
         const names = Object.values(aliases) as string[];
         const byPath = new Map<string, string | undefined>();
+        const invalidPaths = new Set<string>();
         for (const batch of chunk(names, GET_PARAMETERS_LIMIT)) {
             const response = await this.client.send(
                 new GetParametersCommand({
@@ -120,6 +153,16 @@ export class SSMService {
             for (const parameter of response.Parameters ?? []) {
                 if (parameter.Name !== undefined) byPath.set(parameter.Name, parameter.Value);
             }
+            for (const name of response.InvalidParameters ?? []) invalidPaths.add(name);
+        }
+        if (opts?.required) {
+            // No per-chunk results: the SDK output of a failed lookup adds nothing
+            throwIfAny(
+                this.logger,
+                'SSM getParameters',
+                [],
+                missingParameters(aliases, invalidPaths)
+            );
         }
         const result = {} as Record<K, string | undefined>;
         for (const alias of Object.keys(aliases) as K[]) {

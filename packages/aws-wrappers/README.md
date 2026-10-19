@@ -27,9 +27,9 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `S3Service.deleteObjects` and `S3Service.emptyBucket`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `S3Service.deleteObjects`, `S3Service.emptyBucket` and, when `required` is set, `SSMService.getParameters`.
 
-Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
+Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns exactly what it did before.
 
 ```ts
 import { BatchOperationError } from '@aligent/aws-wrappers';
@@ -39,6 +39,7 @@ try {
 } catch (error) {
     if (error instanceof BatchOperationError) {
         // error.results — the raw SDK output of every chunk, including what succeeded
+        //                 (empty for SSM, per-page deleted keys for S3 emptyBucket)
         // error.failed  — [{ id, code, message }] for every rejected entry
         const failedIds = new Set(error.failed.map(entry => entry.id));
         await retry(entries.filter(entry => failedIds.has(entry.Id)));
@@ -48,7 +49,7 @@ try {
 }
 ```
 
-- `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload. For S3 the identifier is the object key.
+- `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload. For S3 the identifier is the object key; for SSM it is the parameter path.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
@@ -327,6 +328,15 @@ const { host, port } = await ssm.getParameters({
 // Recursive defaults to true.
 const params = await ssm.getParametersByPath('/myapp/');
 const shallow = await ssm.getParametersByPath('/myapp/', { recursive: false });
+```
+
+`getParameter` throws when the parameter does not exist, but `getParameters` returns `undefined` for a missing one, so a typo'd path only surfaces later as an undefined value. Pass `required: true` to make `getParameters` fail fast instead. Every chunk is still sent, then a single `BatchOperationError` is thrown (see "Batch semantics") naming every missing parameter: `failed[].id` is the path, `failed[].code` is `ParameterNotFound` and `failed[].message` names the alias. `results` is empty, since there is nothing useful in the SDK output of a failed lookup.
+
+```ts
+const { host, port } = await ssm.getParameters(
+    { host: '/myapp/host', port: '/myapp/port' },
+    { required: true }
+);
 ```
 
 All read operations enable `WithDecryption` automatically — there's no opt-out. Callers needing plaintext should use `SSMClient` directly.
