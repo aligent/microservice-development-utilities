@@ -1,0 +1,54 @@
+/**
+ * Stage-specific, non-secret configuration shared across service stacks, keyed by CDK stage name
+ * (`-c environment=<stage>`, default `dev`).
+ *
+ * These are plain strings, so CDK writes them straight into each service stack's template
+ * instead of exporting them from SharedInfraStack. A value can then be changed with a normal
+ * deploy, without "Cannot update export ... as it is in use by ...".
+ *
+ * Secrets stay in Secrets Manager (see SharedInfraStack) - never put them here.
+ *
+ * SharedInfraStack refuses to synth a stage with any value still set to `TODO`.
+ */
+
+export type Configurations<T> = Record<string, T>;
+
+type ExampleConfiguration = { baseUrl: string };
+
+/**
+ * Example external system:
+ * - `baseUrl`: base URL of the system's API
+ */
+export const EXAMPLE_CONFIGURATIONS: Configurations<ExampleConfiguration> = {
+    dev: { baseUrl: 'https://staging.example.com' },
+    stg: { baseUrl: 'https://staging.example.com' },
+    prd: { baseUrl: 'TODO' },
+};
+
+/**
+ * Gets a system's config for the current stage, failing synth if there is no config for the stage
+ * or any value is `TODO` (so a placeholder can never be deployed).
+ */
+export function getStageConfig<T extends Record<string, string>>(
+    configurations: Configurations<T>,
+    stageName: string,
+    system: string
+): T {
+    const config = configurations[stageName];
+    if (!config) {
+        throw new Error(
+            `Missing ${system} configuration for stage '${stageName}' in libs/infra/src/config.ts`
+        );
+    }
+
+    const todoKeys = Object.entries(config)
+        .filter(([, value]) => value === 'TODO')
+        .map(([key]) => key);
+    if (todoKeys.length) {
+        throw new Error(
+            `${system} configuration for stage '${stageName}' still has TODO values in libs/infra/src/config.ts: ${todoKeys.join(', ')}`
+        );
+    }
+
+    return config;
+}
