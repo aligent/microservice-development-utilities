@@ -90,5 +90,5 @@ yarn nx g @tools/generators:package
 - Whenever the user says "No" or corrects an approach, update this file with the relevant rule so the same mistake is not repeated.
 - After completing a task, search for and update any related documentation (READMEs, docs/ files, CLAUDE.md) that references the modified code before offering to commit. For larger features, treat this as an implicit final step.
 - Always run `/review` before creating a Pull Request.
-- Check for version plan in `.nx/version-plan` and create one using `yarn release-plan` if needed.
+- Every PR needs a version plan in `.nx/version-plans`, including internal refactors with no consumer-visible change (use `patch` for those). Create one with `yarn release-plan` if the branch doesn't already have one.
 - Always create Pull Request using provided `pull_request_template.md`.
