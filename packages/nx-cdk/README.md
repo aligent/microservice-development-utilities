@@ -33,6 +33,7 @@ After running the preset generator, review these defaults before committing:
 
 - **AWS profile** — The `pg:synth`, `pg:deploy`, `pg:diff`, and `pg:destroy` scripts in `package.json` use `--profile playground`. This assumes a profile named `playground` exists in your `~/.aws/config`. Update the profile name in the `pg:*` scripts if yours differs.
 - **`.github/CODEOWNERS`** — The generated file references Aligent's GitHub teams (`@aligent/microservices`, `@aligent/devops`). Replace these with your organisation's team handles.
+- **`libs/infra/src/config.ts`** — Add each external system's non-secret values for every stage you deploy. Any value left as `TODO` fails synth for that stage, so placeholders can't be deployed.
 
 #### What it creates
 
@@ -56,6 +57,11 @@ The preset generator scaffolds:
   - `bin/main.ts` - CDK app entry point
   - `lib/service-stacks.ts` - Service stacks definition
   - TypeScript configurations (`tsconfig.json`, `tsconfig.spec.json`)
+
+- **Shared infrastructure library** (`libs/infra/`, imported as `@libs/infra`):
+  - `src/index.ts` - `SharedInfraStack`, which creates resources shared by every service and passes them to service stacks through `SharedInfraProps`
+  - `src/config.ts` - Non-secret, per-stage configuration (plain strings instead of SSM parameters) and the `getStageConfig` helper, which fails synth if a stage is missing or a value is still `TODO`
+  - `README.md` - How to add stage config and secrets
 
 ### Service Generator
 
@@ -171,6 +177,12 @@ my-cdk-app/
 │   ├── cdk.json
 │   ├── cdk.context.json
 │   └── package.json
+├── libs/
+│   └── infra/
+│       ├── src/
+│       │   ├── config.ts
+│       │   └── index.ts
+│       └── package.json
 ├── services/
 │   ├── user-management/
 │   │   ├── src/
