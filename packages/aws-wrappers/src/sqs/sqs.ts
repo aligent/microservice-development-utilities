@@ -21,6 +21,7 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import xray from 'aws-xray-sdk-core';
+import { chunk } from '../util/chunk.js';
 import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
@@ -147,10 +148,9 @@ export class SQSService {
             input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: SendMessageBatchCommandOutput[] = [];
-        for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
-            const chunk = entries.slice(i, i + SQS_BATCH_LIMIT);
+        for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
             results.push(
-                await this.client.send(new SendMessageBatchCommand({ ...input, Entries: chunk }))
+                await this.client.send(new SendMessageBatchCommand({ ...input, Entries: batch }))
             );
         }
         return results;
@@ -173,10 +173,9 @@ export class SQSService {
             input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
-        for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
-            const chunk = entries.slice(i, i + SQS_BATCH_LIMIT);
+        for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
             results.push(
-                await this.client.send(new DeleteMessageBatchCommand({ ...input, Entries: chunk }))
+                await this.client.send(new DeleteMessageBatchCommand({ ...input, Entries: batch }))
             );
         }
         return results;

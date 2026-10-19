@@ -23,6 +23,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import xray from 'aws-xray-sdk-core';
+import { chunk } from '../util/chunk.js';
+import { collectItems } from '../util/pagination.js';
 import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
@@ -189,13 +191,8 @@ export class S3Service {
             { client: this.client },
             { Bucket: bucket, Prefix: prefix }
         );
-        const keys: string[] = [];
-        for await (const page of paginator) {
-            for (const object of page.Contents ?? []) {
-                if (object.Key) keys.push(object.Key);
-            }
-        }
-        return keys;
+        const objects = await collectItems(paginator, page => page.Contents);
+        return objects.flatMap(object => (object.Key ? [object.Key] : []));
     }
 
     /**
@@ -286,8 +283,7 @@ export class S3Service {
             input: logFullInput ? { bucket, keys } : { bucket, keyCount: keys.length },
         });
         const results: DeleteObjectsCommandOutput[] = [];
-        for (let i = 0; i < keys.length; i += DELETE_OBJECTS_BATCH_LIMIT) {
-            const batch = keys.slice(i, i + DELETE_OBJECTS_BATCH_LIMIT);
+        for (const batch of chunk(keys, DELETE_OBJECTS_BATCH_LIMIT)) {
             results.push(
                 await this.client.send(
                     new DeleteObjectsCommand({

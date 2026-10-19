@@ -132,6 +132,8 @@ Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` 
 - **Generator pagination, yield items**: `DynamoDB.paginateItems` / `paginateScan`. Used when the result set is potentially unbounded — peak memory stays bounded by one page.
 - **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10), `SSM.getParameters` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
 
+Flat-array pagination goes through `collectItems` / `collectPages` (`src/util/pagination.ts`) and chunking through `chunk` (`src/util/chunk.ts`) — don't hand-roll either loop in a service. Both are internal-only and not exported from `src/index.ts`. `S3.emptyBucket` and `S3.getAllObjects` are the deliberate exceptions to `collectItems`: they iterate the paginator directly because they act on each page as it arrives (`emptyBucket` deletes page by page to keep memory bounded; `getAllObjects` fetches each object body).
+
 ### Opt-in payload truncation
 
 `SNS.publish` and `SQS.sendMessage` expose an opt-in truncation knob for callers who prefer data loss over SDK-level failure on oversize (e.g. notification flows where dropped detail beats a thrown error). The default is **off** — fail-fast at the SDK is the right behaviour for most code paths.
