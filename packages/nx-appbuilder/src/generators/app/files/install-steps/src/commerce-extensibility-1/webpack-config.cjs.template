@@ -1,0 +1,51 @@
+// Webpack config for the commerce/extensibility/1 extension's actions.
+//
+// The generated `app-management/installation.js` statically imports every script
+// named by `installation.customInstallationSteps` in app.commerce.config.ts, and
+// those are TypeScript here (`scripts/install/*.ts`). So this extension's bundle
+// needs a TypeScript loader — unlike the other `commerce/*` extensions, whose
+// `.generated` actions are plain JS and are covered by the project-level
+// `webpack-config.cjs` fallback.
+//
+// aio searches upward from each action for the closest config, so this one wins
+// over the project-level fallback for this extension only. That also means the
+// fallback's `experiments.typescript: false` is not inherited and has to be
+// repeated — see below.
+//
+// Appbuilder docs: https://developer.adobe.com/app-builder/docs/guides/configuration/webpack-configuration/
+
+const path = require('path');
+
+module.exports = {
+    devtool: 'inline-source-map',
+    // Same reason as the project-level config: webpack 5.109's built-in
+    // TypeScript experiment defaults to "auto", discovers a tsconfig per module,
+    // and breaks on plain-JS dependencies that ship one (`hasown` and friends).
+    // Registering esbuild-loader below would stop "auto" activating anyway, but
+    // stating it keeps the two configs honest about why it is off.
+    experiments: {
+        typescript: false,
+    },
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, '../..', 'src'),
+        },
+        extensions: ['.ts', '.js'],
+        extensionAlias: {
+            '.js': ['.ts', '.js'],
+        },
+    },
+    module: {
+        rules: [
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                loader: 'esbuild-loader',
+                options: {
+                    loader: 'ts',
+                    target: 'node<%= nodeMajor %>',
+                },
+            },
+        ],
+    },
+};

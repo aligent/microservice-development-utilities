@@ -1,0 +1,44 @@
+import { ok, successOperation } from '@adobe/aio-commerce-lib-webhooks/responses';
+import Logger from '@adobe/aio-lib-core-logging';
+
+/**
+ * Sample Commerce webhook handler, bound by the `webhooks` entry in
+ * `app.commerce.config.ts`. Commerce POSTs the fields selected there and waits
+ * for an operation that tells it how to proceed.
+ *
+ * Build the reply with the helpers from `@adobe/aio-commerce-lib-webhooks/responses`
+ * rather than hand-rolling the `{ op }` body — they encode the contract at
+ * https://developer.adobe.com/commerce/extensibility/webhooks/responses/:
+ *
+ *   ok(successOperation())                      continue unchanged
+ *   ok(exceptionOperation('Reason shown...'))   halt the triggering process
+ *   ok(addOperation(path, value))               amend the payload
+ *   ok(replaceOperation(path, value))           replace part of the payload
+ *   ok(removeOperation(path))                   drop part of the payload
+ *
+ * `ok()` always answers HTTP 200: Commerce reads the outcome from the body's
+ * `op`, not the status code, so a thrown error here would be reported as the
+ * webhook being unavailable rather than as a decision.
+ *
+ * Invoked at:
+ *   https://{namespace}.adobeioruntime.net/api/v1/web/<%= runtimePackageName %>/webhook-sample
+ */
+
+interface ActionParams {
+    __ow_method?: string;
+    __ow_headers: Record<string, string | undefined>;
+    LOG_LEVEL?: string;
+    /** Fields declared under `webhook.fields` arrive as top-level params. */
+    [field: string]: unknown;
+}
+
+export async function main(params: ActionParams) {
+    const logger = Logger('webhook-sample', { level: params.LOG_LEVEL ?? 'info' });
+
+    const { __ow_method, __ow_headers, LOG_LEVEL, ...fields } = params;
+    logger.info('Webhook received', { fields: Object.keys(fields) });
+
+    // TODO: inspect `fields` and return an exception/add/replace operation
+    // when the app needs to intervene.
+    return ok(successOperation());
+}

@@ -5,7 +5,7 @@ import type { NormalizedSchema } from '../schema';
 import { writePackageJson } from './compose-package-json';
 
 function makeOptions(overrides: Partial<NormalizedSchema> = {}): NormalizedSchema {
-    return {
+    const base: NormalizedSchema = {
         name: 'my-app',
         description: 'Test app',
         displayName: 'My App',
@@ -17,6 +17,7 @@ function makeOptions(overrides: Partial<NormalizedSchema> = {}): NormalizedSchem
         hasRestActions: false,
         hasScheduledActions: false,
         hasCustomInstallSteps: false,
+        usesCommerceLib: false,
         appRoot: 'my-app',
         packageName: '@aligent/my-app',
         runtimePackageName: 'myApp',
@@ -24,6 +25,14 @@ function makeOptions(overrides: Partial<NormalizedSchema> = {}): NormalizedSchem
         nodeVersion: '24.0.1',
         ...overrides,
     };
+    // Mirror normalizeOptions: derived unless the test pins it explicitly.
+    base.usesCommerceLib =
+        overrides.usesCommerceLib ??
+        (base.hasAdminUI ||
+            base.hasBusinessConfig ||
+            base.hasCommerceWebhooks ||
+            base.hasCustomInstallSteps);
+    return base;
 }
 
 function readPackageJson(tree: Tree): {
@@ -207,6 +216,19 @@ describe('writePackageJson', () => {
             expect(pkg.dependencies['@adobe/aio-lib-events']).toBeUndefined();
         });
 
+        it('adds @adobe/aio-commerce-lib-webhooks only when hasCommerceWebhooks', () => {
+            // The sample webhook action imports its response helpers.
+            writePackageJson(tree, makeOptions({ hasCommerceWebhooks: true }));
+            expect(
+                readPackageJson(tree).dependencies['@adobe/aio-commerce-lib-webhooks']
+            ).toBeDefined();
+
+            const bare = createTreeWithEmptyWorkspace();
+            writePackageJson(bare, makeOptions({ hasAdminUI: true, hasBusinessConfig: true }));
+            const json = JSON.parse(bare.read('my-app/package.json', 'utf-8') ?? '{}');
+            expect(json.dependencies['@adobe/aio-commerce-lib-webhooks']).toBeUndefined();
+        });
+
         it('adds React + admin-UI runtime deps when hasAdminUI', () => {
             writePackageJson(tree, makeOptions({ hasAdminUI: true }));
             const pkg = readPackageJson(tree);
@@ -222,11 +244,26 @@ describe('writePackageJson', () => {
             });
         });
 
+        it('adds the admin-UI build tooling (Babel preset, js-yaml) as dev deps when hasAdminUI', () => {
+            // aio-commerce-lib-app 2.0 writes `.babelrc` and installs the preset
+            // mid-build if either is missing; the registry script parses
+            // app.config.yaml with js-yaml.
+            writePackageJson(tree, makeOptions({ hasAdminUI: true }));
+            const pkg = readPackageJson(tree);
+            expect(pkg.devDependencies).toMatchObject({
+                '@babel/core': expect.any(String),
+                '@babel/preset-react': expect.any(String),
+                'js-yaml': expect.any(String),
+            });
+        });
+
         it('does NOT add React deps when hasAdminUI is false', () => {
             writePackageJson(tree, makeOptions({ hasAdminUI: false }));
             const pkg = readPackageJson(tree);
             expect(pkg.dependencies['react']).toBeUndefined();
             expect(pkg.devDependencies['@types/react']).toBeUndefined();
+            expect(pkg.devDependencies['@babel/preset-react']).toBeUndefined();
+            expect(pkg.devDependencies['js-yaml']).toBeUndefined();
         });
     });
 

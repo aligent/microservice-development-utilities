@@ -1,0 +1,42 @@
+/**
+ * Custom installation step.
+ *
+ * Referenced from `installation.customInstallationSteps` in
+ * `app.commerce.config.ts`. Return `{ status: 'success' }` to proceed, or throw
+ * to halt the installation.
+ *
+ * A step comes in two flavours — pick whichever fits:
+ *
+ *   1. A plain function. Runs once when a merchant installs the app; nothing
+ *      happens on uninstall.
+ *
+ *      export default defineCustomInstallationStep(async (config, context) => {
+ *          context.logger.info(`Installing ${config.metadata.displayName}...`);
+ *          return { status: 'success' };
+ *      });
+ *
+ *   2. An object with `install` and `uninstall` handlers, for steps that
+ *      provision something that must be torn down again when the merchant
+ *      removes the app. This file uses that form.
+ *
+ * TypeScript is supported for these scripts since `@adobe/aio-commerce-lib-app`
+ * 1.10 — the generated installation action imports this file statically, and
+ * `src/commerce-extensibility-1/webpack-config.cjs` registers the loader that
+ * compiles it into that action's bundle. That config also maps `@/*` to `src/*`
+ * (as does the root tsconfig), so shared code under `src/lib/` can be imported
+ * here the same way the actions import it.
+ */
+import { defineCustomInstallationStep } from '@adobe/aio-commerce-lib-app/management';
+
+export default defineCustomInstallationStep({
+    install: async (config, context) => {
+        context.logger.info(`Installing ${config.metadata.displayName}...`);
+        // TODO: implement the install step.
+        return { status: 'success' };
+    },
+
+    uninstall: async (config, context) => {
+        context.logger.info(`Uninstalling ${config.metadata.displayName}...`);
+        // TODO: undo whatever `install` provisioned.
+    },
+});

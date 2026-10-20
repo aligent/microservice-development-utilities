@@ -72,6 +72,12 @@ yarn nx g @tools/generators:package
 
 - **App Builder apps are ESM (`"type": "module"`).** `@adobe/aio-commerce-lib-app` emits ESM into each extension's `.generated/` directory (including JSON import attributes), which cannot load under CommonJS. Custom installation-step scripts must therefore use `export default`, not `module.exports`.
 
+- **Sample actions use the Adobe lib helpers, not hand-rolled wire formats.** A scaffolded webhook handler replies with `ok(successOperation())` / `exceptionOperation(...)` from `@adobe/aio-commerce-lib-webhooks/responses` rather than returning a literal `{ op: 'success' }`; the same goes for the other `@adobe/aio-commerce-lib-*` request/response helpers (admin UI grid columns, mass actions, order view buttons). Declare the lib as a dependency of the generated app when a sample imports it.
+
+- **`@adobe/aio-commerce-lib-app` rejects empty `businessConfig.schema` and `webhooks` arrays.** A scaffold that emits either as `[]` fails `pre-app-build` validation on the first build, so generated samples must contain at least one real entry (and a webhook entry must point at an action that exists).
+
+- **Custom install steps come in two flavours, and scaffolds must show both.** `defineCustomInstallationStep` from `@adobe/aio-commerce-lib-app/management` accepts either a plain function (runs on install only) or an object with `install` and `uninstall` handlers. A sample step that presents only one form hides the other from whoever is scaffolding, so document the alternative alongside whichever is active. Steps may be TypeScript (lib ≥ 1.10) but then the extensibility extension needs its own `webpack-config.cjs` with a TS loader.
+
 - **Admin UI is `commerce/backend-ui/2`, driven by `adminUi`.** `@adobe/aio-commerce-lib-app` 1.8.0 removed `commerce/backend-ui/1` and the `adminUiSdk` config key. Declare menu items, grid columns, mass actions and order view buttons under `adminUi` in `app.commerce.config.ts`; the lib generates `src/commerce-backend-ui-2/ext.config.yaml` and the registration action from it during `pre-app-build`. Don't hand-write either. (The public Admin UI SDK docs still describe `backend-ui/1` — that's the pre-SDK path.)
 
 - **A `.d.ts` that augments a package must import it first.** Without a top-level `import`/`export` the file is a global script, so `declare module 'pkg'` declares an *ambient* module that replaces the package's real types instead of merging with them — e.g. `Logger('name')` then fails with "This expression is not callable".
@@ -88,6 +94,7 @@ yarn nx g @tools/generators:package
 ## Workflow
 
 - Whenever the user says "No" or corrects an approach, update this file with the relevant rule so the same mistake is not repeated.
+- **Never reference client apps or client repositories** (by name, path or ticket) in anything that lands in this repo: version plans, commit messages, PR descriptions, READMEs, code comments. This is a public package; describe the change on its own terms.
 - After completing a task, search for and update any related documentation (READMEs, docs/ files, CLAUDE.md) that references the modified code before offering to commit. For larger features, treat this as an implicit final step.
 - Always run `/review` before creating a Pull Request.
 - Every PR needs a version plan in `.nx/version-plans`, including internal refactors with no consumer-visible change (use `patch` for those). Create one with `yarn release-plan` if the branch doesn't already have one.
