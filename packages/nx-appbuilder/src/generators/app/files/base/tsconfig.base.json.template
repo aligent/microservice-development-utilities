@@ -9,7 +9,12 @@
         // them, which is this file, so they carry the `./src` prefix explicitly.
         "paths": {
             "@/*": ["./src/*"]
-        }
+        },
+        // Everything here is bundled (webpack/esbuild for actions, Parcel for
+        // web-src), so resolve like a bundler rather than the preset's Node16 —
+        // which would demand explicit extensions on every relative import.
+        "module": "ESNext",
+        "moduleResolution": "Bundler"
     },
     "exclude": ["tests", "**/*.mjs", "**/*.cjs", "node_modules"],
     "include": ["global-types"]

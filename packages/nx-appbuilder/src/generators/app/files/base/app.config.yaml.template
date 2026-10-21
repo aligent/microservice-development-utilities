@@ -1,6 +1,6 @@
 <%_
-const usesCommerceExtensions = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks;
-const hasAnyAction = hasRestActions || hasEvents || hasScheduledActions;
+const usesCommerceExtensions = usesCommerceLib;
+const hasAnyAction = hasRestActions || hasEvents || hasScheduledActions || hasCommerceWebhooks;
 const preBuildSteps = ['./hooks/check-action-types.sh'];
 if (hasAdminUI) preBuildSteps.push('./hooks/check-web-types.sh', './hooks/generate-action-registry.sh');
 const preAppBuild = preBuildSteps.join(' && ');
@@ -47,6 +47,17 @@ application:
                         inputs:
                             LOG_LEVEL: debug
                         annotations:
+                            final: true
+<%_ } _%>
+<%_ if (hasCommerceWebhooks) { _%>
+                    webhook-sample:
+                        function: src/actions/webhook-sample.ts
+                        web: 'yes'
+                        runtime: nodejs:<%= nodeMajor %>
+                        inputs:
+                            LOG_LEVEL: debug
+                        annotations:
+                            require-adobe-auth: true
                             final: true
 <%_ } _%>
 <%_ } _%>

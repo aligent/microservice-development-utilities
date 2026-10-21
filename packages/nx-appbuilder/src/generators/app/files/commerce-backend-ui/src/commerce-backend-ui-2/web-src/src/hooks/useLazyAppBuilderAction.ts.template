@@ -1,7 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useIms } from '@adobe/aio-commerce-lib-admin-ui/web';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { callAction } from '#web/lib/callAction.ts';
 import { type ActionName } from '#web/types/ActionName.ts';
+
+/**
+ * How long to wait for the host's IMS credentials before reporting their
+ * absence. Generous enough for a slow handshake, short enough that a broken one
+ * does not read as a hung page.
+ */
+const CREDENTIALS_TIMEOUT_MS = 8_000;
 
 /**
  * Payload options that can be passed when invoking an action.
@@ -41,9 +49,9 @@ export type UseLazyAppBuilderActionOptions = ActionPayload & {
 /**
  * React hook for invoking App Builder actions with built-in state management.
  *
- * Returns `{ invoke, response, loading, error }`. Call `invoke()` to fire the
- * request manually. For auto-fetching on mount with IMS credentials injected
- * from the Admin UI host, use `useAppBuilderAction`.
+ * Returns `{ invoke, response, loading, error, isReady }`. Call `invoke()` to
+ * fire the request manually, gated on `isReady`. For auto-fetching on mount,
+ * use `useAppBuilderAction`, which does that gating for you.
  *
  * The fetch itself is delegated to `callAction` (the single fetch primitive).
  */
@@ -52,30 +60,111 @@ export function useLazyAppBuilderAction<T = unknown>(options: UseLazyAppBuilderA
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const invoke = useCallback(
-        async (invokeOptions?: ActionPayload) => {
-            setLoading(true);
-            setError(null);
-            setResponse(null);
+    /**
+     * The host's IMS credentials, attached to every call.
+     *
+     * Resolved here rather than left to the caller: every action the Admin UI
+     * invokes is annotated `require-adobe-auth: true`, so a call without a token
+     * is rejected outright — and a hook that silently omits it is a trap for
+     * anyone who reaches for the lazy variant to get manual invocation.
+     *
+     * An explicit `options.ims` still wins, so a caller can override.
+     */
+    const { data: ims, error: imsError } = useIms();
+    const resolvedIms =
+        options.ims ?? (ims ? { token: ims.imsToken, org: ims.imsOrgId } : undefined);
 
-            const body = invokeOptions?.body ?? options.body;
-            try {
-                const data = await callAction<T>(options.name, {
-                    ...(options.method ? { method: options.method } : {}),
-                    searchParams: { ...options.searchParams, ...invokeOptions?.searchParams },
-                    headers: { ...options.headers, ...invokeOptions?.headers },
-                    ...(body !== undefined ? { body } : {}),
-                    ...(options.ims ? { ims: options.ims } : {}),
-                });
-                setResponse(data);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : String(err));
-            } finally {
-                setLoading(false);
-            }
-        },
-        [options]
-    );
+    /**
+     * Whether the credentials have arrived.
+     *
+     * They come over the host's guest connection, so being absent for the first
+     * render or two is normal. Callers that fire from an effect gate on this;
+     * invoking before it would earn a guaranteed 401.
+     */
+    const isReady = resolvedIms !== undefined;
 
-    return { response, loading, error, invoke };
+    /**
+     * Whether we have waited long enough to call the credentials a failure.
+     *
+     * Without this a handshake that never completes leaves every panel spinning
+     * with nothing to say why — which is exactly the failure mode that is hard
+     * to diagnose from a screenshot.
+     */
+    const [credentialsTimedOut, setCredentialsTimedOut] = useState(false);
+
+    useEffect(() => {
+        // No reset once ready: `credentialsError` below already requires
+        // `!isReady`, so a flag left set cannot leak into the result — and
+        // clearing it here would be a synchronous setState in an effect.
+        if (isReady) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setCredentialsTimedOut(true);
+        }, CREDENTIALS_TIMEOUT_MS);
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [isReady]);
+
+    const credentialsError =
+        !isReady && credentialsTimedOut
+            ? `Adobe credentials were not provided by the host${imsError ? `: ${imsError.message}` : '.'}`
+            : null;
+
+    /**
+     * The options as of the latest render, read through a ref.
+     *
+     * Callers pass an object literal, so `options` is a new value every render.
+     * Depending on it directly would give `invoke` a new identity each time —
+     * and any `useEffect(..., [invoke])` would then re-fire forever, resetting
+     * `response` to `null` on every pass and never settling. Reading through a
+     * ref keeps `invoke` stable for the component's lifetime while still using
+     * the current options.
+     */
+    const optionsRef = useRef(options);
+    const imsRef = useRef(resolvedIms);
+
+    // Synced after render rather than during it, which React forbids. The
+    // initial values are already correct, so the first invocation is never
+    // stale, and this hook's effect runs before any the caller declares below it.
+    useEffect(() => {
+        optionsRef.current = options;
+        imsRef.current = resolvedIms;
+    });
+
+    const invoke = useCallback(async (invokeOptions?: ActionPayload) => {
+        const current = optionsRef.current;
+
+        setLoading(true);
+        setError(null);
+        setResponse(null);
+
+        const body = invokeOptions?.body ?? current.body;
+        try {
+            const data = await callAction<T>(current.name, {
+                ...(current.method ? { method: current.method } : {}),
+                searchParams: { ...current.searchParams, ...invokeOptions?.searchParams },
+                headers: { ...current.headers, ...invokeOptions?.headers },
+                ...(body !== undefined ? { body } : {}),
+                // `exactOptionalPropertyTypes` is on, so absent credentials are
+                // omitted rather than passed as `undefined`.
+                ...(imsRef.current ? { ims: imsRef.current } : {}),
+            });
+            setResponse(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // A call counts as pending while the credentials are still on their way, so
+    // a caller gated on `isReady` shows a spinner rather than an empty state it
+    // has not actually checked.
+    const pending = loading || (!isReady && credentialsError === null);
+
+    return { response, loading: pending, error: error ?? credentialsError, invoke, isReady };
 }

@@ -2,8 +2,13 @@
 # section of app.commerce.config.ts during its pre-app-build hook — but
 # app.config.yaml's `$include` is resolved before any hook runs, so the file has
 # to exist on disk first.
+#
+# The dev/run hooks reset `NODE_ENV` in `.env` to development so the Parcel
+# build (and the Babel preset under web-src/.babelrc) picks the right mode.
 hooks:
     pre-app-build: EXTENSION=backend-ui/2 npx aio-commerce-lib-app hooks pre-app-build
+    pre-app-dev: EXTENSION=backend-ui/2 npx aio-commerce-lib-app hooks pre-app-dev
+    pre-app-run: EXTENSION=backend-ui/2 npx aio-commerce-lib-app hooks pre-app-run
 
 operations:
     view:
