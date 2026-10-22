@@ -1,3 +1,5 @@
+import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
+
 /**
  * One entry a batch operation rejected. Deliberately limited to identifier,
  * code and message so the error never carries message bodies, attributes or
@@ -34,10 +36,49 @@ export class BatchOperationError<TResult = unknown> extends Error {
 }
 
 /**
+ * The shape SQS and SNS share for a rejected entry in a batch response.
+ */
+interface RejectedEntry {
+    Id?: string | undefined;
+    Code?: string | undefined;
+    Message?: string | undefined;
+}
+
+/**
+ * SQS and SNS report rejected entries under `Failed` on an otherwise
+ * successful response, so a resolved chunk does not mean every entry was
+ * accepted. Returns `results` untouched when nothing failed; otherwise warns
+ * and throws a {@link BatchOperationError}.
+ *
+ * Only id, code and message are copied out — never the entry itself — so
+ * neither the error nor the warning can leak a payload.
+ */
+export function throwIfAnyFailed<TResult extends { Failed?: RejectedEntry[] | undefined }>(
+    logger: LoggerInterface,
+    operation: string,
+    results: TResult[]
+): TResult[] {
+    const failed: BatchFailedEntry[] = results.flatMap(result =>
+        (result.Failed ?? []).map(({ Id, Code, Message }) => ({
+            id: Id,
+            code: Code,
+            message: Message,
+        }))
+    );
+    if (failed.length === 0) return results;
+
+    logger.warn(`${operation} had rejected entries`, {
+        failedCount: failed.length,
+        codes: distinctCodes(failed),
+    });
+    throw new BatchOperationError(results, failed);
+}
+
+/**
  * Distinct error codes in first-seen order, for the error message and the
  * warning log line.
  */
-export function distinctCodes(failed: readonly BatchFailedEntry[]): string[] {
+function distinctCodes(failed: readonly BatchFailedEntry[]): string[] {
     const codes = failed.flatMap(entry => (entry.code === undefined ? [] : [entry.code]));
     return [...new Set(codes)];
 }
