@@ -13,7 +13,16 @@ export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): Norma
 
     const hasAdminUI = options.hasAdminUI ?? false;
     const hasBusinessConfig = options.hasBusinessConfig ?? false;
+    const hasCommerceWebhooks = options.hasCommerceWebhooks ?? false;
+    const hasCustomInstallSteps = options.hasCustomInstallSteps ?? false;
     const parentMenu: ParentMenu = hasAdminUI ? (options.parentMenu ?? 'none') : 'none';
+
+    // Custom install steps are declared in app.commerce.config.ts and run by
+    // the lib's installation action, so asking for them implies the commerce
+    // lib even when no other commerce flag is set — otherwise the TypeScript
+    // step would be type-checked against a dependency the app never declares.
+    const usesCommerceLib =
+        hasAdminUI || hasBusinessConfig || hasCommerceWebhooks || hasCustomInstallSteps;
 
     const displayName = options.displayName ?? toTitleCase(options.name);
     const camel = toCamelCase(options.name);
@@ -25,11 +34,12 @@ export function normalizeOptions(tree: Tree, options: AppGeneratorSchema): Norma
         hasAdminUI,
         parentMenu,
         hasBusinessConfig,
-        hasCommerceWebhooks: options.hasCommerceWebhooks ?? false,
+        hasCommerceWebhooks,
         hasEvents: options.hasEvents ?? false,
         hasRestActions: options.hasRestActions ?? false,
         hasScheduledActions: options.hasScheduledActions ?? false,
-        hasCustomInstallSteps: options.hasCustomInstallSteps ?? false,
+        hasCustomInstallSteps,
+        usesCommerceLib,
         appRoot: options.name,
         packageName: `@aligent/${options.name}`,
         runtimePackageName: camel,

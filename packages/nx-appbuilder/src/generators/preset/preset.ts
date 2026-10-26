@@ -7,6 +7,7 @@ import {
     type Tree,
 } from '@nx/devkit';
 import * as path from 'path';
+import { PARCEL_ROOT_CONFIG } from '../helpers/parcel-root-config';
 import { loadTemplatePackage, pickVersions } from '../helpers/template-package';
 import { NX_JSON } from './nx-json';
 import type { PresetGeneratorSchema } from './schema';
@@ -97,6 +98,8 @@ function buildWorkspacePackageJson(name: string, nodeVersion: string) {
             '@aligent/nx-appbuilder': getGeneratorVersion(),
             ...WORKSPACE_DEV_DEPS,
         }),
+        // Parcel reads this from the project root, not the app — see the helper.
+        ...PARCEL_ROOT_CONFIG,
     };
 }
 

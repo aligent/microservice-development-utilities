@@ -29,9 +29,10 @@ export interface CallActionOptions {
  * `useAppBuilderAction`) delegate to it, and sequential flows call it directly.
  *
  * URLs come from the registry written by `scripts/generate-action-registry.mjs`,
- * which resolves every scope statically. The extension's own `config.json` only
- * covers actions declared inside this extension, so it can't see the actions
- * declared under `application.runtimeManifest` in app.config.yaml.
+ * which derives them from app.config.yaml and the selected workspace. The
+ * extension's own `config.json` only covers actions declared inside this
+ * extension, so it can't see the actions declared under
+ * `application.runtimeManifest` in app.config.yaml.
  */
 export async function callAction<T>(name: ActionName, options: CallActionOptions = {}): Promise<T> {
     const actionUrl = (ActionRegistry as Record<string, string>)[name];
