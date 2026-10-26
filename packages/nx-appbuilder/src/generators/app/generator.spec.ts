@@ -133,6 +133,35 @@ describe('app generator', () => {
             expect(tree.exists('my-app/hooks/check-action-types.sh')).toBe(true);
         });
 
+        it('resolves modules like a bundler rather than Node16', () => {
+            // Every scope is bundled, and the preset's Node16 resolution would
+            // demand explicit extensions on every relative import.
+            const base = readJson(tree, 'my-app/tsconfig.base.json');
+            expect(base.compilerOptions.module).toBe('ESNext');
+            expect(base.compilerOptions.moduleResolution).toBe('Bundler');
+        });
+
+        it('marks every hooks/*.sh executable, since aio runs them as ./hooks/foo.sh', async () => {
+            // `generateFiles` only writes content; the template's mode is lost.
+            // A fresh tree, so the spy sees the whole run including the admin UI
+            // hooks.
+            const fresh = createTreeWithEmptyWorkspace();
+            const changePermissions = vi.spyOn(fresh, 'changePermissions');
+            await generate(fresh, { name: 'my-app', hasAdminUI: true, parentMenu: 'none' });
+
+            const marked = changePermissions.mock.calls.map(([file, mode]) => [file, mode]);
+            expect(marked).toEqual(
+                expect.arrayContaining([
+                    ['my-app/hooks/check-action-types.sh', '755'],
+                    ['my-app/hooks/check-web-types.sh', '755'],
+                    ['my-app/hooks/generate-action-registry.sh', '755'],
+                ])
+            );
+            for (const [file] of marked) {
+                expect(file).toMatch(/^my-app\/hooks\/.+\.sh$/);
+            }
+        });
+
         it('maps the @/* alias without baseUrl', () => {
             // `baseUrl` is deprecated in TypeScript 6 (TS5101) and removed in 7,
             // so `paths` carry their prefix explicitly and resolve relative to
@@ -336,6 +365,32 @@ describe('app generator', () => {
                 /No root package.json/
             );
         });
+
+        it('enables Parcel packageExports at the root for admin UI apps', async () => {
+            // Parcel reads plugin config from the project root (nearest
+            // lockfile), so the block in the app's package.json is ignored in a
+            // workspace and `#app.commerce.config` fails to resolve without this.
+            await generate(tree, { name: 'my-app', hasAdminUI: true, parentMenu: 'none' });
+            const rootPkg = readJson(tree, 'package.json');
+            expect(rootPkg['@parcel/resolver-default']).toEqual({ packageExports: true });
+        });
+
+        it('merges packageExports into an existing @parcel/resolver-default block', async () => {
+            const rootPkg = readJson(tree, 'package.json');
+            rootPkg['@parcel/resolver-default'] = { packageExports: false, other: 'kept' };
+            tree.write('package.json', JSON.stringify(rootPkg, null, 4) + '\n');
+
+            await generate(tree, { name: 'my-app', hasAdminUI: true, parentMenu: 'none' });
+            expect(readJson(tree, 'package.json')['@parcel/resolver-default']).toEqual({
+                packageExports: true,
+                other: 'kept',
+            });
+        });
+
+        it('leaves the root Parcel config alone for apps without an admin UI', async () => {
+            await generate(tree, { name: 'my-app', hasRestActions: true });
+            expect(readJson(tree, 'package.json')['@parcel/resolver-default']).toBeUndefined();
+        });
     });
 
     describe('hasAdminUI', () => {
@@ -429,6 +484,62 @@ describe('app generator', () => {
             expect(yaml).toContain('./hooks/generate-action-registry.sh');
         });
 
+        it('derives the action registry from app.config.yaml rather than `aio app get-url`', () => {
+            // `aio app get-url --json` throws for any app whose backend-ui
+            // extension declares no actions of its own — which is every
+            // generated backend-ui/2 app — so the script must not depend on it.
+            const script = readText(tree, 'my-app/scripts/generate-action-registry.mjs');
+            expect(script).not.toContain("'get-url'");
+            expect(script).not.toContain('execFileSync');
+            expect(script).toContain("from 'js-yaml'");
+            expect(script).toContain('AIO_runtime_namespace');
+            expect(script).toContain('app.config.yaml');
+
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.devDependencies['js-yaml']).toBeDefined();
+        });
+
+        it('ships the Babel support files the 2.0 lib would otherwise write mid-build', () => {
+            expect(tree.exists('my-app/src/commerce-backend-ui-2/web-src/.babelrc')).toBe(true);
+            const babelrc = readJson(tree, 'my-app/src/commerce-backend-ui-2/web-src/.babelrc');
+            expect(babelrc.env.production.presets[0][0]).toBe('@babel/preset-react');
+
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.devDependencies['@babel/core']).toBeDefined();
+            expect(pkg.devDependencies['@babel/preset-react']).toBeDefined();
+        });
+
+        it('seeds the backend-ui/2 ext.config.yaml with every hook the lib generates', () => {
+            const ext = readText(tree, 'my-app/src/commerce-backend-ui-2/ext.config.yaml');
+            expect(ext).toContain('pre-app-build: EXTENSION=backend-ui/2');
+            expect(ext).toContain('pre-app-dev: EXTENSION=backend-ui/2');
+            expect(ext).toContain('pre-app-run: EXTENSION=backend-ui/2');
+        });
+
+        it('protects the menu item behind a per-app ACL resource', () => {
+            const cfg = readText(tree, 'my-app/app.commerce.config.ts');
+            expect(cfg).toContain('aclProtected: true');
+        });
+
+        it('resolves IMS credentials inside useLazyAppBuilderAction, not only the eager hook', () => {
+            // The lazy hook is what callers reach for to invoke manually; if it
+            // silently omitted the token every `require-adobe-auth` action would
+            // reject the call.
+            const lazy = readText(
+                tree,
+                'my-app/src/commerce-backend-ui-2/web-src/src/hooks/useLazyAppBuilderAction.ts'
+            );
+            expect(lazy).toContain("from '@adobe/aio-commerce-lib-admin-ui/web'");
+            expect(lazy).toContain('useIms()');
+            expect(lazy).toContain('isReady');
+
+            const eager = readText(
+                tree,
+                'my-app/src/commerce-backend-ui-2/web-src/src/hooks/useAppBuilderAction.ts'
+            );
+            expect(eager).not.toContain("from '@adobe/aio-commerce-lib-admin-ui/web'");
+        });
+
         it('ships the ambient declarations that keep check-types green before a build', () => {
             // `.generated/` and the action registry are both gitignored build
             // outputs, so a fresh clone has neither.
@@ -490,10 +601,13 @@ describe('app generator', () => {
             expect(tree.exists('my-app/app.commerce.config.ts')).toBe(true);
         });
 
-        it('emits a businessConfig.schema block in app.commerce.config.ts', () => {
+        it('emits a businessConfig.schema block with a placeholder field', () => {
+            // The lib requires at least one configuration parameter, so an
+            // empty `schema: []` fails validation on the first build.
             const cfg = readText(tree, 'my-app/app.commerce.config.ts');
             expect(cfg).toContain('businessConfig:');
-            expect(cfg).toContain('schema:');
+            expect(cfg).toContain('schema: [');
+            expect(cfg).toContain("name: 'sample_setting'");
         });
 
         it('declares the configuration extension in app.config.yaml', () => {
@@ -507,15 +621,35 @@ describe('app generator', () => {
             await generate(tree, { name: 'my-app', hasCommerceWebhooks: true });
         });
 
-        it('renders the commerce-extensibility subtree but no extra dir', () => {
+        it('renders the commerce-extensibility subtree but no extra extension dir', () => {
             expect(tree.exists('my-app/app.commerce.config.ts')).toBe(true);
             expect(tree.exists('my-app/src/commerce-backend-ui-2')).toBe(false);
             expect(tree.exists('my-app/src/commerce-configuration-1')).toBe(false);
         });
 
-        it('emits a webhooks section in app.commerce.config.ts', () => {
+        it('emits a webhooks section bound to a real sample action', () => {
+            // The lib rejects `webhooks: []` outright ("must contain at least
+            // one webhook when present"), so an empty scaffold could never
+            // build. The sample points at an action that actually exists.
             const cfg = readText(tree, 'my-app/app.commerce.config.ts');
-            expect(cfg).toContain('webhooks:');
+            expect(cfg).toContain('webhooks: [');
+            expect(cfg).toContain("runtimeAction: 'myApp/webhook-sample'");
+
+            expect(tree.exists('my-app/src/actions/webhook-sample.ts')).toBe(true);
+            const yaml = readText(tree, 'my-app/app.config.yaml');
+            expect(yaml).toContain('webhook-sample:');
+            expect(yaml).toContain('src/actions/webhook-sample.ts');
+            expect(yaml).not.toContain('actions: {}');
+
+            // Replies go through the lib's response helpers, not a hand-rolled
+            // `{ op }` body, so the dependency has to be declared too.
+            const action = readText(tree, 'my-app/src/actions/webhook-sample.ts');
+            expect(action).toContain("from '@adobe/aio-lib-core-logging'");
+            expect(action).toContain("from '@adobe/aio-commerce-lib-webhooks/responses'");
+            expect(action).toContain('ok(successOperation())');
+
+            const pkg = readJson(tree, 'my-app/package.json');
+            expect(pkg.dependencies['@adobe/aio-commerce-lib-webhooks']).toBeDefined();
         });
     });
 
@@ -616,14 +750,70 @@ describe('app generator', () => {
             });
         });
 
-        it('writes the sample install script', () => {
-            expect(tree.exists('my-app/scripts/install/sample-step.js')).toBe(true);
+        it('writes the sample install script as TypeScript', () => {
+            expect(tree.exists('my-app/scripts/install/sample-step.ts')).toBe(true);
+            expect(tree.exists('my-app/scripts/install/sample-step.js')).toBe(false);
+
+            const step = readText(tree, 'my-app/scripts/install/sample-step.ts');
+            expect(step).toContain("from '@adobe/aio-commerce-lib-app/management'");
+            // Both flavours must be visible to whoever is scaffolding: the plain
+            // function (install only) and the install/uninstall object.
+            expect(step).toContain('install:');
+            expect(step).toContain('uninstall:');
+            expect(step).toContain('defineCustomInstallationStep(async (config, context)');
         });
 
-        it('emits an installation block in app.commerce.config.ts', () => {
+        it('emits an installation block in app.commerce.config.ts pointing at the .ts step', () => {
             const cfg = readText(tree, 'my-app/app.commerce.config.ts');
             expect(cfg).toContain('installation:');
             expect(cfg).toContain('customInstallationSteps:');
+            expect(cfg).toContain("script: './scripts/install/sample-step.ts'");
+        });
+
+        it('gives the extensibility extension a webpack config that compiles the TS step', () => {
+            // The generated installation action statically imports the step, so
+            // that extension's bundle needs a TS loader — the project-level
+            // fallback deliberately has none.
+            const cfg = readText(tree, 'my-app/src/commerce-extensibility-1/webpack-config.cjs');
+            expect(cfg).toContain("loader: 'esbuild-loader'");
+            expect(cfg).toContain('typescript: false');
+        });
+
+        it('type-checks the install steps via the root project', () => {
+            const ts = readJson(tree, 'my-app/tsconfig.json');
+            expect(ts.include).toContain('scripts/install/*.ts');
+        });
+
+        it('pulls in the commerce lib on its own, since the step is type-checked against it', async () => {
+            // Install steps only exist inside the lib's install flow, so asking
+            // for them without any other commerce flag must still render
+            // app.commerce.config.ts and declare the dependency — otherwise the
+            // TS sample fails `check-types` with a missing module.
+            const alone = createTreeWithEmptyWorkspace();
+            await generate(alone, { name: 'my-app', hasCustomInstallSteps: true });
+
+            expect(alone.exists('my-app/app.commerce.config.ts')).toBe(true);
+            expect(alone.exists('my-app/src/commerce-extensibility-1/ext.config.yaml')).toBe(true);
+            expect(alone.exists('my-app/src/commerce-extensibility-1/webpack-config.cjs')).toBe(
+                true
+            );
+            const pkg = readJson(alone, 'my-app/package.json');
+            expect(pkg.dependencies['@adobe/aio-commerce-lib-app']).toBeDefined();
+            expect(pkg.scripts['postinstall']).toContain('aio-commerce-lib-app hooks postinstall');
+            expect(readJson(alone, 'my-app/tsconfig.json').include).toContain(
+                'app.commerce.config.ts'
+            );
+            expect(readText(alone, 'my-app/app.config.yaml')).toContain('commerce/extensibility/1');
+        });
+
+        it('does not include scripts/install in the root tsconfig when there are no steps', async () => {
+            const bare = createTreeWithEmptyWorkspace();
+            await generate(bare, { name: 'my-app', hasCommerceWebhooks: true });
+            const ts = readJson(bare, 'my-app/tsconfig.json');
+            expect(ts.include).not.toContain('scripts/install/*.ts');
+            expect(bare.exists('my-app/src/commerce-extensibility-1/webpack-config.cjs')).toBe(
+                false
+            );
         });
     });
 
@@ -651,7 +841,7 @@ describe('app generator', () => {
             expect(tree.exists('my-app/src/actions/rest-sample.ts')).toBe(true);
             expect(tree.exists('my-app/src/actions/handle-sample-event.ts')).toBe(true);
             expect(tree.exists('my-app/src/actions/cron-sample.ts')).toBe(true);
-            expect(tree.exists('my-app/scripts/install/sample-step.js')).toBe(true);
+            expect(tree.exists('my-app/scripts/install/sample-step.ts')).toBe(true);
         });
 
         it('emits all conditional sections in app.commerce.config.ts', () => {

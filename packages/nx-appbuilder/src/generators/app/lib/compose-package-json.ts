@@ -34,6 +34,10 @@ const COMMERCE_DEPS = pickVersions(TEMPLATE.dependencies, [
 // resolve at type-check time.
 const EVENT_DEPS = pickVersions(TEMPLATE.dependencies, ['@adobe/aio-lib-events']);
 
+// The sample webhook action replies through the lib's response helpers
+// (`ok(successOperation())` etc.) rather than a hand-rolled `{ op }` body.
+const WEBHOOK_DEPS = pickVersions(TEMPLATE.dependencies, ['@adobe/aio-commerce-lib-webhooks']);
+
 // `@adobe/aio-commerce-lib-app` would normally declare and install these itself
 // while scaffolding `web-src` — but that scaffolding step short-circuits when
 // `web-src/index.html` already exists, which is exactly what we ship (so it can't
@@ -68,16 +72,25 @@ const BASE_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
 ]);
 
 const ADMIN_UI_DEV_DEPS = pickVersions(TEMPLATE.devDependencies, [
+    // The lib's pre-app-build hook (2.0.0+) treats `web-src/.babelrc` and the
+    // Babel preset behind it as required support files: anything missing is
+    // written and installed mid-build, which mutates package.json during a
+    // deploy. Declaring them up front keeps the build read-only. Versions must
+    // satisfy the lib's own ranges or its install plan rejects them outright.
+    '@babel/core',
+    '@babel/preset-react',
     '@types/react',
     '@types/react-dom',
+    // `scripts/generate-action-registry.mjs` reads action declarations straight
+    // out of app.config.yaml rather than shelling out to `aio app get-url`.
+    'js-yaml',
 ]);
 
 export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
     const dependencies: Record<string, string> = { ...BASE_DEPS };
     const devDependencies: Record<string, string> = { ...BASE_DEV_DEPS };
 
-    const usesCommerceLib =
-        options.hasAdminUI || options.hasBusinessConfig || options.hasCommerceWebhooks;
+    const { usesCommerceLib } = options;
 
     if (usesCommerceLib) {
         Object.assign(dependencies, COMMERCE_DEPS);
@@ -85,6 +98,10 @@ export function writePackageJson(tree: Tree, options: NormalizedSchema): void {
 
     if (options.hasEvents) {
         Object.assign(dependencies, EVENT_DEPS);
+    }
+
+    if (options.hasCommerceWebhooks) {
+        Object.assign(dependencies, WEBHOOK_DEPS);
     }
 
     if (options.hasAdminUI) {
