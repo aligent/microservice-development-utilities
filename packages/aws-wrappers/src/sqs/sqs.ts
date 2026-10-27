@@ -23,7 +23,7 @@ import {
 import xray from 'aws-xray-sdk-core';
 import { throwIfAnyFailed } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
-import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
@@ -39,6 +39,17 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
     'MessageGroupId',
     'MessageDeduplicationId',
 ];
+
+/**
+ * Safe log shape for the batch methods. The entries carry message bodies and
+ * receipt handles, so they are reduced to a count.
+ */
+function summariseEntries(input: SendMessageBatchCommandInput | DeleteMessageBatchCommandInput): {
+    QueueUrl: string | undefined;
+    entryCount: number;
+} {
+    return { QueueUrl: input.QueueUrl, entryCount: input.Entries?.length ?? 0 };
+}
 
 /**
  * Wrapper around the AWS SQS client providing structured Powertools logging
@@ -82,7 +93,7 @@ export class SQSService {
         const shouldTruncate = opts?.truncate ?? this.truncate;
         const effective = shouldTruncate ? this.applyTruncation(input) : input;
         this.logger.info('Sending SQS message', {
-            input: filterFieldsForLogLevel(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
+            input: redactInput(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
         });
         return this.client.send(new SendMessageCommand(effective));
     }
@@ -147,12 +158,8 @@ export class SQSService {
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
-        // safe log shape includes the computed `entryCount`, which isn't a key
-        // on `SendMessageBatchCommandInput`.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Sending SQS message batch', {
-            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: SendMessageBatchCommandOutput[] = [];
         for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
@@ -179,12 +186,8 @@ export class SQSService {
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
-        // safe log shape includes the computed `entryCount`, which isn't a key
-        // on `DeleteMessageBatchCommandInput`.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting SQS message batch', {
-            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
         for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {

@@ -17,7 +17,7 @@ import {
 } from '@aws-sdk/client-sfn';
 import xray from 'aws-xray-sdk-core';
 import { collectItems } from '../util/pagination.js';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO for `startExecution`. Omits `input` — the SFN
@@ -69,7 +69,7 @@ export class StepFunctionsService {
      */
     async startExecution(input: StartExecutionCommandInput): Promise<StartExecutionCommandOutput> {
         this.logger.info('Starting Step Functions execution', {
-            input: filterFieldsForLogLevel(this.logger, input, START_EXECUTION_SAFE_FIELDS),
+            input: redactInput(this.logger, input, START_EXECUTION_SAFE_FIELDS),
         });
         return this.client.send(new StartExecutionCommand(input));
     }

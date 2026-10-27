@@ -33,7 +33,7 @@ import {
 } from '@aws-sdk/client-scheduler';
 import xray from 'aws-xray-sdk-core';
 import { collectItems } from '../util/pagination.js';
-import { shouldLogFullInput } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 
 /**
  * `CreateSchedule` / `UpdateSchedule` inputs carry the payload handed to the
@@ -41,23 +41,14 @@ import { shouldLogFullInput } from '../util/redact.js';
  * PII (customer IDs, order contents, etc.), the same risk profile as SFN's
  * execution `input`.
  *
- * This can't go through the package's usual `filterFieldsForLogLevel` helper:
- * that helper picks **top-level** keys only, and the sensitive field is nested
- * one level down inside `Target`. Allowlisting `Target` would leak `Input`;
- * omitting `Target` would lose operationally-useful fields (`Arn`, `RoleArn`,
- * `RetryPolicy`, `DeadLetterConfig`, the target-type params). So this is a
- * bespoke case: keep every top-level field and shallow-strip only
- * `Target.Input`.
- *
- * At the verbose levels — see {@link shouldLogFullInput} — the input is
- * returned unchanged: operators who asked for that verbosity have opted into
- * seeing payloads and PII.
+ * This can't be a key allowlist for {@link redactInput}: an allowlist picks
+ * **top-level** keys only, and the sensitive field is nested one level down
+ * inside `Target`. Allowlisting `Target` would leak `Input`; omitting `Target`
+ * would lose operationally-useful fields (`Arn`, `RoleArn`, `RetryPolicy`,
+ * `DeadLetterConfig`, the target-type params). So this is a projection
+ * function: keep every top-level field and shallow-strip only `Target.Input`.
  */
-function redactTargetInput<T extends { Target?: Target | undefined }>(
-    logger: LoggerInterface,
-    input: T
-): T {
-    if (shouldLogFullInput(logger)) return input;
+function stripTargetInput<T extends { Target?: Target | undefined }>(input: T): T {
     if (input.Target?.Input === undefined) return input;
     const { Input: _input, ...safeTarget } = input.Target;
     return { ...input, Target: safeTarget as Target };
@@ -99,7 +90,9 @@ export class SchedulerService {
      * target payload, a PII carrier).
      */
     async createSchedule(input: CreateScheduleCommandInput): Promise<CreateScheduleCommandOutput> {
-        this.logger.info('Creating schedule', { input: redactTargetInput(this.logger, input) });
+        this.logger.info('Creating schedule', {
+            input: redactInput(this.logger, input, stripTargetInput),
+        });
         return this.client.send(new CreateScheduleCommand(input));
     }
 
@@ -125,7 +118,9 @@ export class SchedulerService {
      * At INFO the log line omits `Target.Input`.
      */
     async updateSchedule(input: UpdateScheduleCommandInput): Promise<UpdateScheduleCommandOutput> {
-        this.logger.info('Updating schedule', { input: redactTargetInput(this.logger, input) });
+        this.logger.info('Updating schedule', {
+            input: redactInput(this.logger, input, stripTargetInput),
+        });
         return this.client.send(new UpdateScheduleCommand(input));
     }
 
