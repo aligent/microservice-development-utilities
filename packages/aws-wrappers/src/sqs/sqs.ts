@@ -41,6 +41,17 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
 ];
 
 /**
+ * Safe log shape for the batch methods. The entries carry message bodies and
+ * receipt handles, so they are reduced to a count.
+ */
+function summariseEntries(input: SendMessageBatchCommandInput | DeleteMessageBatchCommandInput): {
+    QueueUrl: string | undefined;
+    entryCount: number;
+} {
+    return { QueueUrl: input.QueueUrl, entryCount: input.Entries?.length ?? 0 };
+}
+
+/**
  * Wrapper around the AWS SQS client providing structured Powertools logging
  * and X-Ray tracing by default.
  *
@@ -148,10 +159,7 @@ export class SQSService {
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
         this.logger.info('Sending SQS message batch', {
-            input: redactInput(this.logger, input, ({ QueueUrl }) => ({
-                QueueUrl,
-                entryCount: entries.length,
-            })),
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: SendMessageBatchCommandOutput[] = [];
         for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
@@ -179,10 +187,7 @@ export class SQSService {
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
         this.logger.info('Deleting SQS message batch', {
-            input: redactInput(this.logger, input, ({ QueueUrl }) => ({
-                QueueUrl,
-                entryCount: entries.length,
-            })),
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
         for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
