@@ -30,12 +30,23 @@ import {
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
 import xray from 'aws-xray-sdk-core';
-import { redactInput, shouldLogFullInput } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
 const BATCH_GET_MAX_ATTEMPTS = 5;
 const BATCH_GET_BASE_DELAY_MS = 200;
+
+/**
+ * Safe log shape for the batch methods. `RequestItems` is keyed by table name
+ * with the payload (`Keys`, `Item`) nested inside each value, so it can't be
+ * an allowlisted field and is reduced to the table names instead.
+ */
+function summariseTables(input: BatchGetCommandInput | BatchWriteCommandInput): {
+    tables: string[];
+} {
+    return { tables: Object.keys(input.RequestItems ?? {}) };
+}
 
 /**
  * Fields safe to log at INFO. Omits `Key` (may carry customer IDs / tenant IDs).
@@ -304,13 +315,8 @@ export class DynamoDBService {
      * Callers should narrow the result type at the call site.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
-        // Inline verbosity check rather than `redactInput` because
-        // `RequestItems` is a `Record<tableName, KeysAndAttributes>` — the
-        // payload (`Keys[]`) lives inside the value, not as a top-level key
-        // the helper could pick or drop.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Batch getting DynamoDB items', {
-            input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+            input: redactInput(this.logger, input, summariseTables),
         });
 
         let current = input;
@@ -341,13 +347,8 @@ export class DynamoDBService {
      * items remain unprocessed after the final attempt.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
-        // Inline verbosity check rather than `redactInput` because
-        // `RequestItems` is a `Record<tableName, WriteRequest[]>` — the
-        // payload (`PutRequest.Item` / `DeleteRequest.Key`) lives inside the
-        // value, not as a top-level key the helper could pick or drop.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Batch writing DynamoDB items', {
-            input: logFullInput ? input : { tables: Object.keys(input.RequestItems ?? {}) },
+            input: redactInput(this.logger, input, summariseTables),
         });
         let current = input;
         for (let attempt = 0; attempt < BATCH_WRITE_MAX_ATTEMPTS; attempt++) {

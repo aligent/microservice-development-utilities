@@ -13,7 +13,7 @@ import {
 import xray from 'aws-xray-sdk-core';
 import { throwIfAnyFailed } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
-import { redactInput, shouldLogFullInput } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
 const PUBLISH_BATCH_LIMIT = 10;
@@ -133,12 +133,11 @@ export class SNSService {
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
         const entries: PublishBatchRequestEntry[] = input.PublishBatchRequestEntries ?? [];
-        // Inline verbosity check rather than `redactInput` because the
-        // safe log shape includes the computed `entryCount`, which isn't a key
-        // on `PublishBatchCommandInput`.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Publishing SNS message batch', {
-            input: logFullInput ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
+            input: redactInput(this.logger, input, ({ TopicArn }) => ({
+                TopicArn,
+                entryCount: entries.length,
+            })),
         });
         const results: PublishBatchCommandOutput[] = [];
         for (const batch of chunk(entries, PUBLISH_BATCH_LIMIT)) {
