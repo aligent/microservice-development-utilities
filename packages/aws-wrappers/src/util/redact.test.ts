@@ -1,7 +1,7 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import type { LogLevel } from '@aws-lambda-powertools/logger/types';
-import { describe, expect, it } from 'vitest';
-import { filterFieldsForLogLevel, shouldLogFullInput } from './redact';
+import { describe, expect, it, vi } from 'vitest';
+import { redactInput } from './redact';
 
 /**
  * Levels must be uppercase — `setLogLevel('trace')` throws, despite Powertools'
@@ -15,71 +15,62 @@ const buildLogger = (level: Level) => {
     return logger;
 };
 
-describe('shouldLogFullInput', () => {
-    /**
-     * Powertools orders TRACE (6) as more verbose than DEBUG (8), so both
-     * unlock. The boundary sits between DEBUG and INFO.
-     *
-     * Typed as a `Record` over every level rather than an array of cases: if
-     * Powertools adds a level, this stops compiling instead of silently
-     * leaving the new level untested.
-     */
-    const unlocksByLevel: Record<Level, boolean> = {
-        TRACE: true,
-        DEBUG: true,
-        INFO: false,
-        WARN: false,
-        ERROR: false,
-        CRITICAL: false,
-        SILENT: false,
-    };
+/**
+ * Powertools orders TRACE (6) as more verbose than DEBUG (8), so both
+ * unlock. The boundary sits between DEBUG and INFO.
+ *
+ * Typed as a `Record` over every level rather than an array of cases: if
+ * Powertools adds a level, this stops compiling instead of silently
+ * leaving the new level untested.
+ */
+const unlocksByLevel: Record<Level, boolean> = {
+    TRACE: true,
+    DEBUG: true,
+    INFO: false,
+    WARN: false,
+    ERROR: false,
+    CRITICAL: false,
+    SILENT: false,
+};
 
-    const cases = Object.entries(unlocksByLevel) as Array<[Level, boolean]>;
+const cases = Object.entries(unlocksByLevel) as Array<[Level, boolean]>;
 
-    it.each(cases)('at %s level returns %s', (level, expected) => {
-        expect(shouldLogFullInput(buildLogger(level))).toBe(expected);
-    });
-});
+describe('redactInput', () => {
+    const input = { TopicArn: 'arn', Message: 'shh', Subject: 'private' };
+    const projected = { TopicArn: 'arn' };
 
-describe('filterFieldsForLogLevel', () => {
-    it('returns only the listed fields when the logger is at INFO level', () => {
-        const input = { TopicArn: 'arn', Message: 'shh', Subject: 'private' };
+    describe('with a field list', () => {
+        it.each(cases)('at %s level returns the full input: %s', (level, unlocked) => {
+            const result = redactInput(buildLogger(level), input, ['TopicArn']);
 
-        const result = filterFieldsForLogLevel(buildLogger('INFO'), input, ['TopicArn']);
+            expect(result).toEqual(unlocked ? input : projected);
+        });
 
-        expect(result).toEqual({ TopicArn: 'arn' });
-    });
+        it('skips fields that are absent from the input', () => {
+            const sparse: { TopicArn: string; Subject?: string } = { TopicArn: 'arn' };
 
-    it('returns the full input at DEBUG level', () => {
-        const input = { TopicArn: 'arn', Message: 'shh', Subject: 'private' };
+            const result = redactInput(buildLogger('INFO'), sparse, ['TopicArn', 'Subject']);
 
-        const result = filterFieldsForLogLevel(buildLogger('DEBUG'), input, ['TopicArn']);
-
-        expect(result).toEqual(input);
+            expect(result).toEqual({ TopicArn: 'arn' });
+            expect('Subject' in result).toBe(false);
+        });
     });
 
-    it('returns the full input at TRACE level', () => {
-        const input = { TopicArn: 'arn', Message: 'shh', Subject: 'private' };
+    describe('with a projection function', () => {
+        const project = (value: typeof input) => ({ hasMessage: value.Message.length > 0 });
 
-        const result = filterFieldsForLogLevel(buildLogger('TRACE'), input, ['TopicArn']);
+        it.each(cases)('at %s level returns the full input: %s', (level, unlocked) => {
+            const result = redactInput(buildLogger(level), input, project);
 
-        expect(result).toEqual(input);
-    });
+            expect(result).toEqual(unlocked ? input : { hasMessage: true });
+        });
 
-    it('returns the safe subset at WARN level too', () => {
-        const input = { TopicArn: 'arn', Message: 'shh' };
+        it('does not invoke the projection when the full input is returned', () => {
+            const spy = vi.fn(project);
 
-        const result = filterFieldsForLogLevel(buildLogger('WARN'), input, ['TopicArn']);
+            redactInput(buildLogger('TRACE'), input, spy);
 
-        expect(result).toEqual({ TopicArn: 'arn' });
-    });
-
-    it('skips safe fields that are absent from the input', () => {
-        const input: { TopicArn: string; Subject?: string } = { TopicArn: 'arn' };
-
-        const result = filterFieldsForLogLevel(buildLogger('INFO'), input, ['TopicArn', 'Subject']);
-
-        expect(result).toEqual({ TopicArn: 'arn' });
-        expect('Subject' in result).toBe(false);
+            expect(spy).not.toHaveBeenCalled();
+        });
     });
 });

@@ -17,7 +17,7 @@ import {
     UpdateSecretCommandOutput,
 } from '@aws-sdk/client-secrets-manager';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO level. Omits `SecretString` and `SecretBinary` —
@@ -122,7 +122,7 @@ export class SecretsManagerService {
      */
     async createSecret(input: CreateSecretCommandInput): Promise<CreateSecretCommandOutput> {
         this.logger.info('Creating secret', {
-            input: filterFieldsForLogLevel(this.logger, input, CREATE_SECRET_SAFE_FIELDS),
+            input: redactInput(this.logger, input, CREATE_SECRET_SAFE_FIELDS),
         });
         return this.client.send(new CreateSecretCommand(input));
     }
@@ -136,7 +136,7 @@ export class SecretsManagerService {
      */
     async updateSecret(input: UpdateSecretCommandInput): Promise<UpdateSecretCommandOutput> {
         this.logger.info('Updating secret', {
-            input: filterFieldsForLogLevel(this.logger, input, UPDATE_SECRET_SAFE_FIELDS),
+            input: redactInput(this.logger, input, UPDATE_SECRET_SAFE_FIELDS),
         });
         return this.client.send(new UpdateSecretCommand(input));
     }
@@ -149,7 +149,7 @@ export class SecretsManagerService {
      */
     async putSecretValue(input: PutSecretValueCommandInput): Promise<PutSecretValueCommandOutput> {
         this.logger.info('Putting secret value', {
-            input: filterFieldsForLogLevel(this.logger, input, PUT_SECRET_VALUE_SAFE_FIELDS),
+            input: redactInput(this.logger, input, PUT_SECRET_VALUE_SAFE_FIELDS),
         });
         return this.client.send(new PutSecretValueCommand(input));
     }
@@ -162,7 +162,7 @@ export class SecretsManagerService {
      */
     async deleteSecret(input: DeleteSecretCommandInput): Promise<DeleteSecretCommandOutput> {
         this.logger.info('Deleting secret', {
-            input: filterFieldsForLogLevel(this.logger, input, DELETE_SECRET_SAFE_FIELDS),
+            input: redactInput(this.logger, input, DELETE_SECRET_SAFE_FIELDS),
         });
         return this.client.send(new DeleteSecretCommand(input));
     }

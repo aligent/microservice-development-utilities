@@ -97,5 +97,5 @@ yarn nx g @tools/generators:package
 - **Never reference client apps or client repositories** (by name, path or ticket) in anything that lands in this repo: version plans, commit messages, PR descriptions, READMEs, code comments. This is a public package; describe the change on its own terms.
 - After completing a task, search for and update any related documentation (READMEs, docs/ files, CLAUDE.md) that references the modified code before offering to commit. For larger features, treat this as an implicit final step.
 - Always run `/review` before creating a Pull Request.
-- Every PR needs a version plan in `.nx/version-plans`, including internal refactors with no consumer-visible change (use `patch` for those). Create one with `yarn release-plan` if the branch doesn't already have one.
+- Every PR needs a version plan in `.nx/version-plans`, including internal refactors with no consumer-visible change (use `patch` for those). Create one with `yarn release-plan` if the branch doesn't already have one. The pipeline allows at most one version plan per branch, so for work split across several tickets or commits, create the plan in the final one, not per ticket.
 - Always create Pull Request using provided `pull_request_template.md`.

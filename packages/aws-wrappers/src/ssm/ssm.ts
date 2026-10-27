@@ -15,7 +15,7 @@ import xray from 'aws-xray-sdk-core';
 import { type BatchFailedEntry, throwIfAny } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
 import { collectItems } from '../util/pagination.js';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 
 const GET_PARAMETERS_LIMIT = 10;
 
@@ -180,7 +180,7 @@ export class SSMService {
      */
     async putParameter(input: PutParameterCommandInput): Promise<PutParameterCommandOutput> {
         this.logger.info('Putting SSM parameter', {
-            input: filterFieldsForLogLevel(this.logger, input, PUT_PARAMETER_SAFE_FIELDS),
+            input: redactInput(this.logger, input, PUT_PARAMETER_SAFE_FIELDS),
         });
         return this.client.send(new PutParameterCommand(input));
     }
