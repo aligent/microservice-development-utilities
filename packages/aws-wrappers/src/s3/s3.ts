@@ -25,7 +25,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import xray from 'aws-xray-sdk-core';
 import { chunk } from '../util/chunk.js';
 import { collectItems } from '../util/pagination.js';
-import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
+import { redactInput } from '../util/redact.js';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
@@ -95,7 +95,7 @@ export class S3Service {
      */
     async putObject(input: PutObjectInput): Promise<PutObjectCommandOutput> {
         this.logger.info('Putting S3 object', {
-            input: filterFieldsForLogLevel(this.logger, input, PUT_OBJECT_SAFE_FIELDS),
+            input: redactInput(this.logger, input, PUT_OBJECT_SAFE_FIELDS),
         });
         return this.client.send(new PutObjectCommand(input));
     }
@@ -111,7 +111,7 @@ export class S3Service {
      */
     async putJsonObject<T>(input: PutJsonObjectInput<T>): Promise<PutObjectCommandOutput> {
         this.logger.info('Putting S3 JSON object', {
-            input: filterFieldsForLogLevel(this.logger, input, PUT_JSON_OBJECT_SAFE_FIELDS),
+            input: redactInput(this.logger, input, PUT_JSON_OBJECT_SAFE_FIELDS),
         });
         return this.client.send(
             new PutObjectCommand({
@@ -275,12 +275,11 @@ export class S3Service {
      * per chunk.
      */
     async deleteObjects(bucket: string, keys: string[]): Promise<DeleteObjectsCommandOutput[]> {
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
-        // safe log shape includes the computed `keyCount`, which isn't a key
-        // on any SDK input type.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting S3 objects', {
-            input: logFullInput ? { bucket, keys } : { bucket, keyCount: keys.length },
+            input: redactInput(this.logger, { bucket, keys }, input => ({
+                bucket: input.bucket,
+                keyCount: input.keys.length,
+            })),
         });
         const results: DeleteObjectsCommandOutput[] = [];
         for (const batch of chunk(keys, DELETE_OBJECTS_BATCH_LIMIT)) {
