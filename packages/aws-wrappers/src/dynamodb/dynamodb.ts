@@ -30,7 +30,7 @@ import {
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
+import { redactInput, shouldLogFullInput } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
 const BATCH_WRITE_BASE_DELAY_MS = 200;
@@ -185,11 +185,7 @@ export class DynamoDBService {
         R extends Record<string, unknown> = Record<string, unknown>,
     >(input: WithTypedKey<GetCommandInput, K>): Promise<R | undefined> {
         this.logger.info('Getting DynamoDB item', {
-            input: filterFieldsForLogLevel(
-                this.logger,
-                input as GetCommandInput,
-                GET_ITEM_SAFE_FIELDS
-            ),
+            input: redactInput(this.logger, input as GetCommandInput, GET_ITEM_SAFE_FIELDS),
         });
         const response = await this.client.send(new GetCommand(input as GetCommandInput));
         return response.Item as R | undefined;
@@ -204,11 +200,7 @@ export class DynamoDBService {
         input: Omit<PutCommandInput, 'Item'> & { Item: T }
     ): Promise<PutCommandOutput> {
         this.logger.info('Putting DynamoDB item', {
-            input: filterFieldsForLogLevel(
-                this.logger,
-                input as PutCommandInput,
-                PUT_ITEM_SAFE_FIELDS
-            ),
+            input: redactInput(this.logger, input as PutCommandInput, PUT_ITEM_SAFE_FIELDS),
         });
         return this.client.send(new PutCommand(input as PutCommandInput));
     }
@@ -230,11 +222,7 @@ export class DynamoDBService {
         input: WithTypedKey<UpdateCommandInput, K>
     ): Promise<Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: R }> {
         this.logger.info('Updating DynamoDB item', {
-            input: filterFieldsForLogLevel(
-                this.logger,
-                input as UpdateCommandInput,
-                UPDATE_ITEM_SAFE_FIELDS
-            ),
+            input: redactInput(this.logger, input as UpdateCommandInput, UPDATE_ITEM_SAFE_FIELDS),
         });
         const response = await this.client.send(new UpdateCommand(input as UpdateCommandInput));
         return response as Omit<UpdateCommandOutput, 'Attributes'> & { Attributes?: R };
@@ -253,11 +241,7 @@ export class DynamoDBService {
         input: WithTypedKey<DeleteCommandInput, K>
     ): Promise<Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: R }> {
         this.logger.info('Deleting DynamoDB item', {
-            input: filterFieldsForLogLevel(
-                this.logger,
-                input as DeleteCommandInput,
-                DELETE_ITEM_SAFE_FIELDS
-            ),
+            input: redactInput(this.logger, input as DeleteCommandInput, DELETE_ITEM_SAFE_FIELDS),
         });
         const response = await this.client.send(new DeleteCommand(input as DeleteCommandInput));
         return response as Omit<DeleteCommandOutput, 'Attributes'> & { Attributes?: R };
@@ -273,7 +257,7 @@ export class DynamoDBService {
         input: QueryCommandInput
     ): Promise<Omit<QueryCommandOutput, 'Items'> & { Items?: T[] }> {
         this.logger.info('Querying DynamoDB', {
-            input: filterFieldsForLogLevel(this.logger, input, QUERY_SAFE_FIELDS),
+            input: redactInput(this.logger, input, QUERY_SAFE_FIELDS),
         });
         const response = await this.client.send(new QueryCommand(input));
         return response as Omit<QueryCommandOutput, 'Items'> & { Items?: T[] };
@@ -302,7 +286,7 @@ export class DynamoDBService {
         input: ScanCommandInput
     ): Promise<Omit<ScanCommandOutput, 'Items'> & { Items?: T[] }> {
         this.logger.info('Scanning DynamoDB', {
-            input: filterFieldsForLogLevel(this.logger, input, SCAN_SAFE_FIELDS),
+            input: redactInput(this.logger, input, SCAN_SAFE_FIELDS),
         });
         const response = await this.client.send(new ScanCommand(input));
         return response as Omit<ScanCommandOutput, 'Items'> & { Items?: T[] };
@@ -320,7 +304,7 @@ export class DynamoDBService {
      * Callers should narrow the result type at the call site.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because
+        // Inline verbosity check rather than `redactInput` because
         // `RequestItems` is a `Record<tableName, KeysAndAttributes>` — the
         // payload (`Keys[]`) lives inside the value, not as a top-level key
         // the helper could pick or drop.
@@ -357,7 +341,7 @@ export class DynamoDBService {
      * items remain unprocessed after the final attempt.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because
+        // Inline verbosity check rather than `redactInput` because
         // `RequestItems` is a `Record<tableName, WriteRequest[]>` — the
         // payload (`PutRequest.Item` / `DeleteRequest.Key`) lives inside the
         // value, not as a top-level key the helper could pick or drop.
@@ -411,7 +395,7 @@ export class DynamoDBService {
         input: QueryCommandInput
     ): AsyncGenerator<T> {
         this.logger.info('Paginating DynamoDB query', {
-            input: filterFieldsForLogLevel(this.logger, input, QUERY_SAFE_FIELDS),
+            input: redactInput(this.logger, input, QUERY_SAFE_FIELDS),
         });
         const paginator = paginateQuery({ client: this.client }, input);
         for await (const page of paginator) {
@@ -433,7 +417,7 @@ export class DynamoDBService {
         input: ScanCommandInput
     ): AsyncGenerator<T> {
         this.logger.info('Paginating DynamoDB scan', {
-            input: filterFieldsForLogLevel(this.logger, input, SCAN_SAFE_FIELDS),
+            input: redactInput(this.logger, input, SCAN_SAFE_FIELDS),
         });
         const paginator = paginateScan({ client: this.client }, input);
         for await (const page of paginator) {

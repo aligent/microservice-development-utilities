@@ -23,7 +23,7 @@ import {
 import xray from 'aws-xray-sdk-core';
 import { throwIfAnyFailed } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
-import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
+import { redactInput, shouldLogFullInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
@@ -82,7 +82,7 @@ export class SQSService {
         const shouldTruncate = opts?.truncate ?? this.truncate;
         const effective = shouldTruncate ? this.applyTruncation(input) : input;
         this.logger.info('Sending SQS message', {
-            input: filterFieldsForLogLevel(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
+            input: redactInput(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
         });
         return this.client.send(new SendMessageCommand(effective));
     }
@@ -147,7 +147,7 @@ export class SQSService {
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `redactInput` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `SendMessageBatchCommandInput`.
         const logFullInput = shouldLogFullInput(this.logger);
@@ -179,7 +179,7 @@ export class SQSService {
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
+        // Inline verbosity check rather than `redactInput` because the
         // safe log shape includes the computed `entryCount`, which isn't a key
         // on `DeleteMessageBatchCommandInput`.
         const logFullInput = shouldLogFullInput(this.logger);

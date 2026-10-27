@@ -41,7 +41,7 @@ import { shouldLogFullInput } from '../util/redact.js';
  * PII (customer IDs, order contents, etc.), the same risk profile as SFN's
  * execution `input`.
  *
- * This can't go through the package's usual `filterFieldsForLogLevel` helper:
+ * This can't go through the package's usual `redactInput` helper:
  * that helper picks **top-level** keys only, and the sensitive field is nested
  * one level down inside `Target`. Allowlisting `Target` would leak `Input`;
  * omitting `Target` would lose operationally-useful fields (`Arn`, `RoleArn`,

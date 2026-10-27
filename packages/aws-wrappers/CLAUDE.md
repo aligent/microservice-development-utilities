@@ -100,7 +100,7 @@ Every public method emits exactly one `logger.info('<verb> <noun>', { input })` 
 
 `shouldLogFullInput(logger)` in `src/util/redact.ts` is **the only place in the package that reads the log level** — never compare `logger.getLevelName()` yourself. Powertools orders `TRACE` (threshold 6) as *more* verbose than `DEBUG` (8), so the obvious `getLevelName() === 'DEBUG'` check silently redacts at the most verbose level available. That was a real bug (MI-332); the predicate exists so it can only be fixed once. Its TSDoc carries the rule for anyone reading the source without this file.
 
-The projection mechanism is `filterFieldsForLogLevel(logger, input, SAFE_FIELDS)` in the same file. Both are internal-only helpers, not exported from `src/index.ts`.
+The projection mechanism is `redactInput(logger, input, SAFE_FIELDS)` in the same file. Both are internal-only helpers, not exported from `src/index.ts`.
 
 Each service file states the unlock rule **once**, in its class-level TSDoc. Per-method and per-`SAFE_FIELDS` docs describe only *what* is omitted and *why* — don't restate the mechanism, or the next level-semantics change has to touch two dozen comments again.
 
@@ -109,7 +109,7 @@ Each service file states the unlock rule **once**, in its class-level TSDoc. Per
 - **Module-level constant per method**, typed as `ReadonlyArray<keyof CommandInput>`, named `<METHOD>_SAFE_FIELDS`. TSDoc explains what's omitted and why.
 - **Targeted application** — only methods where there's an actual omission use the helper. Methods whose input is already a tight `Required<Pick<...>>` or contains no sensitive fields (e.g. `S3.getObject`, `SFN.listExecutions`) keep their current `{ input }` shape.
 - **Maximal safe set** — include every field *except* known payload, secret, or PII carriers. The level-based design provides the safety valve; the INFO log should still be operationally useful.
-- **Batch methods stay bespoke** — methods that already compute a derived field (e.g. `entryCount`, `keyCount`, `tables`) call `shouldLogFullInput(this.logger)` directly rather than using `filterFieldsForLogLevel`, since the helper only picks input keys and can't synthesise computed fields. A comment explains why.
+- **Batch methods stay bespoke** — methods that already compute a derived field (e.g. `entryCount`, `keyCount`, `tables`) call `shouldLogFullInput(this.logger)` directly rather than using `redactInput`, since the helper only picks input keys and can't synthesise computed fields. A comment explains why.
 
 #### Currently redacted
 
@@ -121,9 +121,9 @@ Each service file states the unlock rule **once**, in its class-level TSDoc. Per
 - **SSM** — `putParameter` omits `Value`.
 - **SFN** — `startExecution` omits the execution `input` (often carries PII).
 
-Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc describing *what* is omitted and *why* (not the unlock mechanism — that's stated once in the class TSDoc), and wire `filterFieldsForLogLevel(this.logger, input, FIELDS)` into the `logger.info` call.
+Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc describing *what* is omitted and *why* (not the unlock mechanism — that's stated once in the class TSDoc), and wire `redactInput(this.logger, input, FIELDS)` into the `logger.info` call.
 
-Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` against an INFO-level logger. For a method that routes through `filterFieldsForLogLevel`, that single test is enough — the unlock direction is covered centrally by `redact.test.ts`, so a per-method TRACE test would only re-prove `shouldLogFullInput`.
+Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` against an INFO-level logger. For a method that routes through `redactInput`, that single test is enough — the unlock direction is covered centrally by `redact.test.ts`, so a per-method TRACE test would only re-prove `shouldLogFullInput`.
 
 **A method with a bespoke inline check needs a second test**: `expect(loggedInput).toHaveProperty('<sensitive>')` against a TRACE-level logger. These are the batch methods that hand-roll `shouldLogFullInput(this.logger)` to synthesise a computed field, so nothing central covers their unlock branch. Without it a site wired to a stale or hand-rolled level check still passes the whole suite, because the INFO assertion only pins the redacted direction — that's precisely how the pre-MI-332 bug survived in eight places.
 
