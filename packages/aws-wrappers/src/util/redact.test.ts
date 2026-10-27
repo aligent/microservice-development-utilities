@@ -1,7 +1,7 @@
 import { Logger } from '@aws-lambda-powertools/logger';
 import type { LogLevel } from '@aws-lambda-powertools/logger/types';
 import { describe, expect, it, vi } from 'vitest';
-import { redactInput, shouldLogFullInput } from './redact';
+import { redactInput } from './redact';
 
 /**
  * Levels must be uppercase — `setLogLevel('trace')` throws, despite Powertools'
@@ -34,12 +34,6 @@ const unlocksByLevel: Record<Level, boolean> = {
 };
 
 const cases = Object.entries(unlocksByLevel) as Array<[Level, boolean]>;
-
-describe('shouldLogFullInput', () => {
-    it.each(cases)('at %s level returns %s', (level, expected) => {
-        expect(shouldLogFullInput(buildLogger(level))).toBe(expected);
-    });
-});
 
 describe('redactInput', () => {
     const input = { TopicArn: 'arn', Message: 'shh', Subject: 'private' };

@@ -5,7 +5,7 @@ import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
  * Whether the logger is verbose enough that full SDK inputs may be written to
  * the log. The unlock rule is documented on {@link redactInput}.
  */
-export function shouldLogFullInput(logger: LoggerInterface): boolean {
+function shouldLogFullInput(logger: LoggerInterface): boolean {
     return LogLevelThreshold[logger.getLevelName()] <= LogLevelThreshold.DEBUG;
 }
 

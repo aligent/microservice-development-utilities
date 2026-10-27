@@ -22,9 +22,6 @@ const target = {
     RoleArn: 'arn:aws:iam::0:role/test',
 };
 
-/** Both levels unlock `Target.Input` — see `shouldLogFullInput` in `util/redact.ts`. */
-const VERBOSE_LEVELS = ['DEBUG', 'TRACE'] as const;
-
 describe('SchedulerService', () => {
     afterEach(() => {
         schedulerMock.reset();
@@ -118,25 +115,6 @@ describe('SchedulerService', () => {
             expect(loggedTarget).toHaveProperty('Arn', target.Arn);
         });
 
-        it.each(VERBOSE_LEVELS)('logs Target.Input at %s level', async level => {
-            schedulerMock.on(CreateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
-            const logger = new Logger();
-            logger.setLogLevel(level);
-            const infoSpy = vi.spyOn(logger, 'info');
-            const service = new SchedulerService({ client: new SchedulerClient({}), logger });
-
-            await service.createSchedule({
-                Name: 's1',
-                ScheduleExpression: 'rate(1 day)',
-                FlexibleTimeWindow: { Mode: 'OFF' },
-                Target: { ...target, Input: 'payload' },
-            });
-
-            const [, payload] = infoSpy.mock.calls[0] ?? [];
-            const loggedTarget = (payload as { input: { Target: object } }).input.Target;
-            expect(loggedTarget).toHaveProperty('Input', 'payload');
-        });
-
         it('leaves the input untouched when the Target has no Input', async () => {
             schedulerMock.on(CreateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
             const logger = new Logger();
@@ -179,25 +157,6 @@ describe('SchedulerService', () => {
             const loggedTarget = (payload as { input: { Target: object } }).input.Target;
             expect(loggedTarget).not.toHaveProperty('Input');
             expect(loggedTarget).toHaveProperty('Arn', target.Arn);
-        });
-
-        it.each(VERBOSE_LEVELS)('logs Target.Input at %s level', async level => {
-            schedulerMock.on(UpdateScheduleCommand).resolves({ ScheduleArn: 'arn-1' });
-            const logger = new Logger();
-            logger.setLogLevel(level);
-            const infoSpy = vi.spyOn(logger, 'info');
-            const service = new SchedulerService({ client: new SchedulerClient({}), logger });
-
-            await service.updateSchedule({
-                Name: 's1',
-                ScheduleExpression: 'rate(2 days)',
-                FlexibleTimeWindow: { Mode: 'OFF' },
-                Target: { ...target, Input: 'payload' },
-            });
-
-            const [, payload] = infoSpy.mock.calls[0] ?? [];
-            const loggedTarget = (payload as { input: { Target: object } }).input.Target;
-            expect(loggedTarget).toHaveProperty('Input', 'payload');
         });
     });
 
