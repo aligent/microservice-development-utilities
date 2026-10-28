@@ -20,26 +20,18 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref_name }}
 
-      # Nx accepts several plans but merges them unpredictably, so a release must be cut from exactly one.
+      # Nx accepts several plans but merges them unpredictably, so a release must be cut from at most one.
+      # Zero is allowed: a re-run after `nx release` consumed the plan must still be able to open the PR.
       # Runs before install so a bad branch fails in seconds. Counts every file because Nx reads them all.
-      - name: 🛡️ Ensure exactly one version plan
+      - name: 🛡️ Ensure at most one version plan
         run: |
           mapfile -t plans < <(find .nx/version-plans -maxdepth 1 -type f 2>/dev/null | sort)
 
-          case "${#plans[@]}" in
-            1)
-              echo "✅ Releasing from ${plans[0]}"
-              ;;
-            0)
-              echo "::error title=No version plan::A release-pr branch needs exactly one version plan in .nx/version-plans. Create one with 'yarn release-plan', commit it to this branch and push again."
-              exit 1
-              ;;
-            *)
-              echo "::error title=Multiple version plans::Found ${#plans[@]} version plans; a release-pr branch needs exactly one. Merge them into a single plan (highest bump per project, combined notes), delete the rest, commit to this branch and push again."
-              printf '  - %s\n' "${plans[@]}"
-              exit 1
-              ;;
-          esac
+          if [ "${#plans[@]}" -gt 1 ]; then
+            echo "::error title=Multiple version plans::Found ${#plans[@]} version plans; a release-pr branch needs exactly one. Merge them into a single plan (highest bump per project, combined notes), delete the rest, commit to this branch and push again."
+            printf '  - %s\n' "${plans[@]}"
+            exit 1
+          fi
 
       - name: Configure Git
         run: |
