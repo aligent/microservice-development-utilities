@@ -122,6 +122,7 @@ To bootstrap a new package:
 2. Check if a version plan exist.
    - The version plan is a `version-plan-*.md` file in `.nx/version-plans` folder.
    - If the a version plan is already created, go to step #3.
+   - If more than one exists (plans from several merged PRs accumulate on `main`), merge them into a single file: keep the highest bump for each project, combine the notes and delete the other files.
    - If not exists, create a new version plan. You can use the following command to generate a version plan based on your changes:
 
      ```bash
@@ -133,6 +134,7 @@ To bootstrap a new package:
 3. Double check your release plan then commit and push your changes to the newly created `release-pr/*` branch.
    - Ensure your change contains only one version plan file.
    - This will trigger the `release` workflow. The workflow will:
+     - Fail straight away unless `.nx/version-plans` contains exactly one file.
      - Detect the version plan file.
      - Release a new version without publishing to NPM.
      - Push the necessary changes to your `release-pr/*` branch.
@@ -148,5 +150,5 @@ Each package that ships generated API docs keeps a `docs/modules.md` index file 
 
 ## Notes
 
-- Nx is responsible for removing the version plans after a release. This is because **having multiple version plan files may produce unpredictable results**. For this reason make sure not to commit more than one version plan file.
+- Nx is responsible for removing the version plans after a release. This is because **having multiple version plan files may produce unpredictable results**. For this reason make sure not to commit more than one version plan file. The release workflow enforces this on `release-pr/*` branches.
 - Always use the provided command to generate version plan files for uniqueness and correctness.
