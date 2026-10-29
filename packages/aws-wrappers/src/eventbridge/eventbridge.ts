@@ -25,18 +25,18 @@ const PUT_EVENTS_LIMIT = 10;
  */
 function rejectedEntries(results: PutEventsCommandOutput[]): BatchFailedEntry[] {
     return results.flatMap((result, chunkIndex) =>
-        (result.Entries ?? []).flatMap(({ ErrorCode, ErrorMessage }, position) =>
-            ErrorCode === undefined
-                ? []
-                : [
-                      {
-                          id: String(chunkIndex * PUT_EVENTS_LIMIT + position),
-                          code: ErrorCode,
-                          message: ErrorMessage,
-                      },
-                  ]
-        )
+        rejectedInChunk(result, chunkIndex * PUT_EVENTS_LIMIT)
     );
+}
+
+function rejectedInChunk(result: PutEventsCommandOutput, offset: number): BatchFailedEntry[] {
+    return (result.Entries ?? [])
+        .map(({ ErrorCode, ErrorMessage }, position) => ({
+            id: String(offset + position),
+            code: ErrorCode,
+            message: ErrorMessage,
+        }))
+        .filter(({ code }) => code !== undefined);
 }
 
 /**
