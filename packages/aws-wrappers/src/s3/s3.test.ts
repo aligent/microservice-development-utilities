@@ -14,6 +14,8 @@ import { sdkStreamMixin } from '@smithy/util-stream';
 import { mockClient } from 'aws-sdk-client-mock';
 import { Readable } from 'stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BatchOperationError } from '../util/batch-operation-error.js';
+import { batchFailure } from '../util/batch-operation-error.test-helpers.js';
 import { S3Service } from './s3';
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
@@ -136,10 +138,191 @@ describe('S3Service', () => {
             expect(loggedInput).not.toHaveProperty('keys');
             expect(loggedInput).toMatchObject({ bucket: Bucket, keyCount: 3 });
         });
+
+        it('does not request Quiet mode', async () => {
+            s3Mock.on(DeleteObjectsCommand).resolves({});
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await service.deleteObjects(Bucket, ['k1']);
+
+            const [call] = s3Mock.commandCalls(DeleteObjectsCommand);
+            expect(call?.args[0].input.Delete?.Quiet).toBeUndefined();
+        });
+
+        describe('partial failure', () => {
+            const service = () => new S3Service({ client: new S3Client({}) });
+            const keys = (count: number) => Array.from({ length: count }, (_, i) => `key-${i}`);
+
+            it('throws with the failed key, code and message when one key in a chunk is rejected', async () => {
+                s3Mock.on(DeleteObjectsCommand).resolves({
+                    Deleted: [{ Key: 'key-0' }, { Key: 'key-2' }],
+                    Errors: [
+                        {
+                            Key: 'key-1',
+                            VersionId: 'v-1',
+                            Code: 'AccessDenied',
+                            Message: 'Access Denied',
+                        },
+                    ],
+                });
+
+                const error = await batchFailure(service().deleteObjects(Bucket, keys(3)));
+
+                expect(error.name).toBe('BatchOperationError');
+                expect(error.failed).toEqual([
+                    { id: 'key-1', code: 'AccessDenied', message: 'Access Denied' },
+                ]);
+                expect(error.results).toEqual([
+                    expect.objectContaining({ Deleted: [{ Key: 'key-0' }, { Key: 'key-2' }] }),
+                ]);
+            });
+
+            it('sends every chunk before throwing and reports failures from each chunk', async () => {
+                s3Mock
+                    .on(DeleteObjectsCommand)
+                    .resolvesOnce({
+                        Errors: [{ Key: 'key-5', Code: 'InternalError', Message: 'first' }],
+                    })
+                    .resolvesOnce({})
+                    .resolvesOnce({
+                        Errors: [{ Key: 'key-2500', Code: 'AccessDenied', Message: 'third' }],
+                    });
+
+                const error = await batchFailure(service().deleteObjects(Bucket, keys(2501)));
+
+                expect(s3Mock.commandCalls(DeleteObjectsCommand)).toHaveLength(3);
+                expect(error.results.map(result => result.Errors?.length ?? 0)).toEqual([1, 0, 1]);
+                expect(error.failed.map(({ id }) => id)).toEqual(['key-5', 'key-2500']);
+            });
+
+            it('reports every key when a whole chunk is rejected', async () => {
+                s3Mock.on(DeleteObjectsCommand).resolves({
+                    Errors: keys(3).map(Key => ({ Key, Code: 'AccessDenied', Message: 'nope' })),
+                });
+
+                const error = await batchFailure(service().deleteObjects(Bucket, keys(3)));
+
+                expect(error.failed.map(({ id }) => id)).toEqual(keys(3));
+            });
+
+            it('returns the per-chunk outputs unchanged when no key is rejected', async () => {
+                const output = { Deleted: [{ Key: 'key-0' }], Errors: [] };
+                s3Mock.on(DeleteObjectsCommand).resolves(output);
+
+                const results = await service().deleteObjects(Bucket, keys(1));
+
+                expect(results).toEqual([expect.objectContaining(output)]);
+            });
+
+            it('lets request-level SDK exceptions propagate unwrapped and stops processing', async () => {
+                s3Mock.on(DeleteObjectsCommand).rejects(new Error('SlowDown'));
+
+                const outcome = service().deleteObjects(Bucket, keys(2501));
+
+                await expect(outcome).rejects.toThrow('SlowDown');
+                await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
+                expect(s3Mock.commandCalls(DeleteObjectsCommand)).toHaveLength(1);
+            });
+
+            it('warns with the failure count and codes but never the keys', async () => {
+                const sentinel = 'customer-key-7f3a';
+                s3Mock.on(DeleteObjectsCommand).resolves({
+                    Errors: [{ Key: sentinel, Code: 'AccessDenied', Message: 'Access Denied' }],
+                });
+                const logger = new Logger();
+                logger.setLogLevel('INFO');
+                const warnSpy = vi.spyOn(logger, 'warn');
+                const failing = new S3Service({ client: new S3Client({}), logger });
+
+                const error = await batchFailure(failing.deleteObjects(Bucket, [sentinel]));
+
+                expect(error.message).not.toContain(sentinel);
+                expect(warnSpy).toHaveBeenCalledTimes(1);
+                const [message, payload] = warnSpy.mock.calls[0] ?? [];
+                expect(`${message}${JSON.stringify(payload)}`).not.toContain(sentinel);
+                expect(payload).toEqual({ failedCount: 1, codes: ['AccessDenied'] });
+            });
+        });
     });
 
     describe('emptyBucket', () => {
-        it('streams the listing and deletes each page via deleteObjects', async () => {
+        const listTwoPages = () =>
+            s3Mock
+                .on(ListObjectsV2Command)
+                .resolvesOnce({
+                    Contents: [{ Key: 'a' }, { Key: 'b' }],
+                    IsTruncated: true,
+                    NextContinuationToken: 'tok',
+                })
+                .resolves({ Contents: [{ Key: 'c' }], IsTruncated: false });
+
+        it('sends its deletes in Quiet mode', async () => {
+            listTwoPages();
+            s3Mock.on(DeleteObjectsCommand).resolves({});
+            const service = new S3Service({ client: new S3Client({}) });
+
+            await service.emptyBucket(Bucket);
+
+            const quietFlags = s3Mock
+                .commandCalls(DeleteObjectsCommand)
+                .map(c => c.args[0].input.Delete?.Quiet);
+            expect(quietFlags).toEqual([true, true]);
+        });
+
+        it('deletes every page after a failure, then throws once covering all pages', async () => {
+            listTwoPages();
+            s3Mock
+                .on(DeleteObjectsCommand)
+                .resolvesOnce({ Errors: [{ Key: 'b', Code: 'AccessDenied', Message: 'first' }] })
+                .resolvesOnce({ Errors: [{ Key: 'c', Code: 'InternalError', Message: 'second' }] });
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new S3Service({ client: new S3Client({}), logger });
+
+            const outcome = service.emptyBucket(Bucket);
+
+            await expect(outcome).rejects.toBeInstanceOf(BatchOperationError);
+            await expect(outcome).rejects.toMatchObject({
+                results: [
+                    { Errors: [{ Key: 'b', Code: 'AccessDenied', Message: 'first' }] },
+                    { Errors: [{ Key: 'c', Code: 'InternalError', Message: 'second' }] },
+                ],
+                failed: [
+                    { id: 'b', code: 'AccessDenied', message: 'first' },
+                    { id: 'c', code: 'InternalError', message: 'second' },
+                ],
+            });
+            const deletedBatches = s3Mock
+                .commandCalls(DeleteObjectsCommand)
+                .map(c => c.args[0].input.Delete?.Objects?.map(o => o.Key));
+            expect(deletedBatches).toEqual([['a', 'b'], ['c']]);
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('lets a request-level SDK exception while listing propagate unwrapped', async () => {
+            s3Mock.on(ListObjectsV2Command).rejects(new Error('AccessDenied'));
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const outcome = service.emptyBucket(Bucket);
+
+            await expect(outcome).rejects.toThrow('AccessDenied');
+            await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
+            expect(s3Mock.commandCalls(DeleteObjectsCommand)).toHaveLength(0);
+        });
+
+        it('lets a request-level SDK exception while deleting propagate unwrapped', async () => {
+            listTwoPages();
+            s3Mock.on(DeleteObjectsCommand).rejects(new Error('SlowDown'));
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const outcome = service.emptyBucket(Bucket);
+
+            await expect(outcome).rejects.toThrow('SlowDown');
+            await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
+            expect(s3Mock.commandCalls(DeleteObjectsCommand)).toHaveLength(1);
+        });
+
+        it('streams the listing and deletes each page', async () => {
             s3Mock
                 .on(ListObjectsV2Command)
                 .resolvesOnce({
