@@ -57,6 +57,10 @@ describe('remove generator', () => {
         tree = setupTree();
     });
 
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('should remove the service directory', async () => {
         await serviceGenerator(tree, { name: 'companies' });
         expect(tree.exists('services/companies')).toBe(true);
@@ -168,27 +172,40 @@ describe('remove generator', () => {
         expect(pkg.workspaces).not.toContain('services/companies');
     });
 
-    it('should throw when service has dependents and forceRemove is false', async () => {
+    it('should throw when a project other than the application depends on the service', async () => {
         vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
             nodes: {},
             dependencies: {
                 application: [
-                    {
-                        source: 'application',
-                        target: '@services/companies',
-                        type: 'static',
-                    },
+                    { source: 'application', target: '@services/companies', type: 'static' },
+                ],
+                '@services/orders': [
+                    { source: '@services/orders', target: '@services/companies', type: 'static' },
                 ],
             },
         });
 
         await serviceGenerator(tree, { name: 'companies' });
 
-        await expect(removeGenerator(tree, { name: 'companies' })).rejects.toThrow(
-            /Cannot remove "companies": it is depended on by application/
+        const removal = removeGenerator(tree, { name: 'companies' });
+        await expect(removal).rejects.toThrow(
+            'Cannot remove "companies": it is depended on by @services/orders. '
         );
 
         expect(tree.exists('services/companies')).toBe(true);
+        expect(tree.read('application/lib/service-stacks.ts', 'utf-8')).toContain(
+            '@services/companies'
+        );
+    });
+
+    it('should not consult the project graph when forceRemove is true', async () => {
+        const graphSpy = vi.spyOn(devkit, 'createProjectGraphAsync');
+
+        await serviceGenerator(tree, { name: 'companies' });
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
+
+        expect(graphSpy).not.toHaveBeenCalled();
+        expect(tree.exists('services/companies')).toBe(false);
     });
 
     it('should throw when the service does not exist', async () => {
@@ -203,10 +220,13 @@ describe('remove generator', () => {
         ).rejects.toThrow(/Invalid service name/);
     });
 
-    it('should proceed when service has no dependents and forceRemove is false', async () => {
+    it('should proceed when only the application depends on the service', async () => {
         vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
             nodes: {},
             dependencies: {
+                application: [
+                    { source: 'application', target: '@services/companies', type: 'static' },
+                ],
                 '@services/companies': [],
             },
         });
@@ -215,5 +235,10 @@ describe('remove generator', () => {
         await removeGenerator(tree, { name: 'companies' });
 
         expect(tree.exists('services/companies')).toBe(false);
+        expect(tree.read('application/lib/service-stacks.ts', 'utf-8')).not.toContain(
+            '@services/companies'
+        );
+        const pkg = JSON.parse(tree.read('application/package.json', 'utf-8') ?? '{}');
+        expect(pkg.bundleDependencies).not.toContain('@services/companies');
     });
 });
