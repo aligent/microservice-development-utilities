@@ -27,7 +27,7 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch` and `SNSService.publishBatch`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch` and `EventBridgeService.putEvents`.
 
 Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
 
@@ -49,6 +49,7 @@ try {
 ```
 
 - `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload.
+- `EventBridgeService.putEvents` entries have no identifier of their own, so for that method `id` is the entry's index in the `Entries` list you passed in, as a string.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
@@ -289,6 +290,40 @@ const group = await scheduler.getScheduleGroup({ Name: 'integrations' });
 const groups = await scheduler.listScheduleGroups();
 await scheduler.deleteScheduleGroup({ Name: 'integrations' });
 ```
+
+## EventBridge
+
+Publishes events to an event bus. `putEvents` takes the SDK input unchanged — `Detail` stays a JSON string you serialise yourself.
+
+```ts
+import { BatchOperationError, EventBridgeService } from '@aligent/aws-wrappers';
+
+const eventBridge = new EventBridgeService();
+
+// Auto-chunks Entries to the EventBridge-enforced 10-entry limit and throws a
+// BatchOperationError if EventBridge rejects any entry — see "Batch semantics".
+// Chunking is by count only: a chunk over the 256 KB request limit fails at the
+// SDK as a request-level error.
+try {
+    await eventBridge.putEvents({
+        Entries: orders.map(order => ({
+            Source: 'orders.service',
+            DetailType: 'OrderCreated',
+            Detail: JSON.stringify(order),
+        })),
+    });
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        // failed[].id is the index in the Entries list you passed in, as a string.
+        const failedIndexes = new Set(error.failed.map(entry => Number(entry.id)));
+        await retry(orders.filter((_, index) => failedIndexes.has(index)));
+        return;
+    }
+    throw error;
+}
+```
+
+The wrapper does not retry. At INFO the log line shows only the endpoint id and the entry count, because `Detail` and `Resources` carry payloads.
 
 ## SSM Parameter Store
 
