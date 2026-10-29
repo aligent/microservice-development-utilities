@@ -21,7 +21,7 @@
   "dependencies": {
     "@redocly/openapi-core": "^1.34.2",
     "openapi-typescript": "7.13.0",
-    "ts-morph": "^27.0.2"
+    "ts-morph": "^28.0.0"
   },
   "devDependencies": {
     "@aligent/ts-code-standards": "^4.2.0",
