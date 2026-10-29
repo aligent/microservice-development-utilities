@@ -27,9 +27,9 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch` and `SNSService.publishBatch`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `S3Service.deleteObjects`, `S3Service.emptyBucket` and, when `required` is set, `SSMService.getParameters`.
 
-Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
+Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns exactly what it did before.
 
 ```ts
 import { BatchOperationError } from '@aligent/aws-wrappers';
@@ -39,6 +39,7 @@ try {
 } catch (error) {
     if (error instanceof BatchOperationError) {
         // error.results — the raw SDK output of every chunk, including what succeeded
+        //                 (empty for SSM, per-page deleted keys for S3 emptyBucket)
         // error.failed  — [{ id, code, message }] for every rejected entry
         const failedIds = new Set(error.failed.map(entry => entry.id));
         await retry(entries.filter(entry => failedIds.has(entry.Id)));
@@ -48,7 +49,7 @@ try {
 }
 ```
 
-- `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload.
+- `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload. For S3 the identifier is the object key; for SSM it is the parameter path.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
@@ -104,9 +105,25 @@ await s3.deleteObjects('my-bucket', ['key1', 'key2']); // auto-chunked to 1000 k
 await s3.emptyBucket('my-bucket');                     // unversioned buckets only — see below
 ```
 
+`deleteObjects` and `emptyBucket` throw a `BatchOperationError` when S3 reports that it could not delete one or more keys — see "Batch semantics". `failed[].id` is the object key.
+
+`emptyBucket` returns only the keys that were actually deleted. A page with failures does not stop the run: every page is attempted, then one aggregated `BatchOperationError` is thrown. Its `results` hold one `{ deletedKeys }` per page, so the caller can tell which keys were deleted and which failed:
+
+```ts
+try {
+    const deleted = await s3.emptyBucket('my-bucket');
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        const deleted = error.results.flatMap(page => page.deletedKeys);
+        const stuck = error.failed.map(entry => entry.id); // [{ id: key, code, message }]
+    }
+    throw error;
+}
+```
+
 Input shapes are intentionally tight (`Bucket`, `Key`, `Body` and similar). Callers needing SDK-specific options like server-side encryption or tagging should use `S3Client` directly.
 
-`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
+`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so only one page of SDK responses is held at a time; the list of deleted keys it returns is the one thing that grows with the bucket. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
 
 ## DynamoDB
 
@@ -311,6 +328,15 @@ const { host, port } = await ssm.getParameters({
 // Recursive defaults to true.
 const params = await ssm.getParametersByPath('/myapp/');
 const shallow = await ssm.getParametersByPath('/myapp/', { recursive: false });
+```
+
+`getParameter` throws when the parameter does not exist, but `getParameters` returns `undefined` for a missing one, so a typo'd path only surfaces later as an undefined value. Pass `required: true` to make `getParameters` fail fast instead. Every chunk is still sent, then a single `BatchOperationError` is thrown (see "Batch semantics") naming every missing parameter: `failed[].id` is the path, `failed[].code` is `ParameterNotFound` and `failed[].message` names the alias. `results` is empty, since there is nothing useful in the SDK output of a failed lookup.
+
+```ts
+const { host, port } = await ssm.getParameters(
+    { host: '/myapp/host', port: '/myapp/port' },
+    { required: true }
+);
 ```
 
 All read operations enable `WithDecryption` automatically — there's no opt-out. Callers needing plaintext should use `SSMClient` directly.

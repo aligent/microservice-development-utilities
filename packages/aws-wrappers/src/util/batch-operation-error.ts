@@ -3,7 +3,8 @@ import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 /**
  * One entry a batch operation rejected. Deliberately limited to identifier,
  * code and message so the error never carries message bodies, attributes or
- * any other payload the caller sent.
+ * any other payload the caller sent. For S3 the identifier is the object key;
+ * for SSM it is the parameter path.
  */
 export interface BatchFailedEntry {
     id: string | undefined;
@@ -16,7 +17,9 @@ export interface BatchFailedEntry {
  * entry was rejected.
  *
  * `results` holds the raw SDK output of every chunk, so the outputs of the
- * entries that succeeded (message ids, sequence numbers) stay readable.
+ * entries that succeeded (message ids, sequence numbers) stay readable. The
+ * exceptions are `S3.emptyBucket`, whose `results` are per-page deleted keys,
+ * and `SSM.getParameters`, whose `results` are empty.
  * `failed` is the normalised list of rejected entries across all chunks.
  *
  * Match on `name` rather than `instanceof` if both the CJS and ESM builds of
@@ -65,6 +68,49 @@ export function throwIfAnyFailed<TResult extends { Failed?: RejectedEntry[] | un
             message: Message,
         }))
     );
+    return throwIfAny(logger, operation, results, failed);
+}
+
+/**
+ * The shape S3 `DeleteObjects` uses for a key it could not delete.
+ */
+interface DeleteError {
+    Key?: string | undefined;
+    Code?: string | undefined;
+    Message?: string | undefined;
+}
+
+/**
+ * S3 reports undeleted keys under `Errors` on an otherwise successful
+ * `DeleteObjects` response. Same contract as {@link throwIfAnyFailed}; the
+ * key is carried as the failed entry's `id`, and `VersionId` is dropped.
+ */
+export function throwIfAnyDeleteErrors<TResult extends { Errors?: DeleteError[] | undefined }>(
+    logger: LoggerInterface,
+    operation: string,
+    results: TResult[]
+): TResult[] {
+    const failed: BatchFailedEntry[] = results.flatMap(result =>
+        (result.Errors ?? []).map(({ Key, Code, Message }) => ({
+            id: Key,
+            code: Code,
+            message: Message,
+        }))
+    );
+    return throwIfAny(logger, operation, results, failed);
+}
+
+/**
+ * Throws a {@link BatchOperationError} for operations whose `results` aren't a
+ * plain list of SDK outputs, such as `S3.emptyBucket`. Returns `results`
+ * untouched when `failed` is empty.
+ */
+export function throwIfAny<TResult>(
+    logger: LoggerInterface,
+    operation: string,
+    results: TResult[],
+    failed: BatchFailedEntry[]
+): TResult[] {
     if (failed.length === 0) return results;
 
     logger.warn(`${operation} had rejected entries`, {
