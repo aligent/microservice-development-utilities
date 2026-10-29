@@ -23,6 +23,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import xray from 'aws-xray-sdk-core';
+import { BatchFailedEntry, throwIfRejected } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
 import { collectItems } from '../util/pagination.js';
 import { redactInput } from '../util/redact.js';
@@ -56,6 +57,21 @@ const PUT_JSON_OBJECT_SAFE_FIELDS: ReadonlyArray<keyof PutJsonObjectInput<unknow
     'Key',
     'Metadata',
 ];
+
+/**
+ * `DeleteObjects` reports a key it could not delete under `Errors` on an
+ * otherwise successful response. Copies only key, code and message out, never
+ * the entry itself.
+ */
+function extractDeleteFailures(results: DeleteObjectsCommandOutput[]): BatchFailedEntry[] {
+    return results.flatMap(result =>
+        (result.Errors ?? []).map(({ Key, Code, Message }) => ({
+            id: Key,
+            code: Code,
+            message: Message,
+        }))
+    );
+}
 
 /**
  * Wrapper around the AWS S3 client providing structured Powertools logging
@@ -273,6 +289,16 @@ export class S3Service {
      * Delete multiple objects from S3, auto-chunking the request into batches
      * of 1000 keys (the S3-enforced DeleteObjects limit). Returns one output
      * per chunk.
+     *
+     * Every chunk is sent before the outcome is judged. If S3 reported any key
+     * under `Errors`, a {@link BatchOperationError} is then thrown carrying the
+     * per-chunk results and the failed entries. For this method each failed
+     * entry's `id` is the object key. The warning logged alongside carries only
+     * the failure count and codes, never keys.
+     *
+     * Request-level SDK exceptions (throttling, access denied on the bucket)
+     * are not wrapped: they propagate unchanged and immediately, so earlier
+     * chunks may already have been deleted.
      */
     async deleteObjects(bucket: string, keys: string[]): Promise<DeleteObjectsCommandOutput[]> {
         this.logger.info('Deleting S3 objects', {
@@ -281,25 +307,26 @@ export class S3Service {
                 keyCount: input.keys.length,
             })),
         });
-        const results: DeleteObjectsCommandOutput[] = [];
-        for (const batch of chunk(keys, DELETE_OBJECTS_BATCH_LIMIT)) {
-            results.push(
-                await this.client.send(
-                    new DeleteObjectsCommand({
-                        Bucket: bucket,
-                        Delete: { Objects: batch.map(Key => ({ Key })) },
-                    })
-                )
-            );
-        }
-        return results;
+        const results = await this.sendDeleteChunks(bucket, keys);
+        return throwIfRejected(
+            this.logger,
+            'S3 deleteObjects',
+            results,
+            extractDeleteFailures(results)
+        );
     }
 
     /**
      * Delete every object in an **unversioned** bucket. Streams the listing
-     * page-by-page and delegates each page's deletion to `deleteObjects`, so
-     * peak memory stays bounded by one page (~1000 keys) regardless of bucket
-     * size.
+     * page-by-page and deletes each page as it arrives, so the listing and the
+     * SDK outputs held stay bounded by one page (~1000 keys). The returned key
+     * list still grows with the bucket.
+     *
+     * Deletes are sent in `Quiet` mode, so S3 reports only the keys it failed
+     * to delete. Every page is deleted before the outcome is judged; if any key
+     * failed, one {@link BatchOperationError} covering every page is then
+     * thrown, with each failed entry's `id` set to the object key. Request-level
+     * SDK exceptions are not wrapped and propagate immediately.
      *
      * **Versioned buckets are out of scope.** This paginates `ListObjectsV2`,
      * which reports only current object versions — never noncurrent versions or
@@ -310,18 +337,39 @@ export class S3Service {
      * versioned bucket requires `ListObjectVersions` and per-version deletes;
      * use `S3Client` directly for that.
      *
-     * @returns The keys this call issued deletes for.
+     * @returns Every key deleted, when no key failed.
      */
     async emptyBucket(bucket: string): Promise<string[]> {
         this.logger.info('Emptying S3 bucket', { input: { bucket } });
         const paginator = paginateListObjectsV2({ client: this.client }, { Bucket: bucket });
         const deletedKeys: string[] = [];
+        const results: DeleteObjectsCommandOutput[] = [];
         for await (const page of paginator) {
             const keys: string[] = (page.Contents ?? []).flatMap(o => (o.Key ? [o.Key] : []));
             if (keys.length === 0) continue;
-            await this.deleteObjects(bucket, keys);
+            results.push(...(await this.sendDeleteChunks(bucket, keys, { quiet: true })));
             deletedKeys.push(...keys);
         }
+        throwIfRejected(this.logger, 'S3 emptyBucket', results, extractDeleteFailures(results));
         return deletedKeys;
+    }
+
+    private async sendDeleteChunks(
+        bucket: string,
+        keys: string[],
+        { quiet }: { quiet?: boolean } = {}
+    ): Promise<DeleteObjectsCommandOutput[]> {
+        const results: DeleteObjectsCommandOutput[] = [];
+        for (const batch of chunk(keys, DELETE_OBJECTS_BATCH_LIMIT)) {
+            results.push(
+                await this.client.send(
+                    new DeleteObjectsCommand({
+                        Bucket: bucket,
+                        Delete: { Objects: batch.map(Key => ({ Key })), Quiet: quiet },
+                    })
+                )
+            );
+        }
+        return results;
     }
 }
