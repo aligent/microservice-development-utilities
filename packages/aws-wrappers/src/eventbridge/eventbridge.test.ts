@@ -178,13 +178,9 @@ describe('EventBridgeService', () => {
                 expect(eventBridgeMock.commandCalls(PutEventsCommand)).toHaveLength(1);
             });
 
-            it('exposes no event detail on the failed entries or in the warning at INFO level', async () => {
-                const entryEchoingDetail = {
-                    ErrorCode: 'InternalFailure',
-                    ErrorMessage: 'Boom',
-                    Detail: '{"secret":"echoed"}',
-                };
-                rejectedChunks([entryEchoingDetail]);
+            it('never carries the request event detail on the error or in the warning', async () => {
+                const sentinel = 'detail-sentinel-7f3a';
+                rejectedChunks([{ ErrorCode: 'InternalFailure', ErrorMessage: 'Boom' }]);
                 const logger = new Logger();
                 logger.setLogLevel('INFO');
                 const warnSpy = vi.spyOn(logger, 'warn');
@@ -193,12 +189,23 @@ describe('EventBridgeService', () => {
                     logger,
                 });
 
-                const error = await batchFailure(failing.putEvents({ Entries: entries(1) }));
+                const error = await batchFailure(
+                    failing.putEvents({
+                        Entries: [
+                            {
+                                Source: 'test.source',
+                                DetailType: 'TestEvent',
+                                Detail: JSON.stringify({ secret: sentinel }),
+                            },
+                        ],
+                    })
+                );
 
-                expect(error.failed[0]).not.toHaveProperty('Detail');
-                expect(JSON.stringify(error.failed)).not.toContain('secret');
+                expect(error.message).not.toContain(sentinel);
+                expect(JSON.stringify({ ...error })).not.toContain(sentinel);
                 expect(warnSpy).toHaveBeenCalledTimes(1);
-                const [, payload] = warnSpy.mock.calls[0] ?? [];
+                const [message, payload] = warnSpy.mock.calls[0] ?? [];
+                expect(`${message}${JSON.stringify(payload)}`).not.toContain(sentinel);
                 expect(payload).toEqual({ failedCount: 1, codes: ['InternalFailure'] });
             });
         });
@@ -225,6 +232,8 @@ describe('EventBridgeService', () => {
             expect(infoSpy).toHaveBeenCalledTimes(1);
             const [, payload] = infoSpy.mock.calls[0] ?? [];
             const loggedInput = (payload as { input: object }).input;
+            expect(loggedInput).not.toHaveProperty('Entries');
+            expect(loggedInput).not.toHaveProperty('Detail');
             expect(loggedInput).toEqual({ EndpointId, entryCount: 1 });
         });
     });

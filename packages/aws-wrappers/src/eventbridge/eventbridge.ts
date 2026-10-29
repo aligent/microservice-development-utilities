@@ -15,21 +15,32 @@ import { redactInput } from '../util/redact.js';
 const PUT_EVENTS_LIMIT = 10;
 
 /**
+ * `Detail`, `Resources` and the entries themselves are payload carriers, so
+ * the INFO line carries only the endpoint id and how many entries were sent.
+ */
+function summariseEntries({ EndpointId, Entries }: PutEventsCommandInput) {
+    return { EndpointId, entryCount: Entries?.length ?? 0 };
+}
+
+/**
+ * Chunks are full except the last, so the caller's original index of a
+ * rejected entry is the chunk's offset (chunk number times the chunk size)
+ * plus its position within the chunk.
+ */
+function extractPutEventsFailures(results: PutEventsCommandOutput[]): BatchFailedEntry[] {
+    return results.flatMap((result, chunkIndex) =>
+        extractChunkFailures(result, chunkIndex * PUT_EVENTS_LIMIT)
+    );
+}
+
+/**
  * `PutEvents` reports a rejected entry by an error code on the result entry at
- * the same position as the request entry. Chunks are full except the last, so
- * the caller's original index is the chunk offset plus the position in the
- * chunk.
+ * the same position as the request entry.
  *
  * Copies only code and message out, never the request entry, so neither the
  * error nor the warning can carry event detail.
  */
-function rejectedEntries(results: PutEventsCommandOutput[]): BatchFailedEntry[] {
-    return results.flatMap((result, chunkIndex) =>
-        rejectedInChunk(result, chunkIndex * PUT_EVENTS_LIMIT)
-    );
-}
-
-function rejectedInChunk(result: PutEventsCommandOutput, offset: number): BatchFailedEntry[] {
+function extractChunkFailures(result: PutEventsCommandOutput, offset: number): BatchFailedEntry[] {
     return (result.Entries ?? [])
         .map(({ ErrorCode, ErrorMessage }, position) => ({
             id: String(offset + position),
@@ -97,10 +108,7 @@ export class EventBridgeService {
     async putEvents(input: PutEventsCommandInput): Promise<PutEventsCommandOutput[]> {
         const entries: PutEventsRequestEntry[] = input.Entries ?? [];
         this.logger.info('Putting EventBridge events', {
-            input: redactInput(this.logger, input, ({ EndpointId }) => ({
-                EndpointId,
-                entryCount: entries.length,
-            })),
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: PutEventsCommandOutput[] = [];
         for (const batch of chunk(entries, PUT_EVENTS_LIMIT)) {
@@ -112,7 +120,7 @@ export class EventBridgeService {
             this.logger,
             'EventBridge putEvents',
             results,
-            rejectedEntries(results)
+            extractPutEventsFailures(results)
         );
     }
 }

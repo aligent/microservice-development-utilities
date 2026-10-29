@@ -1,3 +1,8 @@
+export interface ParsedErrorPayload {
+    errorType: string | undefined;
+    errorMessage: string | undefined;
+}
+
 /**
  * Thrown by `LambdaService.invoke` when a synchronous invocation reached the
  * function but the function itself failed. Lambda reports that as an HTTP 200
@@ -15,20 +20,18 @@
  */
 export class LambdaFunctionError extends Error {
     override readonly name = 'LambdaFunctionError';
+    readonly errorType: string | undefined;
+    readonly errorMessage: string | undefined;
 
     constructor(
         readonly functionName: string | undefined,
         readonly functionError: string,
-        readonly errorType: string | undefined,
-        readonly errorMessage: string | undefined
+        payload: ParsedErrorPayload
     ) {
         super(`Lambda function ${functionName ?? '(unnamed)'} failed (${functionError})`);
+        this.errorType = payload.errorType;
+        this.errorMessage = payload.errorMessage;
     }
-}
-
-interface ParsedErrorPayload {
-    errorType: string | undefined;
-    errorMessage: string | undefined;
 }
 
 /**

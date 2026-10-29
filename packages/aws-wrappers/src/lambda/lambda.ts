@@ -85,12 +85,10 @@ export class LambdaService {
             functionName: input.FunctionName,
             functionError: output.FunctionError,
         });
-        const { errorType, errorMessage } = parseFunctionErrorPayload(output.Payload);
         throw new LambdaFunctionError(
             input.FunctionName,
             output.FunctionError,
-            errorType,
-            errorMessage
+            parseFunctionErrorPayload(output.Payload)
         );
     }
 }
