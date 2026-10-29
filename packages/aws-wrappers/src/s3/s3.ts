@@ -318,9 +318,10 @@ export class S3Service {
 
     /**
      * Delete every object in an **unversioned** bucket. Streams the listing
-     * page-by-page and deletes each page as it arrives, so the listing and the
-     * SDK outputs held stay bounded by one page (~1000 keys). The returned key
-     * list still grows with the bucket.
+     * page-by-page and deletes each page as it arrives, so the listing stays
+     * bounded by one page (~1000 keys). The `Quiet` outputs held for the error
+     * grow with the page count rather than the key count, and the returned key
+     * list grows with the bucket.
      *
      * Deletes are sent in `Quiet` mode, so S3 reports only the keys it failed
      * to delete. Every page is deleted before the outcome is judged; if any key

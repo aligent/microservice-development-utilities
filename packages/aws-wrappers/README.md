@@ -29,7 +29,7 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `EventBridgeService.putEvents`, `S3Service.deleteObjects` and `S3Service.emptyBucket`.
 
-Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
+Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns exactly what it did before: the per-chunk SDK outputs, or for `emptyBucket` the deleted keys.
 
 ```ts
 import { BatchOperationError } from '@aligent/aws-wrappers';

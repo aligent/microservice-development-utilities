@@ -168,10 +168,13 @@ describe('S3Service', () => {
 
                 const error = await batchFailure(service().deleteObjects(Bucket, keys(3)));
 
+                expect(error.name).toBe('BatchOperationError');
                 expect(error.failed).toEqual([
                     { id: 'key-1', code: 'AccessDenied', message: 'Access Denied' },
                 ]);
-                expect(error.results).toHaveLength(1);
+                expect(error.results).toEqual([
+                    expect.objectContaining({ Deleted: [{ Key: 'key-0' }, { Key: 'key-2' }] }),
+                ]);
             });
 
             it('sends every chunk before throwing and reports failures from each chunk', async () => {
@@ -188,7 +191,7 @@ describe('S3Service', () => {
                 const error = await batchFailure(service().deleteObjects(Bucket, keys(2501)));
 
                 expect(s3Mock.commandCalls(DeleteObjectsCommand)).toHaveLength(3);
-                expect(error.results).toHaveLength(3);
+                expect(error.results.map(result => result.Errors?.length ?? 0)).toEqual([1, 0, 1]);
                 expect(error.failed.map(({ id }) => id)).toEqual(['key-5', 'key-2500']);
             });
 
@@ -280,6 +283,10 @@ describe('S3Service', () => {
 
             await expect(outcome).rejects.toBeInstanceOf(BatchOperationError);
             await expect(outcome).rejects.toMatchObject({
+                results: [
+                    { Errors: [{ Key: 'b', Code: 'AccessDenied', Message: 'first' }] },
+                    { Errors: [{ Key: 'c', Code: 'InternalError', Message: 'second' }] },
+                ],
                 failed: [
                     { id: 'b', code: 'AccessDenied', message: 'first' },
                     { id: 'c', code: 'InternalError', message: 'second' },
@@ -312,6 +319,7 @@ describe('S3Service', () => {
 
             await expect(outcome).rejects.toThrow('SlowDown');
             await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
+            expect(s3Mock.commandCalls(DeleteObjectsCommand)).toHaveLength(1);
         });
 
         it('streams the listing and deletes each page', async () => {
