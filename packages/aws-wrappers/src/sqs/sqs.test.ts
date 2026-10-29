@@ -12,6 +12,7 @@ import {
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BatchOperationError } from '../util/batch-operation-error.js';
+import { batchFailure } from '../util/batch-operation-error.test-helpers.js';
 import { SQSService } from './sqs';
 
 const sqsMock = mockClient(SQSClient);
@@ -19,7 +20,6 @@ const QueueUrl = 'https://sqs.us-east-1.amazonaws.com/0/queue';
 
 type BatchEntry = { Id?: string };
 type BatchInput = { Entries?: BatchEntry[] };
-type BatchResult = { Successful?: BatchEntry[]; Failed?: BatchEntry[] };
 
 /**
  * Answers every batch request the way SQS does: entries whose Id is in
@@ -307,19 +307,6 @@ describe('SQSService', () => {
 
     describe.each(batchMethods)('$method partial failure', ({ send, payloadField }) => {
         const service = () => new SQSService({ client: new SQSClient({}) });
-
-        async function batchFailure(
-            promise: Promise<unknown>
-        ): Promise<BatchOperationError<BatchResult>> {
-            const error = await promise.then(
-                () => undefined,
-                (thrown: unknown) => thrown
-            );
-            if (!(error instanceof BatchOperationError)) {
-                throw new Error(`Expected a BatchOperationError, got: ${String(error)}`);
-            }
-            return error;
-        }
 
         it('throws with the failed entry when one entry in a single chunk is rejected', async () => {
             rejectEntries(['1']);
