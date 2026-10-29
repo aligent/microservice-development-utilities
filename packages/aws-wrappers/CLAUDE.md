@@ -20,8 +20,8 @@ packages/aws-wrappers/src/
 │   ├── <service>.ts        # the *Service class
 │   └── <service>.test.ts   # co-located tests
 ├── testing/                # test-only helpers, published as the `./testing` subpath
-├── util/                   # internal helpers; only `BatchOperationError` is public
-└── index.ts                # named exports of every *Service class and `BatchOperationError`
+├── util/                   # internal helpers; only `BatchOperationError` and `LambdaFunctionError` are public
+└── index.ts                # named exports of every *Service class, `BatchOperationError` and `LambdaFunctionError`
 ```
 
 One folder per service, lowercase. `testing/` is the one non-service folder: it backs the `./testing` subpath export and is deliberately **not** re-exported from `index.ts` — see "The `createMockService` helper" below. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
@@ -118,6 +118,7 @@ Each service file states the unlock rule **once**, in its class-level TSDoc. Per
 - **SQS** — `sendMessage` omits `MessageBody`, `MessageAttributes`. Batch methods log `{ QueueUrl, entryCount }`.
 - **DynamoDB** — `getItem` / `deleteItem` omit `Key`. `putItem` omits `Item`. `updateItem` omits `Key` and `ExpressionAttributeValues`. `query` / `scan` / `paginateItems` / `paginateScan` omit `ExpressionAttributeValues`. `batchGet` / `batchWrite` log `{ tables: Object.keys(RequestItems) }` only.
 - **EventBridge** — `putEvents` logs `{ EndpointId, entryCount }` (`Detail`, `Resources` and the entries are payload carriers).
+- **Lambda** — `invoke` omits `Payload` and `ClientContext`; responses are never logged.
 - **SecretsManager** — write methods omit `SecretString` / `SecretBinary`.
 - **SSM** — `putParameter` omits `Value`.
 - **SFN** — `startExecution` omits the execution `input` (often carries PII).
@@ -132,6 +133,7 @@ Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` 
 - **Generator pagination, yield items**: `DynamoDB.paginateItems` / `paginateScan`. Used when the result set is potentially unbounded — peak memory stays bounded by one page.
 - **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10), `EventBridge.putEvents` (10), `SSM.getParameters` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
 - **Throw-after-all-chunks on rejected entries**: `SQS.sendMessageBatch` / `deleteMessageBatch`, `SNS.publishBatch` and `EventBridge.putEvents` send every chunk, then throw one `BatchOperationError` (`src/util/batch-operation-error.ts`, exported from the main entry only) if any `Failed` entry came back (for `putEvents`, any result entry carrying an `ErrorCode`). The collect-warn-throw step is the internal `throwIfAnyFailed(logger, operation, results)` in the same file — call it rather than re-implementing it. It extracts the SQS/SNS `Failed` shape and delegates to `throwIfRejected(logger, operation, results, failed)`, the warn-and-throw step for a service whose rejected entries come in another shape: extract them into `{ id, code, message }` yourself and call that (`EventBridge.putEvents` does, setting `id` to the entry's original index across chunks as a string, since `PutEvents` entries carry no identifier). The error carries the per-chunk `results` and a `failed` list of `{ id, code, message }`; the helper copies those three fields explicitly and never spreads the SDK entry, so a payload can't leak into the error or the warning. Request-level SDK exceptions are deliberately **not** wrapped; each method's TSDoc says so. The S3 batch methods are to reuse this error rather than introduce their own.
+- **Function error on a successful response**: `Lambda.invoke` is the non-batch counterpart. Lambda answers HTTP 200 when the invoked function threw, flagging it with `FunctionError`, so `invoke` warns (function name and function error value only) and throws `LambdaFunctionError` (`src/util/lambda-function-error.ts`, exported from the main entry only; its `name` is fixed so dual-build consumers can match on it instead of `instanceof`). It carries the function name, the SDK's function error value, and the error type and message parsed from the payload when it has the usual JSON shape (otherwise undefined). It deliberately excludes the raw SDK output and the stack trace, because either can hold the caller's payload or PII. The check is unconditional because the marker only appears on synchronous responses; async and dry-run responses return without throwing, and failures of async invocations are not observable by the wrapper (the TSDoc says so).
 
 Flat-array pagination goes through `collectItems` / `collectPages` (`src/util/pagination.ts`) and chunking through `chunk` (`src/util/chunk.ts`) — don't hand-roll either loop in a service. Both are internal-only and not exported from `src/index.ts`. `S3.emptyBucket` and `S3.getAllObjects` are the deliberate exceptions to `collectItems`: they iterate the paginator directly because they act on each page as it arrives (`emptyBucket` deletes page by page to keep memory bounded; `getAllObjects` fetches each object body).
 
@@ -282,4 +284,4 @@ These came up during the initial design and were explicitly deferred:
 - Migration guide from the legacy utilities to the new wrappers.
 - Integration tests against LocalStack or real AWS.
 - CDK constructs in `nx-cdk` corresponding to these wrappers.
-- Wrappers for additional AWS services (EventBridge, Kinesis, etc.) — add them as separate tickets following the "Adding a new service" flow.
+- Wrappers for additional AWS services (Kinesis, etc.) — add them as separate tickets following the "Adding a new service" flow.

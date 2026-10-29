@@ -152,6 +152,7 @@ __metadata:
     "@aws-sdk/client-apigatewayv2": "npm:^3.1127.0"
     "@aws-sdk/client-dynamodb": "npm:^3.1127.0"
     "@aws-sdk/client-eventbridge": "npm:^3.1127.0"
+    "@aws-sdk/client-lambda": "npm:^3.1127.0"
     "@aws-sdk/client-s3": "npm:^3.1127.0"
     "@aws-sdk/client-scheduler": "npm:^3.1127.0"
     "@aws-sdk/client-secrets-manager": "npm:^3.1127.0"
@@ -418,6 +419,22 @@ __metadata:
     "@smithy/types": "npm:^4.19.0"
     tslib: "npm:^2.6.2"
   checksum: 10c0/4f8e13f3f75d78b8bf503f9ed8c37f478af545f1fb396df62f6a3f0862c46feb82781caf01565b7b5103a3165d9c862040bcf150ec2cba99ce0585c57b8ec2e5
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/client-lambda@npm:^3.1127.0":
+  version: 3.1156.0
+  resolution: "@aws-sdk/client-lambda@npm:3.1156.0"
+  dependencies:
+    "@aws-sdk/core": "npm:^3.978.5"
+    "@aws-sdk/credential-provider-node": "npm:^3.972.88"
+    "@aws-sdk/types": "npm:^3.975.0"
+    "@smithy/core": "npm:^3.36.1"
+    "@smithy/fetch-http-handler": "npm:^5.8.0"
+    "@smithy/node-http-handler": "npm:^4.12.1"
+    "@smithy/types": "npm:^4.19.0"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/a59834a278e3b6ff67908748f67bee11a449e22e1f3d7860d8aa78fbac61218e7a862758de1d9a015b5df7b4dd1191e8b19a7b2044c6d584da898b39f77d522d
   languageName: node
   linkType: hard
 

@@ -325,6 +325,47 @@ try {
 
 The wrapper does not retry. At INFO the log line shows only the endpoint id and the entry count, because `Detail` and `Resources` carry payloads.
 
+## Lambda
+
+Invokes another Lambda function. `invoke` takes the SDK input unchanged and returns the SDK output unchanged — `Payload` stays a `Uint8Array` you serialise and decode yourself. Choose sync, async or dry-run with `InvocationType`; omitting it means a synchronous call.
+
+```ts
+import { LambdaFunctionError, LambdaService } from '@aligent/aws-wrappers';
+
+const lambda = new LambdaService();
+
+// Lambda answers HTTP 200 even when the invoked function threw, flagging it with
+// FunctionError on the response. invoke() turns that marker into a thrown
+// LambdaFunctionError so a failed invocation can't be mistaken for a success.
+try {
+    const { Payload } = await lambda.invoke({
+        FunctionName: 'pricing-service',
+        Payload: new TextEncoder().encode(JSON.stringify({ sku: 'ABC-123' })),
+    });
+    const price = JSON.parse(Payload?.transformToString() ?? 'null');
+} catch (error) {
+    if (error instanceof LambdaFunctionError) {
+        // functionError is 'Handled' or 'Unhandled'; errorType and errorMessage are
+        // parsed from the function's error payload, or undefined if it isn't the usual shape.
+        console.error(error.functionName, error.functionError, error.errorType, error.errorMessage);
+    }
+    throw error;
+}
+
+// Fire-and-forget: the response only confirms the request was accepted.
+await lambda.invoke({
+    FunctionName: 'audit-writer',
+    InvocationType: 'Event',
+    Payload: new TextEncoder().encode(JSON.stringify(auditRecord)),
+});
+```
+
+- `LambdaFunctionError` carries the function name, the SDK's function error value, and the error type and message parsed from the payload. It deliberately excludes the raw SDK output and the stack trace, because either can contain your payload or PII. A warning with only the function name and function error value is logged.
+- The error has a stable `name` of `'LambdaFunctionError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
+- The function error marker only appears on synchronous responses, so async (`Event`) and `DryRun` calls return without throwing. **Failures of asynchronous invocations are not observable by the wrapper** — configure a dead-letter queue or destination on the invoked function.
+- Request-level SDK exceptions (throttling, access denied, network errors) are not wrapped and propagate unchanged.
+- At INFO the log line shows only the function name, invocation type, qualifier, log type and tenant id. `Payload` and `ClientContext` are omitted, and responses are never logged.
+
 ## SSM Parameter Store
 
 ```ts
