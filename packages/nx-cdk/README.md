@@ -126,6 +126,10 @@ yarn nx g remove-service <service-name>
 | `name`        | string  | Yes      | -       | The name of the service to remove               |
 | `forceRemove` | boolean | No       | `false` | Skip dependency check when removing the project |
 
+#### Dependency check
+
+Before removing anything, the generator refuses to continue if another project (for example another service importing this one) depends on the service, and names those projects in the error. The main `application` is not counted, because the generator removes its references to the service itself. Pass `--forceRemove` only when you know the remaining dependents are safe to break or you will fix them by hand.
+
 #### What it does
 
 The remove generator performs the following cleanup:
@@ -133,6 +137,7 @@ The remove generator performs the following cleanup:
 - **Application updates**:
   - Removes the service's import declaration from `application/lib/service-stacks.ts`
   - Removes the stack instantiation from the `ApplicationStage` constructor
+  - Removes the service from `application/package.json` `bundleDependencies`
 
 - **Root updates**:
   - Removes the service from the root `tsconfig.json` references
