@@ -114,8 +114,11 @@ function buildHandlerEnvironments(
                 sourcemap: process.env['NODE_ENV'] !== 'production',
                 rolldownOptions: {
                     input: {
+                        // The virtual ID uses the path relative to the handlers directory:
+                        // Rolldown prints virtual IDs verbatim in the bundle, so an absolute
+                        // path would leak the build machine's directory layout
                         index: options.stepFunctionExecutionId
-                            ? `${VIRTUAL_ENTRY_PREFIX}${handler}`
+                            ? `${VIRTUAL_ENTRY_PREFIX}${bundledPath}`
                             : handler,
                     },
                     moduleTypes: { ...options.moduleTypes },
@@ -190,6 +193,8 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  */
 export function handlerBundle(handlersPath: string, options: HandlerBundleOptions = {}): Plugin {
     const activeShims = resolveShims(options.shims);
+    // Set by the `config` hook; `load` resolves virtual entry IDs against it
+    let handlersDir: string | undefined;
 
     return {
         name: 'handler-bundle',
@@ -206,7 +211,7 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             const { customLogger, logLevel, root } = config;
             const { concurrency = Infinity, quiet = true } = options;
 
-            const handlersDir = resolve(root || process.cwd(), handlersPath);
+            handlersDir = resolve(root || process.cwd(), handlersPath);
             const environments = buildHandlerEnvironments(handlersDir, options);
 
             if (!environments) {
@@ -233,7 +238,14 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
         },
         load(id) {
             if (id.startsWith(RESOLVED_VIRTUAL_ENTRY_PREFIX)) {
-                return renderVirtualEntry(id.slice(RESOLVED_VIRTUAL_ENTRY_PREFIX.length));
+                if (handlersDir === undefined) {
+                    throw new Error(
+                        `[handler-bundle] Cannot load ${id}: the handlers directory has not been resolved`
+                    );
+                }
+                return renderVirtualEntry(
+                    resolve(handlersDir, id.slice(RESOLVED_VIRTUAL_ENTRY_PREFIX.length))
+                );
             }
             return null;
         },

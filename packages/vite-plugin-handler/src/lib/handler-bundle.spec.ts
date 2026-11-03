@@ -122,22 +122,28 @@ describe('handlerBundle', () => {
 
         it('routes handler entries through the virtual entry module when enabled', () => {
             const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
-            expect(inputFor(plugin)['index']).toBe(`virtual:handler-entry:${HANDLERS_PATH}/get.ts`);
+            // Relative to the handlers directory so the bundle doesn't contain the build machine's path
+            expect(inputFor(plugin)['index']).toBe('virtual:handler-entry:get.ts');
         });
 
         it('wraps the handler export in the virtual entry module', () => {
             const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
-            const id = callHook(
-                plugin,
-                'resolveId',
-                `virtual:handler-entry:${HANDLERS_PATH}/get.ts`
-            );
+            callConfigHook(plugin);
+            const id = callHook(plugin, 'resolveId', 'virtual:handler-entry:get.ts');
             const code = callHook(plugin, 'load', id) as string;
 
-            expect(id).toBe(`\0virtual:handler-entry:${HANDLERS_PATH}/get.ts`);
+            expect(id).toBe('\0virtual:handler-entry:get.ts');
             expect(code).toContain(`export * from "${HANDLERS_PATH}/get.ts";`);
             expect(code).toContain(
                 'export const handler = __wrapHandler(__handlerModule.handler);'
+            );
+        });
+
+        it('throws when loading a virtual entry before the config hook has run', () => {
+            const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
+
+            expect(() => callHook(plugin, 'load', '\0virtual:handler-entry:get.ts')).toThrow(
+                'handlers directory has not been resolved'
             );
         });
 
@@ -175,9 +181,7 @@ describe('handlerBundle', () => {
             const plugin = handlerBundle(HANDLERS_PATH);
 
             expect(inputFor(plugin)['index']).toBe(`${HANDLERS_PATH}/get.ts`);
-            expect(
-                callHook(plugin, 'resolveId', `virtual:handler-entry:${HANDLERS_PATH}/get.ts`)
-            ).toBeNull();
+            expect(callHook(plugin, 'resolveId', 'virtual:handler-entry:get.ts')).toBeNull();
             expect(
                 callHook(plugin, 'transform', 'class Logger {}\nexport { Logger };', LOGGER_ID)
             ).toBeNull();
