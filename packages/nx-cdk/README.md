@@ -106,6 +106,25 @@ yarn nx g service user-management
 yarn nx g @aligent/nx-cdk:service user-management
 ```
 
+#### Step Functions execution IDs in logs
+
+Generated services bundle their handlers with the `stepFunctionExecutionId` option of `@aligent/vite-plugin-handler` enabled. When a Step Function passes its execution ID to a Lambda through the Lambda `ClientContext`, every Powertools Logger line the Lambda writes during that invocation gets `stepFunctionExecutionId` and `rootStepFunctionExecutionId` fields, with no handler code changes. Query a single execution's logs with Logs Insights:
+
+```
+filter stepFunctionExecutionId = "<execution ARN>"
+```
+
+Each Lambda Task in a state machine definition has to send the ID. In JSONata:
+
+```yaml
+Arguments:
+  FunctionName: ${MyLambda}
+  Payload: '{% $states.input %}'
+  ClientContext: '{% $base64encode($string({"custom": {"stepFunctionExecutionId": $states.context.Execution.Id}})) %}'
+```
+
+`rootStepFunctionExecutionId` defaults to `stepFunctionExecutionId`. For work that runs in a child execution (Distributed Map items, nested `StartExecution`), pass the parent's ID down in the child's input and add it to the `custom` object as `rootStepFunctionExecutionId` so the child's logs group under the top-level execution. See the `@aligent/vite-plugin-handler` README for details. The `--example` service includes a working state machine.
+
 ### Remove Service Generator
 
 The remove-service generator cleanly removes a service and all of its references from the project. It reverses the changes made by the service generator, ensuring no dangling imports or references are left behind.

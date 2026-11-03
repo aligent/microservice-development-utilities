@@ -96,6 +96,94 @@ describe('handlerBundle', () => {
         expect(output['format']).toBe('esm');
     });
 
+    describe('stepFunctionExecutionId', () => {
+        function inputFor(plugin: ReturnType<typeof handlerBundle>) {
+            const result = callConfigHook(plugin) as Record<string, unknown>;
+            const environments = result['environments'] as Record<string, Record<string, unknown>>;
+            const env = environments['handler_get'] as Record<string, unknown>;
+            const build = env['build'] as Record<string, unknown>;
+            const rolldownOptions = build['rolldownOptions'] as Record<string, unknown>;
+            return rolldownOptions['input'] as Record<string, string>;
+        }
+
+        function callHook(
+            plugin: ReturnType<typeof handlerBundle>,
+            name: string,
+            ...args: unknown[]
+        ) {
+            const hook = (plugin as unknown as Record<string, unknown>)[name];
+            if (typeof hook !== 'function') {
+                throw new Error(`Expected ${name} to be a function`);
+            }
+            return hook.call({ warn: vi.fn() }, ...args);
+        }
+
+        const LOGGER_ID = '/repo/node_modules/@aws-lambda-powertools/logger/lib/esm/Logger.js';
+
+        it('routes handler entries through the virtual entry module when enabled', () => {
+            const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
+            expect(inputFor(plugin)['index']).toBe(`virtual:handler-entry:${HANDLERS_PATH}/get.ts`);
+        });
+
+        it('wraps the handler export in the virtual entry module', () => {
+            const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
+            const id = callHook(
+                plugin,
+                'resolveId',
+                `virtual:handler-entry:${HANDLERS_PATH}/get.ts`
+            );
+            const code = callHook(plugin, 'load', id) as string;
+
+            expect(id).toBe(`\0virtual:handler-entry:${HANDLERS_PATH}/get.ts`);
+            expect(code).toContain(`export * from "${HANDLERS_PATH}/get.ts";`);
+            expect(code).toContain(
+                'export const handler = __wrapHandler(__handlerModule.handler);'
+            );
+        });
+
+        it('patches the Powertools Logger module when enabled', () => {
+            const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
+            const result = callHook(
+                plugin,
+                'transform',
+                'class Logger {}\nexport { Logger };',
+                LOGGER_ID
+            ) as {
+                code: string;
+            };
+
+            expect(result.code).toContain('__patchPowertoolsLogger(Logger);');
+        });
+
+        it('warns and skips an unrecognised Powertools Logger module', () => {
+            const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
+            const warn = vi.fn();
+            const hook = (plugin as unknown as Record<string, (...args: unknown[]) => unknown>)[
+                'transform'
+            ];
+            if (!hook) {
+                throw new Error('Expected transform to be defined');
+            }
+
+            expect(hook.call({ warn }, 'export class Logger {}', LOGGER_ID)).toBeNull();
+            expect(warn).toHaveBeenCalledWith(
+                expect.stringContaining('Unrecognised Powertools Logger module')
+            );
+        });
+
+        it('leaves entries and modules untouched by default', () => {
+            const plugin = handlerBundle(HANDLERS_PATH);
+
+            expect(inputFor(plugin)['index']).toBe(`${HANDLERS_PATH}/get.ts`);
+            expect(
+                callHook(plugin, 'resolveId', `virtual:handler-entry:${HANDLERS_PATH}/get.ts`)
+            ).toBeNull();
+            expect(
+                callHook(plugin, 'transform', 'class Logger {}\nexport { Logger };', LOGGER_ID)
+            ).toBeNull();
+        });
+    });
+
     it('externalises node built-in modules and native addons', () => {
         const plugin = handlerBundle(HANDLERS_PATH);
         const result = callConfigHook(plugin) as Record<string, unknown>;

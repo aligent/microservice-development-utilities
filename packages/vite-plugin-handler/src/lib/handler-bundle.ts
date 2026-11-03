@@ -2,6 +2,7 @@ import MagicString from 'magic-string';
 import { globSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
     createLogger,
     type BuildEnvironment,
@@ -27,9 +28,27 @@ export interface HandlerBundleOptions {
     /** Suppress noisy per-module/per-chunk build output for handler environments,
      *  keeping only the build-start, build-summary, and size/gzip lines (default: true) */
     quiet?: boolean;
+    /** Add `stepFunctionExecutionId` and `rootStepFunctionExecutionId` from the Lambda
+     *  ClientContext to every Powertools Logger line written during an invocation (default: false) */
+    stepFunctionExecutionId?: boolean;
 }
 
 const ENV_PREFIX = 'handler';
+
+// Handler entries are routed through a virtual module that wraps the exported
+// `handler` when the `stepFunctionExecutionId` option is enabled
+const VIRTUAL_ENTRY_PREFIX = 'virtual:handler-entry:';
+const RESOLVED_VIRTUAL_ENTRY_PREFIX = `\0${VIRTUAL_ENTRY_PREFIX}`;
+
+// Extensionless so it resolves to the .ts source in tests and the emitted .js when published
+const STEP_FUNCTION_CONTEXT_MODULE = fileURLToPath(
+    new URL('./step-function-context', import.meta.url)
+);
+
+// Only the ESM build is patched — it is what the `import` condition resolves to
+const POWERTOOLS_LOGGER_MODULE =
+    /[\\/]@aws-lambda-powertools[\\/]logger[\\/]lib[\\/]esm[\\/]Logger\.js$/;
+const POWERTOOLS_LOGGER_EXPORT = 'export { Logger };';
 
 // Native .node addons (e.g. cpu-features, sharp) cannot be bundled
 const NATIVE_NODE_ADDONS = /\.node$/;
@@ -94,7 +113,11 @@ function buildHandlerEnvironments(
                 // CLI --mode flag (Lambda builds always use `vite build`).
                 sourcemap: process.env['NODE_ENV'] !== 'production',
                 rolldownOptions: {
-                    input: { index: handler },
+                    input: {
+                        index: options.stepFunctionExecutionId
+                            ? `${VIRTUAL_ENTRY_PREFIX}${handler}`
+                            : handler,
+                    },
                     moduleTypes: { ...options.moduleTypes },
                     checks: { pluginTimings: false },
                     external,
@@ -110,6 +133,22 @@ function buildHandlerEnvironments(
     }
 
     return environments;
+}
+
+/**
+ * Source for the virtual entry module: re-exports everything from the handler
+ * file, replacing `handler` with a version that records the Step Functions
+ * execution IDs for the duration of each invocation.
+ */
+function renderVirtualEntry(handlerPath: string): string {
+    const handlerModule = JSON.stringify(handlerPath);
+    const runtimeModule = JSON.stringify(STEP_FUNCTION_CONTEXT_MODULE);
+    return [
+        `import * as __handlerModule from ${handlerModule};`,
+        `import { wrapHandler as __wrapHandler } from ${runtimeModule};`,
+        `export * from ${handlerModule};`,
+        'export const handler = __wrapHandler(__handlerModule.handler);',
+    ].join('\n');
 }
 
 /**
@@ -185,6 +224,41 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
                         buildHandlersConcurrently(builder, concurrency),
                 },
             };
+        },
+        resolveId(id) {
+            if (options.stepFunctionExecutionId && id.startsWith(VIRTUAL_ENTRY_PREFIX)) {
+                return `\0${id}`;
+            }
+            return null;
+        },
+        load(id) {
+            if (id.startsWith(RESOLVED_VIRTUAL_ENTRY_PREFIX)) {
+                return renderVirtualEntry(id.slice(RESOLVED_VIRTUAL_ENTRY_PREFIX.length));
+            }
+            return null;
+        },
+        transform(code, id) {
+            if (!options.stepFunctionExecutionId || !POWERTOOLS_LOGGER_MODULE.test(id)) {
+                return null;
+            }
+
+            if (!code.includes(POWERTOOLS_LOGGER_EXPORT)) {
+                this.warn(
+                    `[handler-bundle] Unrecognised Powertools Logger module, step function execution IDs will not be logged: ${id}`
+                );
+                return null;
+            }
+
+            const ms = new MagicString(code);
+            ms.append(
+                [
+                    '',
+                    `import { patchPowertoolsLogger as __patchPowertoolsLogger } from ${JSON.stringify(STEP_FUNCTION_CONTEXT_MODULE)};`,
+                    '__patchPowertoolsLogger(Logger);',
+                    '',
+                ].join('\n')
+            );
+            return { code: ms.toString(), map: ms.generateMap({ hires: true }) };
         },
         renderChunk(code) {
             const matched = activeShims.filter(s => s.needles.some(n => code.includes(n)));
