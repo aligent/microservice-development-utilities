@@ -64,6 +64,45 @@ handlerBundle('src/runtime/handlers', {
 });
 ```
 
+### Step Functions execution IDs in logs
+
+A Lambda can't see the ID of the Step Functions execution that invoked it, so the state machine has to send it. With `stepFunctionExecutionId: true`, the state machine sends it in the Lambda `ClientContext`, and every Powertools Logger line written during that invocation gets two extra fields:
+
+| Field                         | Value                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `stepFunctionExecutionId`     | `custom.stepFunctionExecutionId` from the ClientContext — the execution that invoked the Lambda |
+| `rootStepFunctionExecutionId` | `custom.rootStepFunctionExecutionId` if sent, otherwise `stepFunctionExecutionId`               |
+
+Handler code doesn't change. The fields go on lines from every Powertools `Logger` in the bundle, including child loggers and the ones `@aligent/aws-wrappers` creates. Invocations without the ClientContext fields (API Gateway, SQS, direct invokes) log exactly as before.
+
+Send the IDs from each Lambda Task in the state machine. In JSONata:
+
+```yaml
+Type: Task
+Resource: arn:aws:states:::lambda:invoke
+Arguments:
+  FunctionName: ${MyLambda}
+  Payload: '{% $states.input %}'
+  ClientContext: '{% $base64encode($string({"custom": {"stepFunctionExecutionId": $states.context.Execution.Id}})) %}'
+```
+
+Distributed Map items and nested `StartExecution` children run as their own executions, so their `stepFunctionExecutionId` is the child's. To group their logs under the top-level execution, pass the parent's ID down in the child's input and send it as well:
+
+```yaml
+ClientContext: >-
+  {% $base64encode($string({"custom": {
+    "stepFunctionExecutionId": $states.context.Execution.Id,
+    "rootStepFunctionExecutionId": $states.input.rootStepFunctionExecutionId
+  }})) %}
+```
+
+How it works:
+
+- Each handler entry is routed through a virtual module that re-exports the handler file and replaces its `handler` export with a wrapper. The wrapper reads the IDs from `context.clientContext.custom` and holds them in `AsyncLocalStorage` for the invocation, so concurrent invocations never share IDs.
+- When the bundle includes `@aws-lambda-powertools/logger`, its ESM `Logger` module is patched so `trace`/`debug`/`info`/`warn`/`error`/`critical` pass the IDs as the first extra-input object. Fields the caller passes take precedence. Handlers that don't use Powertools don't pull it in.
+- Only Powertools Logger lines get the fields. `console.*` output is unchanged.
+- If a future Powertools release changes the `Logger` module's export shape, the build warns and the fields are left out rather than failing the build.
+
 ## Behaviour
 
 - Automatically skips handler environment creation when running under **vitest** (`VITEST=true`), so tests run without interference.
