@@ -76,6 +76,13 @@ function createQuietLogger(base: Logger): Logger {
     };
 }
 
+interface HandlerEnvironments {
+    environments: Record<string, EnvironmentOptions>;
+    /** Handler path relative to the handlers directory → absolute handler path.
+     *  The allowlist of IDs the virtual entry module will load. */
+    entries: Map<string, string>;
+}
+
 /**
  * Creates a Vite environment configuration for each handler file, producing
  * an ESM bundle per handler under `dist/<entryName>/index.mjs`.
@@ -83,7 +90,7 @@ function createQuietLogger(base: Logger): Logger {
 function buildHandlerEnvironments(
     handlersDir: string,
     options: HandlerBundleOptions
-): Record<string, EnvironmentOptions> | undefined {
+): HandlerEnvironments | undefined {
     const handlers = globSync(`${handlersDir}/**/*.ts`);
     if (!handlers.length) {
         return undefined;
@@ -97,8 +104,10 @@ function buildHandlerEnvironments(
     ];
 
     const environments: Record<string, EnvironmentOptions> = {};
+    const entries = new Map<string, string>();
     for (const handler of handlers) {
         const bundledPath = handler.replace(`${handlersDir}/`, '');
+        entries.set(bundledPath, handler);
         const entryName = bundledPath.replace(extname(bundledPath), '');
         const envName = `${ENV_PREFIX}_${entryName.replace(/[^a-zA-Z0-9$_]/g, '_')}`;
 
@@ -135,7 +144,7 @@ function buildHandlerEnvironments(
         };
     }
 
-    return environments;
+    return { environments, entries };
 }
 
 /**
@@ -193,8 +202,10 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  */
 export function handlerBundle(handlersPath: string, options: HandlerBundleOptions = {}): Plugin {
     const activeShims = resolveShims(options.shims);
-    // Set by the `config` hook; `load` resolves virtual entry IDs against it
-    let handlersDir: string | undefined;
+    // Set by the `config` hook; `load` only serves virtual entry IDs found in it,
+    // so an arbitrary `virtual:handler-entry:<path>` import cannot pull in files
+    // outside the discovered handlers (e.g. via `../` or an absolute path)
+    let handlerEntries: Map<string, string> | undefined;
 
     return {
         name: 'handler-bundle',
@@ -211,13 +222,16 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             const { customLogger, logLevel, root } = config;
             const { concurrency = Infinity, quiet = true } = options;
 
-            handlersDir = resolve(root || process.cwd(), handlersPath);
-            const environments = buildHandlerEnvironments(handlersDir, options);
+            const handlersDir = resolve(root || process.cwd(), handlersPath);
+            const handlerEnvironments = buildHandlerEnvironments(handlersDir, options);
 
-            if (!environments) {
+            if (!handlerEnvironments) {
                 console.warn(`[handler-bundle] No handler files found in: ${handlersDir}`);
                 return;
             }
+
+            const { environments, entries } = handlerEnvironments;
+            handlerEntries = entries;
 
             const quietLogger = createQuietLogger(customLogger ?? createLogger(logLevel));
 
@@ -238,14 +252,20 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
         },
         load(id) {
             if (id.startsWith(RESOLVED_VIRTUAL_ENTRY_PREFIX)) {
-                if (handlersDir === undefined) {
+                if (handlerEntries === undefined) {
                     throw new Error(
                         `[handler-bundle] Cannot load ${id}: the handlers directory has not been resolved`
                     );
                 }
-                return renderVirtualEntry(
-                    resolve(handlersDir, id.slice(RESOLVED_VIRTUAL_ENTRY_PREFIX.length))
+                const handlerPath = handlerEntries.get(
+                    id.slice(RESOLVED_VIRTUAL_ENTRY_PREFIX.length)
                 );
+                if (handlerPath === undefined) {
+                    throw new Error(
+                        `[handler-bundle] Cannot load ${id}: not a handler discovered in the handlers directory`
+                    );
+                }
+                return renderVirtualEntry(handlerPath);
             }
             return null;
         },

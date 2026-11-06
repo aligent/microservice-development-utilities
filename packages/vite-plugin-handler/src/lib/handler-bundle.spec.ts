@@ -147,6 +147,20 @@ describe('handlerBundle', () => {
             );
         });
 
+        it.each([
+            ['a path traversal', '../../etc/passwd'],
+            ['an absolute path', '/etc/passwd'],
+            ['an undiscovered handler', 'missing.ts'],
+        ])('refuses to load a virtual entry for %s', (_, path) => {
+            const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
+            callConfigHook(plugin);
+            const id = callHook(plugin, 'resolveId', `virtual:handler-entry:${path}`);
+
+            expect(() => callHook(plugin, 'load', id)).toThrow(
+                'not a handler discovered in the handlers directory'
+            );
+        });
+
         it('patches the Powertools Logger module when enabled', () => {
             const plugin = handlerBundle(HANDLERS_PATH, { stepFunctionExecutionId: true });
             const result = callHook(
