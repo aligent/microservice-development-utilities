@@ -48,7 +48,23 @@ yarn pg:deploy dev/<%= name %>
 
 ## Configuration & Secrets
 
-This service requires the following parameters to be present in AWS SSM Parameter Store or Secrets Manager **before deployment**.
+This service gets its configuration and secrets from `SharedInfraStack` (see `libs/infra/README.md`) through its stack props.
+
+**Stage configuration.** Non-secret values set per stage in `libs/infra/src/config.ts`. Synth fails if a value is missing for the stage being deployed, or still set to `TODO`.
+
+<!-- List the config values this service uses. For example:
+| Prop | Source | Description |
+|---|---|---|
+| `eCommerceBaseUrl` | `ECOMMERCE_CONFIGURATIONS` | Base URL of the eCommerce API |
+-->
+
+**Secrets.** Secrets Manager secrets created by `SharedInfraStack` with a generated placeholder value. Set the real value by hand after the first deploy of each stage, before the service runs.
+
+<!-- List the secrets this service uses. For example:
+| Prop | Secret | Description |
+|---|---|---|
+| `eCommerceCredentialsSecret` | `{applicationName}/e-commerce-credentials` | eCommerce API credentials |
+-->
 
 ## Deployment
 
