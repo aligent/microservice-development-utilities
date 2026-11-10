@@ -47,8 +47,7 @@ interface RejectedEntry {
 /**
  * SQS and SNS report rejected entries under `Failed` on an otherwise
  * successful response, so a resolved chunk does not mean every entry was
- * accepted. Returns `results` untouched when nothing failed; otherwise warns
- * and throws a {@link BatchOperationError}.
+ * accepted. Extracts those entries and delegates to {@link throwIfRejected}.
  *
  * Only id, code and message are copied out — never the entry itself — so
  * neither the error nor the warning can leak a payload.
@@ -65,6 +64,25 @@ export function throwIfAnyFailed<TResult extends { Failed?: RejectedEntry[] | un
             message: Message,
         }))
     );
+    return throwIfRejected(logger, operation, results, failed);
+}
+
+/**
+ * Warn-and-throw step for services whose responses don't use the SQS/SNS
+ * `Failed` shape and so extract their own rejected entries. Returns `results`
+ * untouched when `failed` is empty; otherwise warns and throws a
+ * {@link BatchOperationError}.
+ *
+ * Callers must build `failed` by copying id, code and message explicitly —
+ * never by spreading the SDK entry — because it goes straight into the error
+ * and the warning.
+ */
+export function throwIfRejected<TResult>(
+    logger: LoggerInterface,
+    operation: string,
+    results: TResult[],
+    failed: BatchFailedEntry[]
+): TResult[] {
     if (failed.length === 0) return results;
 
     logger.warn(`${operation} had rejected entries`, {

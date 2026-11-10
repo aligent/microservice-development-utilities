@@ -63,8 +63,9 @@ function stripTargetInput<T extends { Target?: Target | undefined }>(input: T): 
  * `TRACE`) log full SDK inputs.
  *
  * Covers CRUD on schedules and their groups. Named `SchedulerService` (not
- * `EventBridgeSchedulerService`) so it doesn't collide with a future wrapper
- * over the separate EventBridge bus/rules API (`@aws-sdk/client-eventbridge`).
+ * `EventBridgeSchedulerService`) so it doesn't collide with `EventBridgeService`,
+ * the wrapper over the separate EventBridge bus/rules API
+ * (`@aws-sdk/client-eventbridge`).
  *
  * `FlexibleTimeWindow` is required by `CreateSchedule` and is passed through
  * untouched — the wrapper bakes in no default, so the caller must state their
