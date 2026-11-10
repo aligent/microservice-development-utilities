@@ -9,6 +9,7 @@ import { mockClient } from 'aws-sdk-client-mock';
 import xray from 'aws-xray-sdk-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BatchOperationError } from '../util/batch-operation-error.js';
+import { batchFailure } from '../util/batch-operation-error.test-helpers.js';
 import { EventBridgeService } from './eventbridge';
 
 const eventBridgeMock = mockClient(EventBridgeClient);
@@ -21,16 +22,6 @@ const entries = (count: number): PutEventsRequestEntry[] =>
         DetailType: 'TestEvent',
         Detail: JSON.stringify({ secret: `detail-${i}` }),
     }));
-
-const batchFailure = async (outcome: Promise<unknown>): Promise<BatchOperationError> => {
-    try {
-        await outcome;
-    } catch (error) {
-        if (error instanceof BatchOperationError) return error;
-        throw error;
-    }
-    throw new Error('Expected a BatchOperationError but the call resolved');
-};
 
 describe('EventBridgeService', () => {
     afterEach(() => {

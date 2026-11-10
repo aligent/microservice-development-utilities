@@ -27,9 +27,9 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch` and `EventBridgeService.putEvents`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `EventBridgeService.putEvents`, `S3Service.deleteObjects` and `S3Service.emptyBucket`.
 
-Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
+Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns exactly what it did before: the per-chunk SDK outputs, or for `emptyBucket` the deleted keys.
 
 ```ts
 import { BatchOperationError } from '@aligent/aws-wrappers';
@@ -50,6 +50,7 @@ try {
 
 - `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload.
 - `EventBridgeService.putEvents` entries have no identifier of their own, so for that method `id` is the entry's index in the `Entries` list you passed in, as a string.
+- For `S3Service.deleteObjects` and `emptyBucket`, `id` is the object key.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
@@ -107,7 +108,9 @@ await s3.emptyBucket('my-bucket');                     // unversioned buckets on
 
 Input shapes are intentionally tight (`Bucket`, `Key`, `Body` and similar). Callers needing SDK-specific options like server-side encryption or tagging should use `S3Client` directly.
 
-`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
+`deleteObjects` and `emptyBucket` throw a `BatchOperationError` when S3 fails to delete any key — see "Batch semantics".
+
+`emptyBucket` streams the listing page-by-page and deletes each page as it arrives, so the listing never holds more than one page; the returned key list still grows with the bucket. It keeps deleting every page after a failure, then throws one `BatchOperationError` covering all of them. Its deletes use S3's `Quiet` mode, so the error's `results` hold only the failures, not the deleted keys — re-list the bucket to see what is left. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
 
 ## DynamoDB
 

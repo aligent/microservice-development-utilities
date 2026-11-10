@@ -2,7 +2,6 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import {
     PublishBatchCommand,
     PublishBatchCommandInput,
-    PublishBatchCommandOutput,
     PublishBatchRequestEntry,
     PublishCommand,
     SNSClient,
@@ -10,6 +9,7 @@ import {
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BatchOperationError } from '../util/batch-operation-error.js';
+import { batchFailure } from '../util/batch-operation-error.test-helpers.js';
 import { SNSService } from './sns';
 
 const snsMock = mockClient(SNSClient);
@@ -134,19 +134,6 @@ describe('SNSService', () => {
                             })),
                     };
                 });
-            }
-
-            async function batchFailure(
-                promise: Promise<unknown>
-            ): Promise<BatchOperationError<PublishBatchCommandOutput>> {
-                const error = await promise.then(
-                    () => undefined,
-                    (thrown: unknown) => thrown
-                );
-                if (!(error instanceof BatchOperationError)) {
-                    throw new Error(`Expected a BatchOperationError, got: ${String(error)}`);
-                }
-                return error;
             }
 
             const ids = (count: number): string[] =>
