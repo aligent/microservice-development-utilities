@@ -2,6 +2,7 @@ import MagicString from 'magic-string';
 import { globSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { extname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
     createLogger,
     type BuildEnvironment,
@@ -27,9 +28,27 @@ export interface HandlerBundleOptions {
     /** Suppress noisy per-module/per-chunk build output for handler environments,
      *  keeping only the build-start, build-summary, and size/gzip lines (default: true) */
     quiet?: boolean;
+    /** Add `stepFunctionExecutionId` and `rootStepFunctionExecutionId` from the Lambda
+     *  ClientContext to every Powertools Logger line written during an invocation (default: false) */
+    stepFunctionExecutionId?: boolean;
 }
 
 const ENV_PREFIX = 'handler';
+
+// Handler entries are routed through a virtual module that wraps the exported
+// `handler` when the `stepFunctionExecutionId` option is enabled
+const VIRTUAL_ENTRY_PREFIX = 'virtual:handler-entry:';
+const RESOLVED_VIRTUAL_ENTRY_PREFIX = `\0${VIRTUAL_ENTRY_PREFIX}`;
+
+// Extensionless so it resolves to the .ts source in tests and the emitted .js when published
+const STEP_FUNCTION_CONTEXT_MODULE = fileURLToPath(
+    new URL('./step-function-context', import.meta.url)
+);
+
+// Only the ESM build is patched — it is what the `import` condition resolves to
+const POWERTOOLS_LOGGER_MODULE =
+    /[\\/]@aws-lambda-powertools[\\/]logger[\\/]lib[\\/]esm[\\/]Logger\.js$/;
+const POWERTOOLS_LOGGER_EXPORT = 'export { Logger };';
 
 // Native .node addons (e.g. cpu-features, sharp) cannot be bundled
 const NATIVE_NODE_ADDONS = /\.node$/;
@@ -57,6 +76,13 @@ function createQuietLogger(base: Logger): Logger {
     };
 }
 
+interface HandlerEnvironments {
+    environments: Record<string, EnvironmentOptions>;
+    /** Handler path relative to the handlers directory → absolute handler path.
+     *  The allowlist of IDs the virtual entry module will load. */
+    entries: Map<string, string>;
+}
+
 /**
  * Creates a Vite environment configuration for each handler file, producing
  * an ESM bundle per handler under `dist/<entryName>/index.mjs`.
@@ -64,7 +90,7 @@ function createQuietLogger(base: Logger): Logger {
 function buildHandlerEnvironments(
     handlersDir: string,
     options: HandlerBundleOptions
-): Record<string, EnvironmentOptions> | undefined {
+): HandlerEnvironments | undefined {
     const handlers = globSync(`${handlersDir}/**/*.ts`);
     if (!handlers.length) {
         return undefined;
@@ -78,8 +104,10 @@ function buildHandlerEnvironments(
     ];
 
     const environments: Record<string, EnvironmentOptions> = {};
+    const entries = new Map<string, string>();
     for (const handler of handlers) {
         const bundledPath = handler.replace(`${handlersDir}/`, '');
+        entries.set(bundledPath, handler);
         const entryName = bundledPath.replace(extname(bundledPath), '');
         const envName = `${ENV_PREFIX}_${entryName.replace(/[^a-zA-Z0-9$_]/g, '_')}`;
 
@@ -94,7 +122,14 @@ function buildHandlerEnvironments(
                 // CLI --mode flag (Lambda builds always use `vite build`).
                 sourcemap: process.env['NODE_ENV'] !== 'production',
                 rolldownOptions: {
-                    input: { index: handler },
+                    input: {
+                        // The virtual ID uses the path relative to the handlers directory:
+                        // Rolldown prints virtual IDs verbatim in the bundle, so an absolute
+                        // path would leak the build machine's directory layout
+                        index: options.stepFunctionExecutionId
+                            ? `${VIRTUAL_ENTRY_PREFIX}${bundledPath}`
+                            : handler,
+                    },
                     moduleTypes: { ...options.moduleTypes },
                     checks: { pluginTimings: false },
                     external,
@@ -109,7 +144,23 @@ function buildHandlerEnvironments(
         };
     }
 
-    return environments;
+    return { environments, entries };
+}
+
+/**
+ * Source for the virtual entry module: re-exports everything from the handler
+ * file, replacing `handler` with a version that records the Step Functions
+ * execution IDs for the duration of each invocation.
+ */
+function renderVirtualEntry(handlerPath: string): string {
+    const handlerModule = JSON.stringify(handlerPath);
+    const runtimeModule = JSON.stringify(STEP_FUNCTION_CONTEXT_MODULE);
+    return [
+        `import * as __handlerModule from ${handlerModule};`,
+        `import { wrapHandler as __wrapHandler } from ${runtimeModule};`,
+        `export * from ${handlerModule};`,
+        'export const handler = __wrapHandler(__handlerModule.handler);',
+    ].join('\n');
 }
 
 /**
@@ -151,6 +202,10 @@ async function buildHandlersConcurrently(builder: ViteBuilder, concurrency: numb
  */
 export function handlerBundle(handlersPath: string, options: HandlerBundleOptions = {}): Plugin {
     const activeShims = resolveShims(options.shims);
+    // Set by the `config` hook; `load` only serves virtual entry IDs found in it,
+    // so an arbitrary `virtual:handler-entry:<path>` import cannot pull in files
+    // outside the discovered handlers (e.g. via `../` or an absolute path)
+    let handlerEntries: Map<string, string> | undefined;
 
     return {
         name: 'handler-bundle',
@@ -168,12 +223,15 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
             const { concurrency = Infinity, quiet = true } = options;
 
             const handlersDir = resolve(root || process.cwd(), handlersPath);
-            const environments = buildHandlerEnvironments(handlersDir, options);
+            const handlerEnvironments = buildHandlerEnvironments(handlersDir, options);
 
-            if (!environments) {
+            if (!handlerEnvironments) {
                 console.warn(`[handler-bundle] No handler files found in: ${handlersDir}`);
                 return;
             }
+
+            const { environments, entries } = handlerEnvironments;
+            handlerEntries = entries;
 
             const quietLogger = createQuietLogger(customLogger ?? createLogger(logLevel));
 
@@ -185,6 +243,54 @@ export function handlerBundle(handlersPath: string, options: HandlerBundleOption
                         buildHandlersConcurrently(builder, concurrency),
                 },
             };
+        },
+        resolveId(id) {
+            if (options.stepFunctionExecutionId && id.startsWith(VIRTUAL_ENTRY_PREFIX)) {
+                return `\0${id}`;
+            }
+            return null;
+        },
+        load(id) {
+            if (id.startsWith(RESOLVED_VIRTUAL_ENTRY_PREFIX)) {
+                if (handlerEntries === undefined) {
+                    throw new Error(
+                        `[handler-bundle] Cannot load ${id}: the handlers directory has not been resolved`
+                    );
+                }
+                const handlerPath = handlerEntries.get(
+                    id.slice(RESOLVED_VIRTUAL_ENTRY_PREFIX.length)
+                );
+                if (handlerPath === undefined) {
+                    throw new Error(
+                        `[handler-bundle] Cannot load ${id}: not a handler discovered in the handlers directory`
+                    );
+                }
+                return renderVirtualEntry(handlerPath);
+            }
+            return null;
+        },
+        transform(code, id) {
+            if (!options.stepFunctionExecutionId || !POWERTOOLS_LOGGER_MODULE.test(id)) {
+                return null;
+            }
+
+            if (!code.includes(POWERTOOLS_LOGGER_EXPORT)) {
+                this.warn(
+                    `[handler-bundle] Unrecognised Powertools Logger module, step function execution IDs will not be logged: ${id}`
+                );
+                return null;
+            }
+
+            const ms = new MagicString(code);
+            ms.append(
+                [
+                    '',
+                    `import { patchPowertoolsLogger as __patchPowertoolsLogger } from ${JSON.stringify(STEP_FUNCTION_CONTEXT_MODULE)};`,
+                    '__patchPowertoolsLogger(Logger);',
+                    '',
+                ].join('\n')
+            );
+            return { code: ms.toString(), map: ms.generateMap({ hires: true }) };
         },
         renderChunk(code) {
             const matched = activeShims.filter(s => s.needles.some(n => code.includes(n)));
