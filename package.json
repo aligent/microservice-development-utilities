@@ -24,7 +24,7 @@
     "ts-morph": "^27.0.2"
   },
   "devDependencies": {
-    "@aligent/ts-code-standards": "^4.2.0",
+    "@aligent/ts-code-standards": "^5.0.1",
     "@nx/devkit": "23.2.0",
     "@nx/eslint": "23.2.0",
     "@nx/eslint-plugin": "23.2.0",
