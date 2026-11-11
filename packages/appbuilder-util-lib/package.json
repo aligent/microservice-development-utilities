@@ -14,9 +14,9 @@
     "@adobe/aio-lib-core-logging": "^3.0.2",
     "@adobe/aio-lib-db": "^0.1.0-beta.6",
     "@adobe/aio-lib-files": "^4.1.2",
-    "@adobe/aio-lib-state": "^5.3.1",
+    "@adobe/aio-lib-state": "^5.4.0",
     "base64url": "^3.0.1",
-    "mongodb": "^7.3.0",
+    "mongodb": "^7.7.0",
     "tslib": "^2.8.1"
   },
   "author": "Aligent",
