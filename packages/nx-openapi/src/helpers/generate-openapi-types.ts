@@ -1,5 +1,4 @@
 import { logger, Tree } from '@nx/devkit';
-import { lint, loadConfig } from '@redocly/openapi-core';
 import { readFileSync } from 'fs';
 import openapiTS, { astToString } from 'openapi-typescript';
 
@@ -82,6 +81,8 @@ export async function copySchema(
 export async function validateSchema(path: string): Promise<boolean> {
     let hasError = false;
     try {
+        // @redocly/openapi-core v2 is ESM-only, and this package compiles to CommonJS.
+        const { lint, loadConfig } = await import('@redocly/openapi-core');
         const config = await loadConfig();
         const results = await lint({ ref: path, config });
 
