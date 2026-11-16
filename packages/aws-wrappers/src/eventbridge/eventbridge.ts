@@ -8,7 +8,7 @@ import {
     PutEventsRequestEntry,
 } from '@aws-sdk/client-eventbridge';
 import xray from 'aws-xray-sdk-core';
-import { BatchFailedEntry, throwIfRejected } from '../util/batch-operation-error.js';
+import { BatchFailedEntry, throwIfAny } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
 import { redactInput } from '../util/redact.js';
 
@@ -116,7 +116,7 @@ export class EventBridgeService {
                 await this.client.send(new PutEventsCommand({ ...input, Entries: batch }))
             );
         }
-        return throwIfRejected(
+        return throwIfAny(
             this.logger,
             'EventBridge putEvents',
             results,

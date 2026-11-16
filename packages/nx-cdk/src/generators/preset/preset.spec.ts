@@ -1,4 +1,4 @@
-import { Tree, readNxJson } from '@nx/devkit';
+import { Tree, readNxJson, visitNotIgnoredFiles } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 
 import { presetGenerator } from './preset';
@@ -23,8 +23,13 @@ describe('preset generator', () => {
 
         const infraIndex = tree.read('libs/infra/src/index.ts', 'utf-8');
         expect(infraIndex).toBeDefined();
-        expect(infraIndex).toContain('paramExample');
+        expect(infraIndex).toContain('exampleBaseUrl');
         expect(infraIndex).toContain('secretExample');
+        expect(infraIndex).toContain('getStageConfig(EXAMPLE_CONFIGURATIONS');
+
+        const infraConfig = tree.read('libs/infra/src/config.ts', 'utf-8');
+        expect(infraConfig).toContain('EXAMPLE_CONFIGURATIONS');
+        expect(infraConfig).toContain('export function getStageConfig');
     });
 
     it('should generate without example code when example is false', async () => {
@@ -32,9 +37,28 @@ describe('preset generator', () => {
 
         const infraIndex = tree.read('libs/infra/src/index.ts', 'utf-8');
         expect(infraIndex).toBeDefined();
-        expect(infraIndex).not.toContain('paramExample');
+        expect(infraIndex).not.toContain('exampleBaseUrl');
         expect(infraIndex).not.toContain('secretExample');
+
+        const infraConfig = tree.read('libs/infra/src/config.ts', 'utf-8');
+        expect(infraConfig).toContain('export function getStageConfig');
+        expect(infraConfig).not.toContain('EXAMPLE_CONFIGURATIONS');
     });
+
+    it.each([true, false])(
+        'should not use SSM parameters in generated files when example is %s',
+        async example => {
+            await presetGenerator(tree, { ...options, example });
+
+            const filesUsingSsm: string[] = [];
+            visitNotIgnoredFiles(tree, '.', path => {
+                if (tree.read(path, 'utf-8')?.includes('aws-ssm')) {
+                    filesUsingSsm.push(path);
+                }
+            });
+            expect(filesUsingSsm).toEqual([]);
+        }
+    );
 
     it('should not contain inline Lambda bundling code in vite base config', async () => {
         await presetGenerator(tree, options);
