@@ -4,6 +4,7 @@ export { DynamoDBService } from './dynamodb/dynamodb.js';
 export { EventBridgeService } from './eventbridge/eventbridge.js';
 export { LambdaService } from './lambda/lambda.js';
 export { S3Service } from './s3/s3.js';
+export type { EmptyBucketPageResult } from './s3/s3.js';
 export { SchedulerService } from './scheduler/scheduler.js';
 export { SecretsManagerService } from './secrets-manager/secrets-manager.js';
 export { StepFunctionsService } from './sfn/sfn.js';

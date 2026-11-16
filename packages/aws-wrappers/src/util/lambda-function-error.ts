@@ -1,4 +1,4 @@
-export interface ParsedErrorPayload {
+interface ParsedErrorPayload {
     errorType: string | undefined;
     errorMessage: string | undefined;
 }
@@ -26,7 +26,7 @@ export class LambdaFunctionError extends Error {
     constructor(
         readonly functionName: string | undefined,
         readonly functionError: string,
-        payload: ParsedErrorPayload
+        payload: Pick<LambdaFunctionError, 'errorType' | 'errorMessage'>
     ) {
         super(`Lambda function ${functionName ?? '(unnamed)'} failed (${functionError})`);
         this.errorType = payload.errorType;

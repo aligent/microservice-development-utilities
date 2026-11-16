@@ -1,4 +1,4 @@
-import { createProjectGraphAsync, formatFiles, Tree, updateJson } from '@nx/devkit';
+import { createProjectGraphAsync, formatFiles, ProjectGraph, Tree, updateJson } from '@nx/devkit';
 import { MAIN_APPLICATION_NAME, SERVICES_FOLDER, SERVICES_SCOPE } from '../constants';
 import {
     assertValidServiceName,
@@ -7,6 +7,18 @@ import {
     removeTsConfigReference,
 } from '../helpers/utilities';
 import { RemoveGeneratorSchema } from './schema';
+
+/**
+ * The main application always depends on a service the service generator
+ * registered, and this generator removes those references itself, so only
+ * other dependents block removal.
+ */
+function findBlockingDependents(graph: ProjectGraph, projectName: string) {
+    return Object.entries(graph.dependencies)
+        .filter(([source]) => source !== projectName && source !== MAIN_APPLICATION_NAME)
+        .filter(([, deps]) => deps.some(d => d.target === projectName))
+        .map(([source]) => source);
+}
 
 export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema) {
     const { name, forceRemove } = options;
@@ -21,11 +33,7 @@ export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema
     }
 
     if (!forceRemove) {
-        const graph = await createProjectGraphAsync();
-        const dependents = Object.entries(graph.dependencies)
-            .filter(([source]) => source !== projectName)
-            .filter(([, deps]) => deps.some(d => d.target === projectName))
-            .map(([source]) => source);
+        const dependents = findBlockingDependents(await createProjectGraphAsync(), projectName);
 
         if (dependents.length > 0) {
             throw new Error(

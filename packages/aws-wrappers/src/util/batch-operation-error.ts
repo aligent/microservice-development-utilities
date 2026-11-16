@@ -3,7 +3,7 @@ import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 /**
  * One entry a batch operation rejected. Deliberately limited to identifier,
  * code and message so the error never carries message bodies, attributes or
- * any other payload the caller sent.
+ * any other payload the caller sent. For S3 the identifier is the object key.
  */
 export interface BatchFailedEntry {
     id: string | undefined;
@@ -16,7 +16,8 @@ export interface BatchFailedEntry {
  * entry was rejected.
  *
  * `results` holds the raw SDK output of every chunk, so the outputs of the
- * entries that succeeded (message ids, sequence numbers) stay readable.
+ * entries that succeeded (message ids, sequence numbers) stay readable. The
+ * one exception is `S3.emptyBucket`, whose `results` are per-page deleted keys.
  * `failed` is the normalised list of rejected entries across all chunks.
  *
  * Match on `name` rather than `instanceof` if both the CJS and ESM builds of
@@ -47,7 +48,7 @@ interface RejectedEntry {
 /**
  * SQS and SNS report rejected entries under `Failed` on an otherwise
  * successful response, so a resolved chunk does not mean every entry was
- * accepted. Extracts those entries and delegates to {@link throwIfRejected}.
+ * accepted. Extracts those entries and delegates to {@link throwIfAny}.
  *
  * Only id, code and message are copied out — never the entry itself — so
  * neither the error nor the warning can leak a payload.
@@ -64,20 +65,49 @@ export function throwIfAnyFailed<TResult extends { Failed?: RejectedEntry[] | un
             message: Message,
         }))
     );
-    return throwIfRejected(logger, operation, results, failed);
+    return throwIfAny(logger, operation, results, failed);
+}
+
+/**
+ * The shape S3 `DeleteObjects` uses for a key it could not delete.
+ */
+interface DeleteError {
+    Key?: string | undefined;
+    Code?: string | undefined;
+    Message?: string | undefined;
+}
+
+/**
+ * S3 reports undeleted keys under `Errors` on an otherwise successful
+ * `DeleteObjects` response. Same contract as {@link throwIfAnyFailed}; the
+ * key is carried as the failed entry's `id`, and `VersionId` is dropped.
+ */
+export function throwIfAnyDeleteErrors<TResult extends { Errors?: DeleteError[] | undefined }>(
+    logger: LoggerInterface,
+    operation: string,
+    results: TResult[]
+): TResult[] {
+    const failed: BatchFailedEntry[] = results.flatMap(result =>
+        (result.Errors ?? []).map(({ Key, Code, Message }) => ({
+            id: Key,
+            code: Code,
+            message: Message,
+        }))
+    );
+    return throwIfAny(logger, operation, results, failed);
 }
 
 /**
  * Warn-and-throw step for services whose responses don't use the SQS/SNS
- * `Failed` shape and so extract their own rejected entries. Returns `results`
- * untouched when `failed` is empty; otherwise warns and throws a
- * {@link BatchOperationError}.
+ * `Failed` shape and so extract their own rejected entries (`EventBridge.putEvents`),
+ * or whose `results` aren't a plain list of SDK outputs (`S3.emptyBucket`).
+ * Returns `results` untouched when `failed` is empty.
  *
  * Callers must build `failed` by copying id, code and message explicitly —
  * never by spreading the SDK entry — because it goes straight into the error
  * and the warning.
  */
-export function throwIfRejected<TResult>(
+export function throwIfAny<TResult>(
     logger: LoggerInterface,
     operation: string,
     results: TResult[],
