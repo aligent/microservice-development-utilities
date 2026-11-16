@@ -6,7 +6,7 @@ export default defineConfig(configEnv => {
     return mergeConfig(
         baseConfig(configEnv),
         defineConfig({
-            plugins: [handlerBundle('src/runtime/handlers')],
+            plugins: [handlerBundle('src/runtime/handlers', { stepFunctionExecutionId: true })],
             cacheDir: '../../node_modules/.vitest/<%= name %>',
             test: {
                 env: {

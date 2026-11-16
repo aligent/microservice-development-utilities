@@ -25,8 +25,7 @@ Services deployment are managed by the main [CDK Application](./application/READ
 ├── services/                 # Microservices workspace
 │
 ├── nx.json                   # Nx monorepo configuration
-├── rolldown.config.base.mjs  # Base Lambda bundling config
-├── vitest.config.base.mjs    # Base test configuration
+├── vite.config.base.mjs      # Base Vite/Vitest configuration
 └── eslint.config.mjs         # ESLint configuration
 ```
 

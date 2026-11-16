@@ -82,4 +82,24 @@ describe('service generator', () => {
 
         expect(tree.exists('services/.gitkeep')).toBe(true);
     });
+
+    it('should enable step function execution IDs in the handler bundle', async () => {
+        await serviceGenerator(tree, { name: 'test' });
+
+        const viteConfig = tree.read('services/test/vite.config.mjs', 'utf-8');
+        expect(viteConfig).toContain(
+            "handlerBundle('src/runtime/handlers', { stepFunctionExecutionId: true })"
+        );
+    });
+
+    it('should pass the execution ID from the example step function to its lambda', async () => {
+        await serviceGenerator(tree, { name: 'test', example: true });
+
+        const definition = tree.read('services/test/src/infra/stepfunctions/example.yml', 'utf-8');
+        expect(definition).toContain('FunctionName: ${ExampleLambda}');
+        expect(definition).toContain('"stepFunctionExecutionId": $states.context.Execution.Id');
+
+        const stack = tree.read('services/test/src/index.ts', 'utf-8');
+        expect(stack).toContain('lambdaFunctions: [exampleLambda]');
+    });
 });

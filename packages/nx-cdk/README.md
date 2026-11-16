@@ -42,8 +42,7 @@ The preset generator scaffolds:
 - **Root configuration files**:
   - `eslint.config.mjs` - ESLint configuration
   - `prettier.config.mjs` - Prettier configuration
-  - `rolldown.config.base.mjs` - Base Rolldown configuration
-  - `vitest.config.base.mjs` - Base Vitest configuration
+  - `vite.config.base.mjs` - Base Vite configuration, with the Vitest settings each service extends
   - `vitest.global.setup.mjs` - Global Vitest setup
   - `tsconfig.json` - Root TypeScript configuration
   - `nx.json` - Nx workspace configuration
@@ -92,8 +91,7 @@ The service generator creates a new service in `services/<service-name>/` with:
   - `package.json` - Service-specific dependencies
   - `README.md` - Service documentation
   - `eslint.config.mjs` - ESLint configuration
-  - `rolldown.config.mjs` - Rolldown configuration
-  - `vitest.config.mjs` - Vitest configuration
+  - `vite.config.mjs` - Lambda handler bundling (via `@aligent/vite-plugin-handler`) and Vitest configuration
   - TypeScript configurations (`tsconfig.json`, `tsconfig.lib.json`, `tsconfig.spec.json`)
 
 - **Root updates**:
@@ -111,6 +109,85 @@ yarn nx g service user-management
 # Or with the full plugin prefix
 yarn nx g @aligent/nx-cdk:service user-management
 ```
+
+#### Step Functions execution IDs in logs
+
+Generated services bundle their handlers with the `stepFunctionExecutionId` option of `@aligent/vite-plugin-handler` enabled. When a Step Function passes its execution ID to a Lambda through the Lambda `ClientContext`, every Powertools Logger line the Lambda writes during that invocation gets `stepFunctionExecutionId` and `rootStepFunctionExecutionId` fields, with no handler code changes. Query a single execution's logs with Logs Insights:
+
+```
+filter stepFunctionExecutionId = "<execution ARN>"
+```
+
+Each Lambda Task in a state machine definition has to send the ID. In JSONata:
+
+```yaml
+Arguments:
+  FunctionName: ${MyLambda}
+  Payload: '{% $states.input %}'
+  ClientContext: '{% $base64encode($string({"custom": {"stepFunctionExecutionId": $states.context.Execution.Id}})) %}'
+```
+
+`rootStepFunctionExecutionId` defaults to `stepFunctionExecutionId`. For work that runs in a child execution (Distributed Map items, nested `StartExecution`), pass the parent's ID down in the child's input and add it to the `custom` object as `rootStepFunctionExecutionId` so the child's logs group under the top-level execution. See the `@aligent/vite-plugin-handler` README for details. The `--example` service includes a working state machine.
+
+##### Adding it to an existing service
+
+Services generated before `@aligent/nx-cdk` 0.11.0 don't have this enabled. To add it:
+
+1. **Upgrade the plugin.** In the workspace root `package.json`, set `"@aligent/vite-plugin-handler": "^0.6.0"` and run `yarn install`. Older versions ignore the option without any warning.
+
+2. **Turn on the option** in `services/<service-name>/vite.config.mjs`:
+
+   ```diff
+   - plugins: [handlerBundle('src/runtime/handlers')],
+   + plugins: [handlerBundle('src/runtime/handlers', { stepFunctionExecutionId: true })],
+   ```
+
+   Services that still have a `rolldown.config.mjs` were generated before the switch to Vite and don't use this plugin. Move them to the `vite.config.mjs` setup first.
+
+3. **Log with Powertools.** Only lines from `Logger` in `@aws-lambda-powertools/logger` get the fields. That includes child loggers and the loggers `@aligent/aws-wrappers` creates. `console.*` output doesn't. Handler code doesn't otherwise change.
+
+4. **Send the ID from each Lambda Task** in the state machine definition. The Task has to use the `lambda:invoke` integration:
+
+   ```yaml
+   MyStep:
+     Type: Task
+     Resource: arn:aws:states:::lambda:invoke
+     Arguments:
+       FunctionName: ${MyLambda}
+       Payload: '{% $states.input %}'
+       ClientContext: '{% $base64encode($string({"custom": {"stepFunctionExecutionId": $states.context.Execution.Id}})) %}'
+     Output: '{% $states.result.Payload %}'
+   ```
+
+   - If the Task uses the function ARN directly (`Resource: ${MyLambda}`), it can't send a `ClientContext`. Change it to the form above. `lambda:invoke` wraps the response in `{ Payload, StatusCode, ... }`, so keep the `Output` line or the next state receives a different shape.
+   - `${MyLambda}` is filled in by `StepFunctionFromFile` when the function is passed in `lambdaFunctions`. That prop also grants the state machine permission to invoke it:
+
+     ```ts
+     new StepFunctionFromFile(this, 'MyStepFunction', {
+         baseDir: import.meta.dirname,
+         filepath: 'infra/stepfunctions/my-step-function.yml',
+         lambdaFunctions: [myLambda],
+     });
+     ```
+
+   - For JSONPath definitions (no `QueryLanguage: JSONata`), build the JSON with `States.Format` and use `OutputPath: $.Payload`:
+
+     ```yaml
+     Parameters:
+       FunctionName: ${MyLambda}
+       Payload.$: $
+       ClientContext.$: "States.Base64Encode(States.Format('\\{\"custom\":\\{\"stepFunctionExecutionId\":\"{}\"\\}\\}', $$.Execution.Id))"
+     OutputPath: $.Payload
+     ```
+
+5. **Deploy and check.** Start an execution, then run this in Logs Insights on the Lambda's log group:
+
+   ```
+   fields @timestamp, message, stepFunctionExecutionId, rootStepFunctionExecutionId
+   | filter stepFunctionExecutionId = "<execution ARN>"
+   ```
+
+   If the fields are missing, check that `dist/<handler>/index.mjs` contains `patchPowertoolsLogger`. If it doesn't, the installed plugin is older than 0.6.0 or the option isn't set. Also check that the build didn't print `Unrecognised Powertools Logger module`.
 
 ### Remove Service Generator
 
