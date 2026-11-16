@@ -2,6 +2,7 @@ export { APIGatewayV2Service } from './api-gateway-v2/api-gateway-v2.js';
 export { APIGatewayService } from './api-gateway/api-gateway.js';
 export { DynamoDBService } from './dynamodb/dynamodb.js';
 export { S3Service } from './s3/s3.js';
+export type { EmptyBucketPageResult } from './s3/s3.js';
 export { SchedulerService } from './scheduler/scheduler.js';
 export { SecretsManagerService } from './secrets-manager/secrets-manager.js';
 export { StepFunctionsService } from './sfn/sfn.js';
