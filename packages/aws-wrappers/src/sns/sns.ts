@@ -11,7 +11,9 @@ import {
     SNSClient,
 } from '@aws-sdk/client-sns';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
+import { throwIfAnyFailed } from '../util/batch-operation-error.js';
+import { chunk } from '../util/chunk.js';
+import { redactInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
 const PUBLISH_BATCH_LIMIT = 10;
@@ -77,7 +79,7 @@ export class SNSService {
         const shouldTruncate = opts?.truncate ?? this.truncate;
         const effective = shouldTruncate ? this.applyTruncation(input) : input;
         this.logger.info('Publishing SNS message', {
-            input: filterFieldsForLogLevel(this.logger, effective, PUBLISH_SAFE_FIELDS),
+            input: redactInput(this.logger, effective, PUBLISH_SAFE_FIELDS),
         });
         return this.client.send(new PublishCommand(effective));
     }
@@ -120,29 +122,34 @@ export class SNSService {
      * PublishBatch at 10 entries per request, so this method auto-chunks
      * the caller's `PublishBatchRequestEntries` and sends one request per
      * chunk, returning the array of outputs.
+     *
+     * Every chunk is sent before the outcome is judged. If SNS rejected any
+     * entry, a {@link BatchOperationError} is then thrown carrying the
+     * per-chunk results and the failed entries. Request-level SDK exceptions
+     * (throttling, access denied) propagate unchanged and immediately, so
+     * earlier chunks may already have been published.
+     *
      * @param input - PublishBatchCommandInput including TopicArn and entries.
      */
     async publishBatch(input: PublishBatchCommandInput): Promise<PublishBatchCommandOutput[]> {
         const entries: PublishBatchRequestEntry[] = input.PublishBatchRequestEntries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
-        // safe log shape includes the computed `entryCount`, which isn't a key
-        // on `PublishBatchCommandInput`.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Publishing SNS message batch', {
-            input: logFullInput ? input : { TopicArn: input.TopicArn, entryCount: entries.length },
+            input: redactInput(this.logger, input, ({ TopicArn }) => ({
+                TopicArn,
+                entryCount: entries.length,
+            })),
         });
         const results: PublishBatchCommandOutput[] = [];
-        for (let i = 0; i < entries.length; i += PUBLISH_BATCH_LIMIT) {
-            const chunk = entries.slice(i, i + PUBLISH_BATCH_LIMIT);
+        for (const batch of chunk(entries, PUBLISH_BATCH_LIMIT)) {
             results.push(
                 await this.client.send(
                     new PublishBatchCommand({
                         ...input,
-                        PublishBatchRequestEntries: chunk,
+                        PublishBatchRequestEntries: batch,
                     })
                 )
             );
         }
-        return results;
+        return throwIfAnyFailed(this.logger, 'SNS publishBatch', results);
     }
 }

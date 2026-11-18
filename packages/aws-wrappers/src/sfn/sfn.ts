@@ -16,7 +16,8 @@ import {
     StopExecutionCommandOutput,
 } from '@aws-sdk/client-sfn';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel } from '../util/redact.js';
+import { collectItems } from '../util/pagination.js';
+import { redactInput } from '../util/redact.js';
 
 /**
  * Fields safe to log at INFO for `startExecution`. Omits `input` — the SFN
@@ -60,11 +61,7 @@ export class StepFunctionsService {
     async listExecutions(input: ListExecutionsCommandInput): Promise<ExecutionListItem[]> {
         this.logger.info('Listing Step Functions executions', { input });
         const paginator = paginateListExecutions({ client: this.client }, input);
-        const executions: ExecutionListItem[] = [];
-        for await (const page of paginator) {
-            if (page.executions) executions.push(...page.executions);
-        }
-        return executions;
+        return collectItems(paginator, page => page.executions);
     }
 
     /**
@@ -72,7 +69,7 @@ export class StepFunctionsService {
      */
     async startExecution(input: StartExecutionCommandInput): Promise<StartExecutionCommandOutput> {
         this.logger.info('Starting Step Functions execution', {
-            input: filterFieldsForLogLevel(this.logger, input, START_EXECUTION_SAFE_FIELDS),
+            input: redactInput(this.logger, input, START_EXECUTION_SAFE_FIELDS),
         });
         return this.client.send(new StartExecutionCommand(input));
     }

@@ -1,8 +1,9 @@
-import { Stack, Stage, StackProps, Tags } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import type { StackProps } from 'aws-cdk-lib';
+import { Stack, Stage, Tags } from 'aws-cdk-lib';
+import type { Construct } from 'constructs';
 
 export interface SharedInfraProps {
-    // TODO: Add shared infrastructure properties (e.g. SSM parameters, secrets)
+    // TODO: Add shared infrastructure properties (e.g. stage config from ./config, secrets)
 }
 
 export class SharedInfraStack extends Stack {

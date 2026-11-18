@@ -29,24 +29,26 @@ export default defineConfig({
 <%_ } else { _%>
             // parentMenu: 'sales', // omit for a top-level item
 <%_ } _%>
+            // Commerce generates a per-app ACL resource (derived from
+            // `metadata.id`) so admins can grant or deny this menu item per
+            // role. Drop it to make the page visible to every admin user.
+            aclProtected: true,
         },
     },
 <%_ } _%>
 <%_ if (hasBusinessConfig) { _%>
     businessConfig: {
+        // Merchant-facing configuration fields. Each one renders a control in
+        // the Commerce admin under Stores → Configuration for this app's
+        // section. The lib rejects an empty schema, so a placeholder field is
+        // declared here — replace it with the app's real settings.
         schema: [
-            // Add merchant-facing configuration fields here. Each field
-            // renders a control in the Commerce admin under
-            // Stores → Configuration for this app's section.
-            //
-            // Examples:
-            //
-            // {
-            //     type: 'text',
-            //     name: 'api_key',
-            //     label: 'API Key',
-            //     description: 'Authentication key for the upstream service.',
-            // },
+            {
+                type: 'text',
+                name: 'sample_setting',
+                label: 'Sample Setting',
+                description: 'Placeholder field scaffolded by the generator. Replace me.',
+            },
             // {
             //     type: 'list',
             //     name: 'environment',
@@ -107,42 +109,40 @@ export default defineConfig({
     },
 <%_ } _%>
 <%_ if (hasCommerceWebhooks) { _%>
+    // Each webhook binds a Commerce extensibility hook to one of your runtime
+    // actions (declared in app.config.yaml). At install time the lib provisions
+    // the subscription on the Commerce instance. The lib rejects an empty list,
+    // so a sample bound to `src/actions/webhook-sample.ts` is declared here —
+    // replace it, or send to an external URL instead by dropping
+    // `runtimeAction` / `requireAdobeAuth` and adding `url` under `webhook`.
+    //
+    // Schema reference:
+    //   https://developer.adobe.com/commerce/extensibility/app-management/installation/webhooks/
     webhooks: [
-        // Each webhook binds a Commerce extensibility hook to one of your
-        // runtime actions (declared in app.config.yaml). At install time the
-        // lib provisions the subscription on the Commerce instance.
-        //
-        // Schema reference:
-        //   https://developer.adobe.com/commerce/extensibility/app-management/installation/webhooks/
-        //
-        // Worked example — point at a runtime action you've defined:
-        //
-        // {
-        //     label: 'Validate order before placement',
-        //     description: 'Halt order placement when a custom rule fails.',
-        //     category: 'validation',
-        //     runtimeAction: '<%= runtimePackageName %>/validate-order',
-        //     requireAdobeAuth: true,
-        //     webhook: {
-        //         webhook_method: 'observer.sales_order_place_before',
-        //         webhook_type: 'before',
-        //         batch_name: '<%= runtimePackageName %>_validate_batch',
-        //         hook_name: '<%= runtimePackageName %>_validate_hook',
-        //         method: 'POST',
-        //         priority: 100,
-        //         required: true,
-        //         timeout: 5000,
-        //         fallback_error_message: '<%= displayName %> validation unavailable',
-        //         fields: [
-        //             { name: 'grand_total', source: 'data.order.grand_total' },
-        //         ],
-        //         rules: [],
-        //         headers: [],
-        //     },
-        // },
-        //
-        // Or send to an external URL instead of a runtime action — drop
-        // `runtimeAction`/`requireAdobeAuth` and add `url` under `webhook`.
+        {
+            label: 'Sample order placement hook',
+            description: 'Placeholder webhook scaffolded by the generator. Replace me.',
+            category: 'validation',
+            runtimeAction: '<%= runtimePackageName %>/webhook-sample',
+            requireAdobeAuth: true,
+            webhook: {
+                webhook_method: 'observer.sales_order_place_before',
+                webhook_type: 'before',
+                batch_name: '<%= appSlug %>_sample_batch',
+                hook_name: '<%= appSlug %>_sample_hook',
+                method: 'POST',
+                priority: 100,
+                // Not required: a failure here lets the order through rather
+                // than taking checkout down with it. Flip to `true` once the
+                // action enforces something that must not be bypassed.
+                required: false,
+                timeout: 5000,
+                fallback_error_message: '<%= displayName %> webhook unavailable',
+                fields: [{ name: 'grand_total', source: 'data.order.grand_total' }],
+                rules: [],
+                headers: [],
+            },
+        },
     ],
 <%_ } _%>
 <%_ if (hasCustomInstallSteps) { _%>
@@ -155,7 +155,9 @@ export default defineConfig({
             {
                 name: 'sample-step',
                 description: 'Use case description for the step.',
-                script: './scripts/install/sample-step.js',
+                // TypeScript is fine here: the extensibility extension's
+                // webpack config compiles it into the installation action.
+                script: './scripts/install/sample-step.ts',
             },
         ],
     },

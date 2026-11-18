@@ -28,6 +28,13 @@ export interface AppGeneratorSchema {
 }
 
 export interface NormalizedSchema extends Required<AppGeneratorSchema> {
+    /**
+     * Whether the app integrates with Adobe Commerce via `@adobe/aio-commerce-lib-app`
+     * (app.commerce.config.ts, the `commerce/extensibility/1` extension, the lib's
+     * dependencies and hooks). True for any of the commerce flags, and for
+     * custom install steps, which only exist inside that lib's install flow.
+     */
+    usesCommerceLib: boolean;
     /** Path of the generated app relative to the workspace root, e.g. "my-app" */
     appRoot: string;
     /** Scoped npm package name, e.g. "@aligent/my-app" */

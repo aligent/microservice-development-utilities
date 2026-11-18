@@ -25,6 +25,35 @@ new XService({ logger?, client? })
 
 Every wrapper emits one `logger.info` line per SDK call with a per-method safe-field allowlist (omitting payloads, secret material, and PII recipient identifiers). Set `POWERTOOLS_LOG_LEVEL` to either `DEBUG` or `TRACE` to unlock the full SDK input in those log lines — useful for local development and incident triage. Both levels unlock because Powertools orders `TRACE` as more verbose than `DEBUG`; every level from `INFO` upwards redacts. See `packages/aws-wrappers/CLAUDE.md` for the per-method allowlists currently in force.
 
+### Batch semantics
+
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `EventBridgeService.putEvents`, `S3Service.deleteObjects` and `S3Service.emptyBucket`.
+
+Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns the per-chunk SDK outputs exactly as before.
+
+```ts
+import { BatchOperationError } from '@aligent/aws-wrappers';
+
+try {
+    await sqs.sendMessageBatch({ QueueUrl, Entries: entries });
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        // error.results — the raw SDK output of every chunk, including what succeeded
+        // error.failed  — [{ id, code, message }] for every rejected entry
+        const failedIds = new Set(error.failed.map(entry => entry.id));
+        await retry(entries.filter(entry => failedIds.has(entry.Id)));
+        return;
+    }
+    throw error;
+}
+```
+
+- `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload. For S3 the identifier is the object key.
+- `EventBridgeService.putEvents` entries have no identifier of their own, so for that method `id` is the entry's index in the `Entries` list you passed in, as a string.
+- The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
+- A warning is logged with the failure count and error codes, and no payload, at every log level.
+- Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
+
 ### X-Ray outside Lambda
 
 X-Ray's middleware throws by default when no active segment exists, which is the case for CLI scripts and local development. Set the environment variable to silence the noise:
@@ -76,9 +105,25 @@ await s3.deleteObjects('my-bucket', ['key1', 'key2']); // auto-chunked to 1000 k
 await s3.emptyBucket('my-bucket');                     // unversioned buckets only — see below
 ```
 
+`deleteObjects` and `emptyBucket` throw a `BatchOperationError` when S3 reports that it could not delete one or more keys — see "Batch semantics". `failed[].id` is the object key.
+
+`emptyBucket` returns only the keys that were actually deleted. A page with failures does not stop the run: every page is attempted, then one aggregated `BatchOperationError` is thrown. Its `results` hold one `{ deletedKeys }` per page, so the caller can tell which keys were deleted and which failed:
+
+```ts
+try {
+    const deleted = await s3.emptyBucket('my-bucket');
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        const deleted = error.results.flatMap(page => page.deletedKeys);
+        const stuck = error.failed.map(entry => entry.id); // [{ id: key, code, message }]
+    }
+    throw error;
+}
+```
+
 Input shapes are intentionally tight (`Bucket`, `Key`, `Body` and similar). Callers needing SDK-specific options like server-side encryption or tagging should use `S3Client` directly.
 
-`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so peak memory stays bounded by one page regardless of bucket size. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
+`emptyBucket` streams the listing page-by-page and delegates each page to `deleteObjects`, so only one page of SDK responses is held at a time; the list of deleted keys it returns is the one thing that grows with the bucket. It empties **unversioned buckets only**: it paginates `ListObjectsV2`, which reports current object versions and never noncurrent versions or delete markers. Against a versioned bucket the call succeeds and the bucket then *looks* empty to `ListObjectsV2` — but the deletes only added delete markers, so every object version is still stored. You will still be billed for that storage, and `DeleteBucket` will fail with `BucketNotEmpty`. Emptying a versioned bucket needs `ListObjectVersions` plus per-version deletes — use `S3Client` directly.
 
 ## DynamoDB
 
@@ -262,6 +307,81 @@ const groups = await scheduler.listScheduleGroups();
 await scheduler.deleteScheduleGroup({ Name: 'integrations' });
 ```
 
+## EventBridge
+
+Publishes events to an event bus. `putEvents` takes the SDK input unchanged — `Detail` stays a JSON string you serialise yourself.
+
+```ts
+import { BatchOperationError, EventBridgeService } from '@aligent/aws-wrappers';
+
+const eventBridge = new EventBridgeService();
+
+// Auto-chunks Entries to the EventBridge-enforced 10-entry limit and throws a
+// BatchOperationError if EventBridge rejects any entry — see "Batch semantics".
+// Chunking is by count only: a chunk over the 256 KB request limit fails at the
+// SDK as a request-level error.
+try {
+    await eventBridge.putEvents({
+        Entries: orders.map(order => ({
+            Source: 'orders.service',
+            DetailType: 'OrderCreated',
+            Detail: JSON.stringify(order),
+        })),
+    });
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        // failed[].id is the index in the Entries list you passed in, as a string.
+        const failedIndexes = new Set(error.failed.map(entry => Number(entry.id)));
+        await retry(orders.filter((_, index) => failedIndexes.has(index)));
+        return;
+    }
+    throw error;
+}
+```
+
+The wrapper does not retry. At INFO the log line shows only the endpoint id and the entry count, because `Detail` and `Resources` carry payloads.
+
+## Lambda
+
+Invokes another Lambda function. `invoke` takes the SDK input unchanged and returns the SDK output unchanged — `Payload` stays a `Uint8Array` you serialise and decode yourself. Choose sync, async or dry-run with `InvocationType`; omitting it means a synchronous call.
+
+```ts
+import { LambdaFunctionError, LambdaService } from '@aligent/aws-wrappers';
+
+const lambda = new LambdaService();
+
+// Lambda answers HTTP 200 even when the invoked function threw, flagging it with
+// FunctionError on the response. invoke() turns that marker into a thrown
+// LambdaFunctionError so a failed invocation can't be mistaken for a success.
+try {
+    const { Payload } = await lambda.invoke({
+        FunctionName: 'pricing-service',
+        Payload: new TextEncoder().encode(JSON.stringify({ sku: 'ABC-123' })),
+    });
+    const price = JSON.parse(Payload?.transformToString() ?? 'null');
+} catch (error) {
+    if (error instanceof LambdaFunctionError) {
+        // functionError is 'Handled' or 'Unhandled'; errorType and errorMessage are
+        // parsed from the function's error payload, or undefined if it isn't the usual shape.
+        console.error(error.functionName, error.functionError, error.errorType, error.errorMessage);
+    }
+    throw error;
+}
+
+// Fire-and-forget: the response only confirms the request was accepted.
+await lambda.invoke({
+    FunctionName: 'audit-writer',
+    InvocationType: 'Event',
+    Payload: new TextEncoder().encode(JSON.stringify(auditRecord)),
+});
+```
+
+- `LambdaFunctionError` carries the function name, the SDK's function error value, and the error type and message parsed from the payload. It deliberately excludes the raw SDK output and the stack trace, because either can contain your payload or PII. A warning with only the function name and function error value is logged.
+- The error has a stable `name` of `'LambdaFunctionError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
+- The function error marker only appears on synchronous responses, so async (`Event`) and `DryRun` calls return without throwing. **Failures of asynchronous invocations are not observable by the wrapper** — configure a dead-letter queue or destination on the invoked function.
+- Request-level SDK exceptions (throttling, access denied, network errors) are not wrapped and propagate unchanged.
+- At INFO the log line shows only the function name, invocation type, qualifier, log type and tenant id. `Payload` and `ClientContext` are omitted, and responses are never logged.
+
 ## SSM Parameter Store
 
 ```ts
@@ -318,7 +438,8 @@ for (const message of messages) {
     }
 }
 
-// Batch methods auto-chunk Entries to the SQS-enforced 10-entry limit.
+// Batch methods auto-chunk Entries to the SQS-enforced 10-entry limit and throw
+// a BatchOperationError if SQS rejects any entry — see "Batch semantics".
 await sqs.sendMessageBatch({ QueueUrl, Entries: bigEntryList });
 await sqs.deleteMessageBatch({ QueueUrl, Entries: receiptEntries });
 ```
@@ -343,7 +464,8 @@ const sns = new SNSService();
 
 await sns.publish({ TopicArn, Message: 'hello' });
 
-// publishBatch auto-chunks PublishBatchRequestEntries to the SNS-enforced 10-entry limit.
+// publishBatch auto-chunks PublishBatchRequestEntries to the SNS-enforced 10-entry limit
+// and throws a BatchOperationError if SNS rejects any entry — see "Batch semantics".
 await sns.publishBatch({ TopicArn, PublishBatchRequestEntries: bigEntryList });
 
 // Opt-in truncation — same shape as SQS. Truncates Message (256 KB byte-safe)
@@ -352,6 +474,32 @@ const truncSns = new SNSService({ truncate: true });
 await truncSns.publish({ TopicArn, Message: huge, Subject: long });
 await truncSns.publish({ TopicArn, Message: huge }, { truncate: false });
 ```
+
+## API Gateway
+
+Read-only lookups against the control plane. `APIGatewayService` wraps REST APIs (v1); `APIGatewayV2Service` wraps HTTP and WebSocket APIs (v2). List methods are auto-paginated and return flat arrays.
+
+```ts
+import { APIGatewayService, APIGatewayV2Service } from '@aligent/aws-wrappers';
+
+const apiGateway = new APIGatewayService();
+
+const restApis = await apiGateway.getRestApis();
+// REST APIs expose their routes as resources; embed methods to see the verbs.
+const resources = await apiGateway.getResources({ restApiId, embed: ['methods'] });
+
+// API key values are always returned (includeValue(s) is baked in, no opt-out).
+const keys = await apiGateway.getApiKeys({ nameQuery: 'partner' });
+const key = await apiGateway.getApiKey({ apiKey: keyId }); // throws NotFoundException if missing
+
+const apiGatewayV2 = new APIGatewayV2Service();
+
+const apis = await apiGatewayV2.getApis();
+const routes = await apiGatewayV2.getRoutes({ ApiId });
+const route = await apiGatewayV2.getRoute({ ApiId, RouteId }); // throws NotFoundException if missing
+```
+
+API key values only ever appear in method output, which the wrappers never log.
 
 ## Testing
 
@@ -413,7 +561,7 @@ const getJsonObject = async <T>() => ({ total: 42 }) as T;
 
 Note that the typed-spy form does **not** work here: `vi.fn<S3Service['getJsonObject']>()` produces a `Mock` that erases the type parameter and is no longer assignable to the generic signature. Reach for a typed spy on non-generic methods only.
 
-The helper is generic over any class, so it works for all eight wrappers and for your own service classes too.
+The helper is generic over any class, so it works for all wrappers and for your own service classes too.
 
 ## Build / test
 

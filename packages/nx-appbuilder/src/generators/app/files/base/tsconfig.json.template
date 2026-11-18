@@ -3,11 +3,12 @@
 // own tsconfig, so anything outside those three would otherwise be type-checked
 // by nothing. `src/lib/**/*.ts` is the conventional home for code shared between
 // actions; it may not exist yet, which is fine — `include` only errors when
-// nothing at all matches.
-const usesCommerceLib = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks;
+// nothing at all matches. Custom install steps live outside `src/` too, so they
+// are picked up here when the app declares any.
 const includes = ['global-types'];
 if (usesCommerceLib) includes.push('app.commerce.config.ts');
 includes.push('vitest.config.ts', 'src/lib/**/*.ts');
+if (hasCustomInstallSteps) includes.push('scripts/install/*.ts');
 _%>
 {
     "extends": "./tsconfig.base.json",

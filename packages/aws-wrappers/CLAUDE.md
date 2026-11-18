@@ -20,7 +20,8 @@ packages/aws-wrappers/src/
 │   ├── <service>.ts        # the *Service class
 │   └── <service>.test.ts   # co-located tests
 ├── testing/                # test-only helpers, published as the `./testing` subpath
-└── index.ts                # named exports of every *Service class
+├── util/                   # internal helpers; only `BatchOperationError` (and its `BatchFailedEntry` type) and `LambdaFunctionError` are public
+└── index.ts                # named exports of every *Service class, `BatchOperationError` and `LambdaFunctionError`
 ```
 
 One folder per service, lowercase. `testing/` is the one non-service folder: it backs the `./testing` subpath export and is deliberately **not** re-exported from `index.ts` — see "The `createMockService` helper" below. No barrel files inside service folders — `index.ts` imports the class directly from `<service>/<service>.js` (note the explicit `.js` extension — see "Build layout" below).
@@ -97,9 +98,9 @@ Every public method emits exactly one `logger.info('<verb> <noun>', { input })` 
 - At the **verbose** levels (`TRACE` and `DEBUG`), the full SDK input is logged. Operators have explicitly opted into seeing payloads, secret material, and PII.
 - At any other level, only a per-method **safe-fields allowlist** is logged.
 
-`shouldLogFullInput(logger)` in `src/util/redact.ts` is **the only place in the package that reads the log level** — never compare `logger.getLevelName()` yourself. Powertools orders `TRACE` (threshold 6) as *more* verbose than `DEBUG` (8), so the obvious `getLevelName() === 'DEBUG'` check silently redacts at the most verbose level available. That was a real bug (MI-332); the predicate exists so it can only be fixed once. Its TSDoc carries the rule for anyone reading the source without this file.
+`redactInput(logger, input, project)` in `src/util/redact.ts` is **the only place in the package that reads the log level** — never compare `logger.getLevelName()` yourself. The level predicate behind it is private to that module, so a service cannot make the decision itself. Powertools orders `TRACE` (threshold 6) as *more* verbose than `DEBUG` (8), so the obvious `getLevelName() === 'DEBUG'` check silently redacts at the most verbose level available. That was a real bug (MI-332); routing every decision through one function means it can only be fixed once. Its TSDoc carries the rule for anyone reading the source without this file.
 
-The projection mechanism is `filterFieldsForLogLevel(logger, input, SAFE_FIELDS)` in the same file. Both are internal-only helpers, not exported from `src/index.ts`.
+`project` is either an allowlist of top-level keys (`SAFE_FIELDS`) or a function from the input to a safe shape. `redactInput` is an internal-only helper, not exported from `src/index.ts`, and it does not log: call sites keep their single `this.logger.info(message, { input: redactInput(...) })` line.
 
 Each service file states the unlock rule **once**, in its class-level TSDoc. Per-method and per-`SAFE_FIELDS` docs describe only *what* is omitted and *why* — don't restate the mechanism, or the next level-semantics change has to touch two dozen comments again.
 
@@ -108,7 +109,7 @@ Each service file states the unlock rule **once**, in its class-level TSDoc. Per
 - **Module-level constant per method**, typed as `ReadonlyArray<keyof CommandInput>`, named `<METHOD>_SAFE_FIELDS`. TSDoc explains what's omitted and why.
 - **Targeted application** — only methods where there's an actual omission use the helper. Methods whose input is already a tight `Required<Pick<...>>` or contains no sensitive fields (e.g. `S3.getObject`, `SFN.listExecutions`) keep their current `{ input }` shape.
 - **Maximal safe set** — include every field *except* known payload, secret, or PII carriers. The level-based design provides the safety valve; the INFO log should still be operationally useful.
-- **Batch methods stay bespoke** — methods that already compute a derived field (e.g. `entryCount`, `keyCount`, `tables`) call `shouldLogFullInput(this.logger)` directly rather than using `filterFieldsForLogLevel`, since the helper only picks input keys and can't synthesise computed fields. A comment explains why.
+- **Allowlists first, projection functions for computed shapes** — prefer the key list: it is safe by default, since a new SDK field is not logged until someone allowlists it. Pass a projection function only where the safe shape is computed (e.g. `entryCount`, `keyCount`, `tables`, or the Scheduler's `Target.Input` strip), and keep it small.
 
 #### Currently redacted
 
@@ -116,21 +117,26 @@ Each service file states the unlock rule **once**, in its class-level TSDoc. Per
 - **SNS** — `publish` omits `Message`, `Subject`, `MessageAttributes`, `PhoneNumber`. `publishBatch` logs `{ TopicArn, entryCount }`.
 - **SQS** — `sendMessage` omits `MessageBody`, `MessageAttributes`. Batch methods log `{ QueueUrl, entryCount }`.
 - **DynamoDB** — `getItem` / `deleteItem` omit `Key`. `putItem` omits `Item`. `updateItem` omits `Key` and `ExpressionAttributeValues`. `query` / `scan` / `paginateItems` / `paginateScan` omit `ExpressionAttributeValues`. `batchGet` / `batchWrite` log `{ tables: Object.keys(RequestItems) }` only.
+- **EventBridge** — `putEvents` logs `{ EndpointId, entryCount }` (`Detail`, `Resources` and the entries are payload carriers).
+- **Lambda** — `invoke` omits `Payload` and `ClientContext`; responses are never logged.
 - **SecretsManager** — write methods omit `SecretString` / `SecretBinary`.
 - **SSM** — `putParameter` omits `Value`.
 - **SFN** — `startExecution` omits the execution `input` (often carries PII).
 
-Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc describing *what* is omitted and *why* (not the unlock mechanism — that's stated once in the class TSDoc), and wire `filterFieldsForLogLevel(this.logger, input, FIELDS)` into the `logger.info` call.
+Adding a new redacted method: define a `<METHOD>_SAFE_FIELDS` constant near the top of the service file with TSDoc describing *what* is omitted and *why* (not the unlock mechanism — that's stated once in the class TSDoc), and wire `redactInput(this.logger, input, FIELDS)` into the `logger.info` call.
 
-Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` against an INFO-level logger. For a method that routes through `filterFieldsForLogLevel`, that single test is enough — the unlock direction is covered centrally by `redact.test.ts`, so a per-method TRACE test would only re-prove `shouldLogFullInput`.
-
-**A method with a bespoke inline check needs a second test**: `expect(loggedInput).toHaveProperty('<sensitive>')` against a TRACE-level logger. These are the batch methods that hand-roll `shouldLogFullInput(this.logger)` to synthesise a computed field, so nothing central covers their unlock branch. Without it a site wired to a stale or hand-rolled level check still passes the whole suite, because the INFO assertion only pins the redacted direction — that's precisely how the pre-MI-332 bug survived in eight places.
+Lock the redaction with `expect(loggedInput).not.toHaveProperty('<sensitive>')` (or the summary shape) against an INFO-level logger. That single test is enough for every method, whichever projection form it uses — the unlock direction is covered centrally by `redact.test.ts`, so a per-method TRACE test would only re-prove `redactInput`.
 
 ### Patterns
 
 - **Auto-pagination, flat array**: `S3.listObjects` / `getAllObjects` / `emptyBucket`, `SSM.getParametersByPath`, `SFN.listExecutions`. Used when the result set is bounded in practice.
 - **Generator pagination, yield items**: `DynamoDB.paginateItems` / `paginateScan`. Used when the result set is potentially unbounded — peak memory stays bounded by one page.
-- **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10), `SSM.getParameters` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
+- **Auto-chunking**: `S3.deleteObjects` / `emptyBucket` (1000), `SQS.sendMessageBatch` / `deleteMessageBatch` (10), `SNS.publishBatch` (10), `EventBridge.putEvents` (10), `SSM.getParameters` (10). Mirrors the SDK-enforced per-request cap so callers don't have to.
+- **Throw-after-all-chunks on rejected entries**: `SQS.sendMessageBatch` / `deleteMessageBatch`, `SNS.publishBatch`, `S3.deleteObjects` and `EventBridge.putEvents` send every chunk, then throw one `BatchOperationError` (`src/util/batch-operation-error.ts`, exported from the main entry only) if any `Failed` (S3: `Errors`; for `putEvents`, any result entry carrying an `ErrorCode`) entry came back. The collect-warn-throw step is the internal `throwIfAnyFailed` (SQS/SNS) / `throwIfAnyDeleteErrors` (S3) in the same file, both thin wrappers over `throwIfAny` — call them rather than re-implementing it. A service whose rejected entries come in another shape extracts them into `{ id, code, message }` itself and calls `throwIfAny(logger, operation, results, failed)` directly (`EventBridge.putEvents` does, setting `id` to the entry's original index across chunks as a string, since `PutEvents` entries carry no identifier). The error carries the per-chunk `results` and a `failed` list of `{ id, code, message }` (S3: `id` is the object key); the helpers copy those three fields explicitly and never spread the SDK entry, so a payload can't leak into the error or the warning. Request-level SDK exceptions are deliberately **not** wrapped; each method's TSDoc says so.
+- **Function error on a successful response**: `Lambda.invoke` is the non-batch counterpart. Lambda answers HTTP 200 when the invoked function threw, flagging it with `FunctionError`, so `invoke` warns (function name and function error value only) and throws `LambdaFunctionError` (`src/util/lambda-function-error.ts`, exported from the main entry only; its `name` is fixed so dual-build consumers can match on it instead of `instanceof`). It carries the function name, the SDK's function error value, and the error type and message parsed from the payload when it has the usual JSON shape (otherwise undefined). It deliberately excludes the raw SDK output and the stack trace, because either can hold the caller's payload or PII. The check is unconditional because the marker only appears on synchronous responses; async and dry-run responses return without throwing, and failures of async invocations are not observable by the wrapper (the TSDoc says so).
+- **`S3.emptyBucket` aggregates across pages**: it catches the per-page `BatchOperationError` from `deleteObjects`, keeps listing, and throws one aggregated error at the end via `throwIfAny`. Its `results` are per-page `EmptyBucketPageResult` (`{ deletedKeys }`), not raw SDK output — keeping every page's `DeleteObjects` output (which lists every deleted key again, plus S3's own envelope) would roughly double what the returned key list already costs. The return value is the keys actually deleted.
+
+Flat-array pagination goes through `collectItems` / `collectPages` (`src/util/pagination.ts`) and chunking through `chunk` (`src/util/chunk.ts`) — don't hand-roll either loop in a service. Both are internal-only and not exported from `src/index.ts`. `S3.emptyBucket` and `S3.getAllObjects` are the deliberate exceptions to `collectItems`: they iterate the paginator directly because they act on each page as it arrives (`emptyBucket` deletes page by page to keep memory bounded; `getAllObjects` fetches each object body).
 
 ### Opt-in payload truncation
 
@@ -248,7 +254,7 @@ The Proxy's `get` trap throws `<ClassName>.<method> was accessed but not mocked`
 Related, and equally deliberate:
 
 - Method discovery inspects property **descriptors** rather than reading properties, so a prototype getter is never invoked — reading one would execute consumer code with `this` bound to the Proxy. Accessor properties are therefore neither mockable nor throwable.
-- Discovery walks the prototype chain up to but excluding `Object.prototype`, so inheritance in a consumer's own class works even though the eight services don't use it.
+- Discovery walks the prototype chain up to but excluding `Object.prototype`, so inheritance in a consumer's own class works even though the services don't use it.
 - `constructor` is excluded from the throwable set; TypeScript `private` methods are left in it — they're real prototype properties at runtime, and "not mocked" is a reasonable message for a consumer who reached one.
 - A `has` trap exists so `in` answers against the class surface rather than the raw overrides object. There is deliberately **no** `ownKeys` / `getOwnPropertyDescriptor` pair: advertising the class methods as enumerable own properties made anything that enumerates-then-reads (`{ ...mock }`, `JSON.stringify`, a Vitest deep-equal on an object holding the mock) throw `was accessed but not mocked` instead of doing its job — the same mystery-failure trap the `undefined` fallback exists to avoid, reintroduced via enumeration. Only the overrides enumerate; `Object.keys` reporting just those is the accepted cost.
 - The `get` trap checks `Object.hasOwn(target, key)`, not `Reflect.has`. `Reflect.has` walks the overrides object's prototype chain, so a class method shadowing one of `Object.prototype`'s (`toString`, `valueOf`, `hasOwnProperty`, …) was served silently from the prototype instead of throwing — a wrong value and a green test. The probe-key fallback still routes through `Reflect.get`, so unshadowed `toString` / `valueOf` resolve as usual.
@@ -279,4 +285,4 @@ These came up during the initial design and were explicitly deferred:
 - Migration guide from the legacy utilities to the new wrappers.
 - Integration tests against LocalStack or real AWS.
 - CDK constructs in `nx-cdk` corresponding to these wrappers.
-- Wrappers for additional AWS services (EventBridge, Kinesis, etc.) — add them as separate tickets following the "Adding a new service" flow.
+- Wrappers for additional AWS services (Kinesis, etc.) — add them as separate tickets following the "Adding a new service" flow.

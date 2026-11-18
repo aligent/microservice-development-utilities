@@ -27,7 +27,6 @@ npx nx run <%= name %>:deploy
 
 ## Structure
 
-<%_ const usesCommerceLib = hasAdminUI || hasBusinessConfig || hasCommerceWebhooks; _%>
 <%_ if (usesCommerceLib) { _%>
 This app integrates with Adobe Commerce via App Management
 (`@adobe/aio-commerce-lib-app`). The merchant-facing config, eventing, webhook
@@ -38,6 +37,14 @@ Everything under `src/*/.generated/` is written by the lib during
 `pre-app-build` and is gitignored — treat it as disposable. That includes the
 target of the `#app.commerce.config` import alias, which the lib also adds to
 `package.json`.
+
+The lib's generated `installation` action (under `commerce/extensibility/1`)
+binds the `AIO_COMMERCE_AUTH_IMS_*` inputs — client id, client secrets,
+technical account id and email, org id, scopes — plus
+`AIO_COMMERCE_CONFIG_ENCRYPTION_KEY` from `.env`. `aio app use` does not write
+these: they come from the project's server-to-server credential in the Adobe
+Developer Console, and `aio app deploy` warns about each one that is missing.
+Set them in `.env` before the first deploy.
 
 If you import `#app.commerce.config` from your own action code, add an ambient
 declaration under `global-types/` for the fields you read. The alias resolves to
@@ -66,11 +73,22 @@ Add pages under `web-src/src/pages/` and wire them up in `web-src/src/app.tsx`.
 host, the shared context, routing and the Spectrum provider — use `useIms()`
 for IMS credentials rather than reaching for the guest connection.
 
-To call a backend action from the UI, add its `<package>/<action>` key to
-`web-src/src/types/ActionName.ts` and use `useAppBuilderAction` /
+To call a backend action from the UI, declare it with `web: 'yes'` under
+`application.runtimeManifest` in `app.config.yaml`, add its `<package>/<action>`
+key to `web-src/src/types/ActionName.ts`, and use `useAppBuilderAction` /
 `useLazyAppBuilderAction`. URLs come from `action-urls.generated.json`, which
-`scripts/generate-action-registry.mjs` writes during `pre-app-build` — select a
-workspace with `aio app use` first or that step fails.
+`scripts/generate-action-registry.mjs` derives from `app.config.yaml` plus the
+runtime namespace in `.env` during `pre-app-build` — select a workspace with
+`aio app use` first or that step fails.
+<%_ } _%>
+<%_ if (hasCustomInstallSteps) { _%>
+
+Custom install steps live under `scripts/install/` and are declared in
+`installation.customInstallationSteps`. They're TypeScript, compiled into the
+generated installation action by `src/commerce-extensibility-1/webpack-config.cjs`,
+and type-checked by the root `tsconfig.json`. Both map `@/*` to `src/*`, so
+shared code under `src/lib/` is importable from a step just as it is from an
+action.
 <%_ } _%>
 <%_ } else { _%>
 This is a standalone Adobe App Builder integration. Backend actions live under

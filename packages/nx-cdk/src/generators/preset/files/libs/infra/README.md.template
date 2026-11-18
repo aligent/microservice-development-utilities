@@ -11,8 +11,8 @@ This library exports a `SharedInfraStack` that manages shared infrastructure res
 This `SharedInfraStack` provides:
 
 <!-- List your shared resources here. For example:
-- **eCommerce Base URL**: Retrieved from SSM Parameter Store (`/{applicationName}/e-commerce/base-url`)
-- **eCommerce Credentials**: Managed secret for API authentication (`{applicationName}/e-commerce-credentials`) 
+- **eCommerce Base URL**: Set per stage in `src/config.ts` (`ECOMMERCE_CONFIGURATIONS`)
+- **eCommerce Credentials**: Managed secret for API authentication (`{applicationName}/e-commerce-credentials`)
 -->
 
 ### Usage
@@ -41,6 +41,33 @@ interface Props extends StackProps, SharedInfraProps {
 }
 ```
 
+### Stage Configuration
+
+Non-secret values that change between stages (base URLs, store IDs, account names) live in `src/config.ts`, keyed by CDK stage name (`-c environment=<stage>`, default `dev`).
+
+1. Add a `Configurations<T>` constant for the system, with an entry for every stage you deploy:
+
+```typescript
+export const ECOMMERCE_CONFIGURATIONS: Configurations<{ baseUrl: string }> = {
+  dev: { baseUrl: 'https://staging.example.com' },
+  stg: { baseUrl: 'https://staging.example.com' },
+  prd: { baseUrl: 'TODO' },
+};
+```
+
+2. Read it in `SharedInfraStack` with `getStageConfig`, and expose it through `SharedInfraProps` and `getProps()`:
+
+```typescript
+const { baseUrl } = getStageConfig(ECOMMERCE_CONFIGURATIONS, stageName, 'eCommerce');
+this.eCommerceBaseUrl = baseUrl;
+```
+
+3. Use it in a service stack from its props, e.g. as a Lambda environment variable.
+
+`getStageConfig` fails synth if the stage has no entry, or if any value is still `TODO`. Use `TODO` for values you don't know yet - it can't be deployed by accident.
+
+Secrets (API keys, tokens, passwords) never go in `src/config.ts`. Create them as Secrets Manager secrets in `SharedInfraStack`, pass the `Secret` to services, and grant read access to the functions that need it.
+
 ## Technical Decisions
 
 ### Single Shared Stack Pattern
@@ -52,9 +79,15 @@ Resources that are used by multiple services are created once in the shared infr
 - Simplifies resource management and updates
 - Reduces AWS costs by sharing resources
 
+### Stage Config Instead of SSM
+
+Non-secret values live in `src/config.ts` as plain strings rather than SSM parameters. A value read from SSM in this stack reaches service stacks as a CloudFormation export, and CloudFormation won't change an export while another stack imports it - so changing the SSM value blocks every deploy with "Cannot update export ... as it is in use by ...". Plain strings are written straight into each service stack's template, so changing one is just a code change and a normal deploy, and every change is reviewed in a PR.
+
+The config is keyed by stage only, as the application deploys each stage to a single region. If a project deploys the same stage to several regions with different values (e.g. one per country), add a second level to `Configurations<T>` keyed by region or country, and pick the entry from `this.region` in `SharedInfraStack`.
+
 ### Stage Requirement
 
-The `SharedInfraStack` must be instantiated within a CDK Stage to properly resolve the stage name for resource naming and tagging.
+The `SharedInfraStack` must be instantiated within a CDK Stage to properly resolve the stage name for resource naming, tagging and stage configuration.
 
 ### Resource Naming
 

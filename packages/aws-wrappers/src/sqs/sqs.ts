@@ -21,7 +21,9 @@ import {
     SQSClient,
 } from '@aws-sdk/client-sqs';
 import xray from 'aws-xray-sdk-core';
-import { filterFieldsForLogLevel, shouldLogFullInput } from '../util/redact.js';
+import { throwIfAnyFailed } from '../util/batch-operation-error.js';
+import { chunk } from '../util/chunk.js';
+import { redactInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
@@ -37,6 +39,17 @@ const SEND_MESSAGE_SAFE_FIELDS: ReadonlyArray<keyof SendMessageCommandInput> = [
     'MessageGroupId',
     'MessageDeduplicationId',
 ];
+
+/**
+ * Safe log shape for the batch methods. The entries carry message bodies and
+ * receipt handles, so they are reduced to a count.
+ */
+function summariseEntries(input: SendMessageBatchCommandInput | DeleteMessageBatchCommandInput): {
+    QueueUrl: string | undefined;
+    entryCount: number;
+} {
+    return { QueueUrl: input.QueueUrl, entryCount: input.Entries?.length ?? 0 };
+}
 
 /**
  * Wrapper around the AWS SQS client providing structured Powertools logging
@@ -80,7 +93,7 @@ export class SQSService {
         const shouldTruncate = opts?.truncate ?? this.truncate;
         const effective = shouldTruncate ? this.applyTruncation(input) : input;
         this.logger.info('Sending SQS message', {
-            input: filterFieldsForLogLevel(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
+            input: redactInput(this.logger, effective, SEND_MESSAGE_SAFE_FIELDS),
         });
         return this.client.send(new SendMessageCommand(effective));
     }
@@ -134,51 +147,54 @@ export class SQSService {
      * Send a batch of messages to an SQS queue. The SQS API caps
      * SendMessageBatch at 10 entries per request, so this method auto-chunks
      * the caller's entries and sends one request per chunk.
+     *
+     * Every chunk is sent before the outcome is judged. If SQS rejected any
+     * entry, a {@link BatchOperationError} is then thrown carrying the
+     * per-chunk results and the failed entries. Request-level SDK exceptions
+     * (throttling, access denied) propagate unchanged and immediately, so
+     * earlier chunks may already have been sent.
      */
     async sendMessageBatch(
         input: SendMessageBatchCommandInput
     ): Promise<SendMessageBatchCommandOutput[]> {
         const entries: SendMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
-        // safe log shape includes the computed `entryCount`, which isn't a key
-        // on `SendMessageBatchCommandInput`.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Sending SQS message batch', {
-            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: SendMessageBatchCommandOutput[] = [];
-        for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
-            const chunk = entries.slice(i, i + SQS_BATCH_LIMIT);
+        for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
             results.push(
-                await this.client.send(new SendMessageBatchCommand({ ...input, Entries: chunk }))
+                await this.client.send(new SendMessageBatchCommand({ ...input, Entries: batch }))
             );
         }
-        return results;
+        return throwIfAnyFailed(this.logger, 'SQS sendMessageBatch', results);
     }
 
     /**
      * Delete a batch of messages from an SQS queue. The SQS API caps
      * DeleteMessageBatch at 10 entries per request, so this method auto-chunks
      * the caller's entries and sends one request per chunk.
+     *
+     * Every chunk is sent before the outcome is judged. If SQS failed to
+     * delete any message, a {@link BatchOperationError} is then thrown carrying
+     * the per-chunk results and the failed entries; those messages will be
+     * redelivered. Request-level SDK exceptions (throttling, access denied)
+     * propagate unchanged and immediately, so earlier chunks may already have
+     * been deleted.
      */
     async deleteMessageBatch(
         input: DeleteMessageBatchCommandInput
     ): Promise<DeleteMessageBatchCommandOutput[]> {
         const entries: DeleteMessageBatchRequestEntry[] = input.Entries ?? [];
-        // Inline verbosity check rather than `filterFieldsForLogLevel` because the
-        // safe log shape includes the computed `entryCount`, which isn't a key
-        // on `DeleteMessageBatchCommandInput`.
-        const logFullInput = shouldLogFullInput(this.logger);
         this.logger.info('Deleting SQS message batch', {
-            input: logFullInput ? input : { QueueUrl: input.QueueUrl, entryCount: entries.length },
+            input: redactInput(this.logger, input, summariseEntries),
         });
         const results: DeleteMessageBatchCommandOutput[] = [];
-        for (let i = 0; i < entries.length; i += SQS_BATCH_LIMIT) {
-            const chunk = entries.slice(i, i + SQS_BATCH_LIMIT);
+        for (const batch of chunk(entries, SQS_BATCH_LIMIT)) {
             results.push(
-                await this.client.send(new DeleteMessageBatchCommand({ ...input, Entries: chunk }))
+                await this.client.send(new DeleteMessageBatchCommand({ ...input, Entries: batch }))
             );
         }
-        return results;
+        return throwIfAnyFailed(this.logger, 'SQS deleteMessageBatch', results);
     }
 }

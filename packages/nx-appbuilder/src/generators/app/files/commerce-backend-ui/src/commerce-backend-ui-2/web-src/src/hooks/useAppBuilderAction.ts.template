@@ -1,4 +1,3 @@
-import { useIms } from '@adobe/aio-commerce-lib-admin-ui/web';
 import { useEffect, useRef } from 'react';
 
 import {
@@ -31,24 +30,16 @@ import {
  */
 export function useAppBuilderAction<T = unknown>(options: UseLazyAppBuilderActionOptions) {
     const hasInvokedRef = useRef(false);
-    const { data: ims } = useIms();
 
-    const resolvedIms =
-        options.ims ?? (ims ? { token: ims.imsToken, org: ims.imsOrgId } : undefined);
-
+    // Credentials and readiness both come from the lazy hook, so the two cannot
+    // disagree about whether a call is safe to make.
     const {
         response,
         loading: isInvoking,
         error,
         invoke,
-    } = useLazyAppBuilderAction<T>({
-        ...options,
-        // Spread conditionally rather than assigning `undefined`: `ims` is an
-        // optional property and the tsconfig sets `exactOptionalPropertyTypes`.
-        ...(resolvedIms ? { ims: resolvedIms } : {}),
-    });
-
-    const isReady = resolvedIms !== undefined;
+        isReady,
+    } = useLazyAppBuilderAction<T>(options);
 
     useEffect(() => {
         if (hasInvokedRef.current || !isReady) {

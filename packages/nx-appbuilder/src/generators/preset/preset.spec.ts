@@ -21,6 +21,16 @@ describe('preset generator', () => {
             expect(pkg.author).toBe('Aligent Consulting');
         });
 
+        it('enables Parcel packageExports at the workspace root', async () => {
+            // Parcel reads plugin config from the project root (the nearest
+            // lockfile), not from the app's package.json — without this an admin
+            // UI app's web build can't resolve `#app.commerce.config`.
+            await presetGenerator(tree, { name: 'acme-apps' });
+            const pkg = readJson(tree, 'package.json');
+
+            expect(pkg['@parcel/resolver-default']).toEqual({ packageExports: true });
+        });
+
         it('declares @aligent/nx-appbuilder in devDependencies at the generator version', async () => {
             await presetGenerator(tree, { name: 'acme-apps' });
             const pkg = readJson(tree, 'package.json');

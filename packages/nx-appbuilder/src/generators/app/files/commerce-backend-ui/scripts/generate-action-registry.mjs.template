@@ -1,5 +1,6 @@
 /**
- * Generates the Admin UI action registry consumed by the useAppBuilderAction hooks.
+ * Generates the Admin UI action registry consumed by `callAction` and the
+ * `useAppBuilderAction` hooks.
  *
  * Why this exists:
  *   `aio app build` writes a `config.json` into each extension's web-src, but it
@@ -9,18 +10,23 @@
  *   extension's `config.json` — and under `commerce/backend-ui/2` that extension
  *   has no web actions of its own at all.
  *
- *   `aio app get-url` resolves URLs across *every* scope (all extensions plus the
- *   standalone application) and does so entirely statically — it derives each URL
- *   from the namespace + package/action name with no network call. We capture that
- *   merged map here and write it to a file the UI imports directly.
+ * Why it computes URLs itself:
+ *   `aio app get-url --json` would resolve every scope for us, but it throws for
+ *   any app whose backend-ui extension declares no actions (a live bug in
+ *   @adobe/aio-cli-plugin-app / aio-lib-runtime) — which is exactly the shape of
+ *   a `commerce/backend-ui/2` extension. A web action's URL is fully determined
+ *   by the runtime host and namespace plus its package and action name, so this
+ *   derives the same map from `app.config.yaml` (following `$include`s, across
+ *   the application and every extension) and the selected workspace's `.env`.
  *
  * This keeps action-URL resolution static (no runtime lookups) while letting all
  * custom actions be declared in a single location.
  */
-import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import yaml from 'js-yaml';
 
 const appRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outFile = join(
@@ -28,50 +34,79 @@ const outFile = join(
     'src/commerce-backend-ui-2/web-src/src/action-urls.generated.json'
 );
 
-// `--json` prints `{ "runtime": { "<pkg>/<action>": "<url>", ... } }`.
-// The `runtime` map is the correct host for actions in the (frontend-less)
-// application scope; the `cdn` host is only emitted for actions that belong to
-// an extension that ships a frontend.
-const raw = execFileSync('aio', ['app', 'get-url', '--json'], {
-    cwd: appRoot,
-    encoding: 'utf-8',
-});
+// `aio app use` writes the selected workspace's namespace (and, for non-default
+// runtimes, the API host) to `.env`. Already exported values (CI, a wrapper
+// script) take precedence, so the file is only consulted when the namespace is
+// absent.
+const envFile = join(appRoot, '.env');
+if (!process.env.AIO_runtime_namespace && existsSync(envFile)) {
+    process.loadEnvFile(envFile);
+}
 
-// Guard against any non-JSON preamble (update notices, etc.) on stdout.
-const parsed = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
-const urls = parsed.runtime ?? {};
-
-// Fail loudly rather than writing a broken registry. URLs are derived from local
-// config (the action declarations) plus the workspace namespace from .aio/.env —
-// no deploy required. But if no workspace is selected, the namespace is missing
-// and get-url emits malformed hosts (e.g. https://undefined.adobeioruntime.net/...)
-// or nothing at all, which would silently ship an unusable registry.
-const keys = Object.keys(urls);
-if (keys.length === 0) {
+const namespace = process.env.AIO_runtime_namespace;
+if (!namespace) {
     throw new Error(
-        'aio app get-url returned no actions. Check that actions are declared in ' +
-            'app.config.yaml and that the app config is valid.'
+        'AIO_runtime_namespace is not set — select a workspace first (e.g. `aio app use`).'
     );
 }
-const unresolved = keys.filter((key) => {
-    const { hostname } = new URL(urls[key]);
-    // A resolved host looks like "<namespace>.adobeioruntime.net"; a missing
-    // namespace collapses to "undefined.*" or a leading-dot host.
-    return hostname.startsWith('undefined.') || hostname.startsWith('.');
-});
-if (unresolved.length > 0) {
+
+// Same derivation as aio-lib-runtime: web actions are served from
+// `<namespace>.<apihost>`, with the host defaulting to Adobe's public runtime.
+const apihost = new URL(process.env.AIO_runtime_apihost ?? 'https://adobeioruntime.net');
+const actionBaseUrl = `${apihost.protocol}//${namespace}.${apihost.host}/api/v1/web`;
+
+/** Loads a YAML file, replacing every `{ $include: <path> }` node with its content. */
+function loadYamlWithIncludes(file) {
+    const resolveIncludes = (node) => {
+        if (Array.isArray(node)) return node.map(resolveIncludes);
+        if (node === null || typeof node !== 'object') return node;
+        if (typeof node.$include === 'string') {
+            return loadYamlWithIncludes(resolve(dirname(file), node.$include));
+        }
+        return Object.fromEntries(
+            Object.entries(node).map(([key, value]) => [key, resolveIncludes(value)])
+        );
+    };
+    return resolveIncludes(yaml.load(readFileSync(file, 'utf-8')));
+}
+
+const appConfig = loadYamlWithIncludes(join(appRoot, 'app.config.yaml'));
+
+// Every scope that can declare actions: the standalone application plus each
+// extension point. Package names are unique per namespace, so merging them into
+// one map is what `aio app get-url` would have produced.
+const scopes = [appConfig?.application, ...Object.values(appConfig?.extensions ?? {})];
+const packages = Object.assign(
+    {},
+    ...scopes.map((scope) => scope?.runtimeManifest?.packages ?? {})
+);
+
+// Only web-exported actions are reachable from the browser. `web` is a string
+// in the manifest (`'yes'`, `'raw'`, `'no'`), but YAML also accepts a bare
+// boolean, so both forms are accepted here.
+const isWebAction = (action) =>
+    ['yes', 'true', 'raw'].includes(String(action?.web ?? 'no').toLowerCase());
+
+const registry = {};
+for (const [packageName, pkg] of Object.entries(packages)) {
+    for (const [actionName, action] of Object.entries(pkg?.actions ?? {})) {
+        if (!isWebAction(action)) continue;
+        registry[`${packageName}/${actionName}`] = `${actionBaseUrl}/${packageName}/${actionName}`;
+    }
+}
+
+// Fail loudly rather than writing an empty registry the UI can't use.
+const keys = Object.keys(registry);
+if (keys.length === 0) {
     throw new Error(
-        'Action URLs have an unresolved namespace — select a workspace first ' +
-            `(e.g. \`aio app use\`). Affected: ${unresolved.join(', ')}`
+        'No web actions found in app.config.yaml (application or extension ' +
+            "runtimeManifests, including $include'd files). Declare the actions the " +
+            "Admin UI calls with `web: 'yes'`."
     );
 }
 
 // Sort keys so regeneration produces stable, review-friendly diffs.
-const registry = Object.fromEntries(
-    Object.keys(urls)
-        .sort()
-        .map((key) => [key, urls[key]])
-);
+const sorted = Object.fromEntries(keys.sort().map((key) => [key, registry[key]]));
 
-writeFileSync(outFile, `${JSON.stringify(registry, null, 4)}\n`, 'utf-8');
-console.log(`Wrote ${Object.keys(registry).length} action URL(s) to ${outFile}`);
+writeFileSync(outFile, `${JSON.stringify(sorted, null, 4)}\n`, 'utf-8');
+console.log(`Wrote ${keys.length} action URL(s) to ${outFile}`);
