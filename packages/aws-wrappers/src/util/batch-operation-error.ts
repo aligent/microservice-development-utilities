@@ -3,7 +3,8 @@ import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
 /**
  * One entry a batch operation rejected. Deliberately limited to identifier,
  * code and message so the error never carries message bodies, attributes or
- * any other payload the caller sent. For S3 the identifier is the object key.
+ * any other payload the caller sent. For S3 the identifier is the object key;
+ * for SSM it is the parameter path.
  */
 export interface BatchFailedEntry {
     id: string | undefined;
@@ -17,7 +18,8 @@ export interface BatchFailedEntry {
  *
  * `results` holds the raw SDK output of every chunk, so the outputs of the
  * entries that succeeded (message ids, sequence numbers) stay readable. The
- * one exception is `S3.emptyBucket`, whose `results` are per-page deleted keys.
+ * exceptions are `S3.emptyBucket`, whose `results` are per-page deleted keys,
+ * and `SSM.getParameters`, whose `results` are empty.
  * `failed` is the normalised list of rejected entries across all chunks.
  *
  * Match on `name` rather than `instanceof` if both the CJS and ESM builds of

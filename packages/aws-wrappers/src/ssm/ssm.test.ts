@@ -9,6 +9,7 @@ import {
 } from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BatchOperationError } from '../util/batch-operation-error.js';
 import { SSMService } from './ssm';
 
 const ssmMock = mockClient(SSMClient);
@@ -127,6 +128,142 @@ describe('SSMService', () => {
             expect((fetchCalls[0]?.[1] as { input: { aliases: unknown } }).input.aliases).toEqual(
                 aliases
             );
+        });
+    });
+
+    describe('getParameters with required', () => {
+        const respondWithExisting = (existing: Record<string, string>): void => {
+            ssmMock.on(GetParametersCommand).callsFake(input => {
+                const names: string[] = input.Names ?? [];
+                return {
+                    Parameters: names
+                        .filter(name => name in existing)
+                        .map(name => ({ Name: name, Value: existing[name] })),
+                    InvalidParameters: names.filter(name => !(name in existing)),
+                };
+            });
+        };
+
+        const manyAliases = (count: number): Record<string, string> =>
+            Object.fromEntries(
+                Array.from({ length: count }, (_, i) => [`alias${i}`, `/app/param${i}`])
+            );
+
+        async function batchFailure(promise: Promise<unknown>): Promise<BatchOperationError> {
+            const error = await promise.then(
+                () => undefined,
+                (thrown: unknown) => thrown
+            );
+            if (!(error instanceof BatchOperationError)) {
+                throw new Error(`Expected a BatchOperationError, got: ${String(error)}`);
+            }
+            return error;
+        }
+
+        it('returns the same alias-keyed record as the default mode when every parameter exists', async () => {
+            respondWithExisting({ '/app/a': 'aaa', '/app/b': 'bbb' });
+            const service = new SSMService({ client: new SSMClient({}) });
+            const aliases = { first: '/app/a', second: '/app/b' };
+
+            const required = await service.getParameters(aliases, { required: true });
+            const lenient = await service.getParameters(aliases);
+
+            expect(required).toEqual({ first: 'aaa', second: 'bbb' });
+            expect(required).toEqual(lenient);
+        });
+
+        it('throws naming the alias and path of a missing parameter', async () => {
+            respondWithExisting({ '/app/a': 'aaa' });
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const error = await batchFailure(
+                service.getParameters({ first: '/app/a', typo: '/app/tpyo' }, { required: true })
+            );
+
+            expect(error.failed).toEqual([
+                {
+                    id: '/app/tpyo',
+                    code: 'ParameterNotFound',
+                    message: 'Parameter not found for alias "typo"',
+                },
+            ]);
+        });
+
+        it('names every missing parameter merged across chunks and still sends every chunk', async () => {
+            respondWithExisting({});
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const error = await batchFailure(
+                service.getParameters(manyAliases(12), { required: true })
+            );
+
+            expect(ssmMock.commandCalls(GetParametersCommand)).toHaveLength(2);
+            expect(error.failed.map(entry => entry.id)).toEqual(
+                Array.from({ length: 12 }, (_, i) => `/app/param${i}`)
+            );
+        });
+
+        it('reports only the missing parameters when some in other chunks exist', async () => {
+            const missing = new Set(['/app/param2', '/app/param11']);
+            respondWithExisting(
+                Object.fromEntries(
+                    Array.from({ length: 12 }, (_, i) => [`/app/param${i}`, `v${i}`]).filter(
+                        ([path]) => !missing.has(path as string)
+                    )
+                )
+            );
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const error = await batchFailure(
+                service.getParameters(manyAliases(12), { required: true })
+            );
+
+            expect(error.failed.map(entry => entry.id)).toEqual(['/app/param2', '/app/param11']);
+        });
+
+        it('reports one entry per alias when two aliases share a missing path', async () => {
+            respondWithExisting({});
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const error = await batchFailure(
+                service.getParameters(
+                    { alpha: '/app/shared', beta: '/app/shared' },
+                    { required: true }
+                )
+            );
+
+            expect(error.failed.map(entry => entry.message)).toEqual([
+                'Parameter not found for alias "alpha"',
+                'Parameter not found for alias "beta"',
+            ]);
+        });
+
+        it('does not throw by default and maps invalid parameters to undefined', async () => {
+            respondWithExisting({ '/app/a': 'aaa' });
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters({ first: '/app/a', typo: '/app/tpyo' });
+
+            expect(result).toEqual({ first: 'aaa', typo: undefined });
+        });
+
+        it('does not throw when required is explicitly false', async () => {
+            respondWithExisting({});
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            await expect(
+                service.getParameters({ typo: '/app/tpyo' }, { required: false })
+            ).resolves.toEqual({ typo: undefined });
+        });
+
+        it('does not wrap request-level SDK exceptions', async () => {
+            ssmMock.on(GetParametersCommand).rejects(new Error('Rate exceeded'));
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const outcome = service.getParameters({ a: '/app/a' }, { required: true });
+
+            await expect(outcome).rejects.toThrow('Rate exceeded');
+            await expect(outcome).rejects.not.toBeInstanceOf(BatchOperationError);
         });
     });
 
