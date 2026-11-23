@@ -13,5 +13,10 @@
         "checkJs": false
     },
     "include": ["src/**/*.ts"],
-    "exclude": ["vitest.config.mjs", "src/**/*.spec.ts", "src/**/*.test.ts"]
+    "exclude": [
+        "vitest.config.mjs",
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts",
+        "src/**/*.test-helpers.ts"
+    ]
 }
