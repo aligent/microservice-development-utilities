@@ -27,7 +27,7 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `EventBridgeService.putEvents`, `S3Service.deleteObjects`, `S3Service.emptyBucket` and, when `required` is set, `SSMService.getParameters`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `SESService.sendBulkEmail`, `EventBridgeService.putEvents`, `S3Service.deleteObjects`, `S3Service.emptyBucket` and, when `required` is set, `SSMService.getParameters`.
 
 Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns exactly what it did before.
 
@@ -50,7 +50,7 @@ try {
 ```
 
 - `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload. For S3 the identifier is the object key; for SSM it is the parameter path.
-- `EventBridgeService.putEvents` entries have no identifier of their own, so for that method `id` is the entry's index in the `Entries` list you passed in, as a string.
+- `EventBridgeService.putEvents` and `SESService.sendBulkEmail` entries have no identifier of their own, so for those methods `id` is the entry's index in the `Entries` / `BulkEmailEntries` list you passed in, as a string.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
@@ -484,6 +484,47 @@ const truncSns = new SNSService({ truncate: true });
 await truncSns.publish({ TopicArn, Message: huge, Subject: long });
 await truncSns.publish({ TopicArn, Message: huge }, { truncate: false });
 ```
+
+## SES
+
+Wraps the SES v2 API (`@aws-sdk/client-sesv2`), not the legacy v1 API. Inputs and outputs are the SDK's own types, and no defaults are baked in: `FromEmailAddress`, `ConfigurationSetName` and the rest come from you on every call. Template, identity and suppression-list management is not wrapped — use the SDK client directly or infrastructure as code.
+
+```ts
+import { SESService } from '@aligent/aws-wrappers';
+
+const ses = new SESService();
+
+// Simple, Raw or Template content — pass whichever `Content` shape SES accepts.
+const { MessageId } = await ses.sendEmail({
+    FromEmailAddress: 'orders@example.com',
+    Destination: { ToAddresses: [customerEmail] },
+    Content: {
+        Template: {
+            TemplateName: 'order-confirmation',
+            TemplateData: JSON.stringify({ orderNumber }),
+        },
+    },
+});
+
+// sendBulkEmail auto-chunks BulkEmailEntries to the SES-enforced 50-entry limit and
+// throws a BatchOperationError if SES rejects any entry — see "Batch semantics".
+await ses.sendBulkEmail({
+    FromEmailAddress: 'orders@example.com',
+    DefaultContent: { Template: { TemplateName: 'order-confirmation', TemplateData: '{}' } },
+    BulkEmailEntries: customers.map(({ email, data }) => ({
+        Destination: { ToAddresses: [email] },
+        ReplacementEmailContent: {
+            ReplacementTemplate: { ReplacementTemplateData: JSON.stringify(data) },
+        },
+    })),
+});
+```
+
+- SES answers HTTP 200 for a bulk send even when individual entries fail, so `sendBulkEmail` checks every entry's `Status` after all chunks are sent. Anything other than `SUCCESS` (including an entry SES returned no result for) ends up in `BatchOperationError.failed`, with `id` set to the entry's index in `BulkEmailEntries`, `code` set to the SES status and `message` set to the SES error text. `error.results` holds each chunk's output, so you can retry just the failed indexes.
+- Sending is not idempotent: retrying the whole `sendBulkEmail` call after a `BatchOperationError` re-sends the entries that already succeeded.
+- `sendEmail` is a pure pass-through. SDK exceptions such as `MessageRejected` or `SendingPausedException` propagate unchanged, and so do request-level failures from `sendBulkEmail`.
+- At INFO the log line shows only routing metadata (`FromEmailAddressIdentityArn`, `ConfigurationSetName`, tags, `EndpointId`, `TenantName`), the template name, and a recipient or entry count. Sender, recipient and reply-to addresses, subjects, bodies and template data are omitted.
+- There is no `truncate` option: a silently truncated email is worse than the SDK rejecting an oversized one.
 
 ## API Gateway
 
