@@ -44,20 +44,33 @@ function extractBulkEmailFailures(
 }
 
 /**
+ * The routing fields both send methods share and are safe to log: none of
+ * them identifies a recipient or carries content.
+ */
+type RoutingMetadata = Pick<
+    SendEmailCommandInput,
+    'FromEmailAddressIdentityArn' | 'ConfigurationSetName' | 'EndpointId' | 'TenantName'
+>;
+
+interface SendEmailLogSummary extends RoutingMetadata {
+    EmailTags: SendEmailCommandInput['EmailTags'];
+    templateName: string | undefined;
+    recipientCount: number;
+}
+
+interface SendBulkEmailLogSummary extends RoutingMetadata {
+    DefaultEmailTags: SendBulkEmailCommandInput['DefaultEmailTags'];
+    templateName: string | undefined;
+    entryCount: number;
+}
+
+/**
  * Safe log shape for `sendEmail`. Keeps routing metadata and reduces the
  * recipients to a count; the sender and reply-to addresses, the subject, the
  * body and any template data are omitted as PII or payload. The template name
  * is operational metadata, not PII, so it is kept.
  */
-function summariseSendEmail(input: SendEmailCommandInput): {
-    FromEmailAddressIdentityArn: string | undefined;
-    ConfigurationSetName: string | undefined;
-    EmailTags: SendEmailCommandInput['EmailTags'];
-    EndpointId: string | undefined;
-    TenantName: string | undefined;
-    templateName: string | undefined;
-    recipientCount: number;
-} {
+function summariseSendEmail(input: SendEmailCommandInput): SendEmailLogSummary {
     const { ToAddresses, CcAddresses, BccAddresses } = input.Destination ?? {};
     return {
         FromEmailAddressIdentityArn: input.FromEmailAddressIdentityArn,
@@ -76,15 +89,7 @@ function summariseSendEmail(input: SendEmailCommandInput): {
  * replacement data, and the default template data may carry PII, so they are
  * reduced to a count and the template name.
  */
-function summariseSendBulkEmail(input: SendBulkEmailCommandInput): {
-    FromEmailAddressIdentityArn: string | undefined;
-    ConfigurationSetName: string | undefined;
-    DefaultEmailTags: SendBulkEmailCommandInput['DefaultEmailTags'];
-    EndpointId: string | undefined;
-    TenantName: string | undefined;
-    templateName: string | undefined;
-    entryCount: number;
-} {
+function summariseSendBulkEmail(input: SendBulkEmailCommandInput): SendBulkEmailLogSummary {
     return {
         FromEmailAddressIdentityArn: input.FromEmailAddressIdentityArn,
         ConfigurationSetName: input.ConfigurationSetName,
