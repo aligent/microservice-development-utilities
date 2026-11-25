@@ -9,7 +9,7 @@ import {
 } from '@aws-sdk/client-eventbridge';
 import xray from 'aws-xray-sdk-core';
 import { BatchFailedEntry, throwIfAny } from '../util/batch-operation-error.js';
-import { chunk } from '../util/chunk.js';
+import { chunk, originalIndex } from '../util/chunk.js';
 import { redactInput } from '../util/redact.js';
 
 const PUT_EVENTS_LIMIT = 10;
@@ -22,15 +22,8 @@ function summariseEntries({ EndpointId, Entries }: PutEventsCommandInput) {
     return { EndpointId, entryCount: Entries?.length ?? 0 };
 }
 
-/**
- * Chunks are full except the last, so the caller's original index of a
- * rejected entry is the chunk's offset (chunk number times the chunk size)
- * plus its position within the chunk.
- */
 function extractPutEventsFailures(results: PutEventsCommandOutput[]): BatchFailedEntry[] {
-    return results.flatMap((result, chunkIndex) =>
-        extractChunkFailures(result, chunkIndex * PUT_EVENTS_LIMIT)
-    );
+    return results.flatMap(extractChunkFailures);
 }
 
 /**
@@ -40,10 +33,13 @@ function extractPutEventsFailures(results: PutEventsCommandOutput[]): BatchFaile
  * Copies only code and message out, never the request entry, so neither the
  * error nor the warning can carry event detail.
  */
-function extractChunkFailures(result: PutEventsCommandOutput, offset: number): BatchFailedEntry[] {
+function extractChunkFailures(
+    result: PutEventsCommandOutput,
+    chunkIndex: number
+): BatchFailedEntry[] {
     return (result.Entries ?? [])
         .map(({ ErrorCode, ErrorMessage }, position) => ({
-            id: String(offset + position),
+            id: originalIndex(chunkIndex, PUT_EVENTS_LIMIT, position),
             code: ErrorCode,
             message: ErrorMessage,
         }))

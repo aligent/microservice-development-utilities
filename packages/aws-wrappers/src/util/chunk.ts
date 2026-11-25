@@ -9,3 +9,14 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
     }
     return chunks;
 }
+
+/**
+ * The index, as a string, that an entry had in the list `chunk` split, given
+ * its chunk number and its position within that chunk. Batch operations whose
+ * entries carry no identifier of their own report failures by this index.
+ * `chunk` fills every chunk but the last, so the chunk's offset is the chunk
+ * number times the chunk size.
+ */
+export function originalIndex(chunkIndex: number, chunkSize: number, position: number): string {
+    return String(chunkIndex * chunkSize + position);
+}
