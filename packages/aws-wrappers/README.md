@@ -8,7 +8,7 @@ Opinionated AWS SDK wrappers with Powertools logging and X-Ray tracing baked in.
 npm install @aligent/aws-wrappers
 ```
 
-Requires **Node 18 or later**. The package is compiled to ES2022 and ships native `class` declarations, so older runtimes fail at import time with a syntax error rather than degrading gracefully.
+Requires **Node 20 or later**, the minimum the underlying `@aws-sdk/*` v3 clients support. The package is compiled to ES2022 and ships native `class` declarations, so older runtimes fail at import time with a syntax error rather than degrading gracefully.
 
 ## Conventions
 
@@ -27,7 +27,7 @@ Every wrapper emits one `logger.info` line per SDK call with a per-method safe-f
 
 ### Batch semantics
 
-Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `SESService.sendBulkEmail`, `EventBridgeService.putEvents`, `S3Service.deleteObjects`, `S3Service.emptyBucket` and, when `required` is set, `SSMService.getParameters`.
+Batch methods split your entries into chunks of the size the AWS API allows and send one request per chunk. AWS reports rejected entries inside an otherwise successful response, so a resolved request does not mean every entry was accepted. Currently covered: `SQSService.sendMessageBatch`, `SQSService.deleteMessageBatch`, `SNSService.publishBatch`, `SESService.sendBulkEmail`, `EventBridgeService.putEvents`, `S3Service.deleteObjects`, `S3Service.emptyBucket`, `DynamoDBService.batchGet`, `DynamoDBService.batchWrite` and, when `required` is set, `SSMService.getParameters`.
 
 Every chunk is sent first. If any entry was rejected, the method then throws a single `BatchOperationError`. A call where nothing was rejected returns exactly what it did before.
 
@@ -39,7 +39,8 @@ try {
 } catch (error) {
     if (error instanceof BatchOperationError) {
         // error.results — the raw SDK output of every chunk, including what succeeded
-        //                 (empty for SSM, per-page deleted keys for S3 emptyBucket)
+        //                 (empty for SSM, per-page deleted keys for S3 emptyBucket,
+//                 the single last output for DynamoDB)
         // error.failed  — [{ id, code, message }] for every rejected entry
         const failedIds = new Set(error.failed.map(entry => entry.id));
         await retry(entries.filter(entry => failedIds.has(entry.Id)));
@@ -51,6 +52,7 @@ try {
 
 - `failed` carries only the entry identifier, error code and message — never message bodies, attributes or any other payload. For S3 the identifier is the object key; for SSM it is the parameter path.
 - `EventBridgeService.putEvents` and `SESService.sendBulkEmail` entries have no identifier of their own, so for those methods `id` is the entry's index in the `Entries` / `BulkEmailEntries` list you passed in, as a string.
+- DynamoDB batch entries have no identifier either, and the key or item is caller data that must stay out of `failed`, so `id` is `<table>[<index>]`, the position within that table's still-unprocessed list — see the DynamoDB section.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
@@ -105,6 +107,8 @@ await s3.deleteObject({ Bucket: 'my-bucket', Key: 'file.txt' });
 await s3.deleteObjects('my-bucket', ['key1', 'key2']); // auto-chunked to 1000 keys per request
 await s3.emptyBucket('my-bucket');                     // unversioned buckets only — see below
 ```
+
+`getJsonObject` and `getAllObjects` throw when an object body is not valid JSON. The error names the object (`s3://bucket/key`) and deliberately carries none of its content, unlike the native `SyntaxError`, which quotes a snippet of the input. `getAllObjects` stops at the first bad object.
 
 `deleteObjects` and `emptyBucket` throw a `BatchOperationError` when S3 reports that it could not delete one or more keys — see "Batch semantics". `failed[].id` is the object key.
 
@@ -169,7 +173,8 @@ const { Attributes } = await ddb.updateItem<MyKey, { value: number }>({
 await ddb.deleteItem({ TableName: 'my-table', Key: { pk: 'abc' } });
 
 // batchWrite retries UnprocessedItems with jittered exponential backoff
-// (5 attempts, 200ms base) and throws if any remain after the final attempt.
+// (5 attempts, 200ms base) and throws a BatchOperationError if any remain
+// after the final attempt — see below.
 await ddb.batchWrite({
     RequestItems: {
         'my-table': [{ PutRequest: { Item: { pk: 'abc' } } }],
@@ -205,7 +210,23 @@ for await (const item of ddb.paginateItems<{ pk: string }>({
 
 `Limit` on `paginateItems` / `paginateScan` is applied by DynamoDB per request, and both methods walk every page until `LastEvaluatedKey` is exhausted. Passing `Limit: 10` therefore yields *every* matching item in pages of 10, not the first 10. Because both return an `AsyncGenerator`, `break` calls its `return()`, which unwinds the pagination and issues no further requests — that is how you bound the number of items. `Limit` is still the right knob for tuning per-request consumed capacity and page memory; it just doesn't stop the walk.
 
-`batchGet` is **not** generic — its `Responses` field is a multi-table record whose item shapes can differ per table, so no single generic can soundly describe it. Callers should narrow the result type at the call site. Like `batchWrite`, it retries non-empty `UnprocessedKeys` with jittered exponential backoff (5 attempts, 200ms base), merging `Responses` across attempts and throwing if keys remain unprocessed after the final attempt.
+`batchGet` is **not** generic — its `Responses` field is a multi-table record whose item shapes can differ per table, so no single generic can soundly describe it. Callers should narrow the result type at the call site. Like `batchWrite`, it retries non-empty `UnprocessedKeys` with jittered exponential backoff (5 attempts, 200ms base), merging `Responses` across attempts.
+
+When items or keys are still unprocessed after the final attempt, `batchGet` and `batchWrite` throw a `BatchOperationError` (see "Batch semantics") rather than a plain `Error`, so a caller that caught `Error` and matched the old `batchGet failed after 5 attempts` message must match on the error `name` instead. Nothing is lost: `error.results` holds one output, and its `UnprocessedKeys` / `UnprocessedItems` are exactly what is left to retry. For `batchGet` that output also carries the `Responses` merged across every attempt, so the items already retrieved are still available:
+
+```ts
+try {
+    return await ddb.batchGet({ RequestItems: { 'my-table': { Keys: keys } } });
+} catch (error) {
+    if (error instanceof BatchOperationError) {
+        const [partial] = error.results; // { Responses, UnprocessedKeys, ... }
+        // retry partial.UnprocessedKeys later, keep partial.Responses
+    }
+    throw error;
+}
+```
+
+`failed` has one entry per pending key or item, with `code` `UnprocessedKeys` or `UnprocessedItems`. Because the key or item is your data and must stay out of the error message and logs, `failed[].id` is `<table>[<index>]`, the position within `results[0].UnprocessedKeys[table].Keys` (or `results[0].UnprocessedItems[table]`). `results` does carry that data, as it is what you asked for or sent, so don't log the error's `results` wholesale.
 
 ## Secrets Manager
 
@@ -218,7 +239,7 @@ const raw = await secrets.getSecret('my-secret-name');
 const config = await secrets.getJsonSecret<MySecretShape>('my-secret-name');
 ```
 
-`getSecret` throws when the response has no `SecretString` (e.g. a binary-only secret). `getJsonSecret` additionally throws if the secret value is not valid JSON. `VersionId` / `VersionStage` aren't exposed — use `SecretsManagerClient` directly if you need version pinning.
+`getSecret` throws when the response has no `SecretString` (e.g. a binary-only secret). `getJsonSecret` additionally throws if the secret value is not valid JSON; that error names the secret and deliberately carries none of its value, unlike the native `SyntaxError`, which quotes a snippet of the input. `VersionId` / `VersionStage` aren't exposed — use `SecretsManagerClient` directly if you need version pinning.
 
 ```ts
 // Write operations. Prefer IaC (CDK / Terraform) for secret lifecycle;
@@ -394,7 +415,8 @@ const apiKey = await ssm.getParameter('/myapp/api-key');
 
 // Supply an alias-to-path map — the result is keyed by the aliases so the
 // SSM path is only mentioned at the call site. Auto-chunks past 10 aliases
-// (the SDK's per-request cap on GetParameters).
+// (the SDK's per-request cap on GetParameters). A value may also be a
+// parameter ARN or a `name:version` / `name:label` selector.
 const { host, port } = await ssm.getParameters({
     host: '/myapp/host',
     port: '/myapp/port',
@@ -465,6 +487,8 @@ await sqs.sendMessage({ QueueUrl, MessageBody: huge });
 await sqs.sendMessage({ QueueUrl, MessageBody: huge }, { truncate: false }); // per-call override
 ```
 
+With truncation on, a `MessageBody` above 1 MiB (the SQS maximum) is cut at a UTF-8 codepoint boundary and a warning is logged. A queue can be configured with a lower `MaximumMessageSize`, but the wrapper does not know a queue's setting, so lowering it does not lower this cut-off. Message attributes count toward the SQS limit as well and are never truncated, so a body cut to 1 MiB that also carries attributes can still be rejected. Truncating a structured body such as JSON can leave it invalid, so only enable it where the consumer tolerates that.
+
 ## SNS
 
 ```ts
@@ -478,12 +502,14 @@ await sns.publish({ TopicArn, Message: 'hello' });
 // and throws a BatchOperationError if SNS rejects any entry — see "Batch semantics".
 await sns.publishBatch({ TopicArn, PublishBatchRequestEntries: bigEntryList });
 
-// Opt-in truncation — same shape as SQS. Truncates Message (256 KB byte-safe)
-// and Subject (100 chars codepoint-safe) when enabled.
+// Opt-in truncation — same shape as SQS. Truncates Message (256 KiB byte-safe)
+// and Subject (99 chars codepoint-safe) when enabled.
 const truncSns = new SNSService({ truncate: true });
 await truncSns.publish({ TopicArn, Message: huge, Subject: long });
 await truncSns.publish({ TopicArn, Message: huge }, { truncate: false });
 ```
+
+With truncation on, a `Message` above 256 KiB is cut at a UTF-8 codepoint boundary and a `Subject` above 99 characters is cut to 99 (SNS requires fewer than 100), each with a warning. 256 KiB is the default `MaximumMessageSize` of a topic. A topic can be raised to 1 MiB, but the wrapper does not know a topic's setting, so raising it does not raise this cut-off. Message attributes count toward the topic limit as well and are never truncated, so a message cut to 256 KiB that also carries attributes can still be rejected. Truncating a structured `Message` such as JSON can leave it invalid, so only enable it where the subscribers tolerate that.
 
 ## SES
 

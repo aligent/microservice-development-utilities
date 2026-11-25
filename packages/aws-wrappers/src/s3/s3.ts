@@ -30,12 +30,20 @@ import {
     throwIfAnyDeleteErrors,
 } from '../util/batch-operation-error.js';
 import { chunk } from '../util/chunk.js';
+import { parseJson } from '../util/json.js';
 import { collectItems } from '../util/pagination.js';
 import { redactInput } from '../util/redact.js';
 
 const DEFAULT_PRESIGNED_URL_EXPIRES_IN_SECONDS = 3600;
 
 const DELETE_OBJECTS_BATCH_LIMIT = 1000;
+
+/**
+ * `Key` is `string | undefined` here because the SDK types a required `Key`
+ * that way even through `Required<Pick<...>>`.
+ */
+const parseJsonObject = <T>(body: string, bucket: string | undefined, key: string | undefined): T =>
+    parseJson<T>(body, `S3 object s3://${bucket}/${key}`);
 
 /**
  * One page of an `emptyBucket` run, as carried in `BatchOperationError.results`.
@@ -164,7 +172,9 @@ export class S3Service {
      * Get an object from S3 and parse it as JSON.
      * @template T - Expected type of the parsed value.
      * @returns The parsed value, or `undefined` if the response has no body.
-     * @throws If the body is non-empty and not valid JSON.
+     * @throws If the body is non-empty and not valid JSON. The error names the
+     * object and never includes any of its content, unlike the native
+     * `SyntaxError`.
      */
     async getJsonObject<T>(
         input: Required<Pick<GetObjectCommandInput, 'Bucket' | 'Key'>>
@@ -172,7 +182,7 @@ export class S3Service {
         this.logger.info('Getting S3 JSON object', { input });
         const response = await this.client.send(new GetObjectCommand(input));
         const body = await response.Body?.transformToString();
-        return body ? (JSON.parse(body) as T) : undefined;
+        return body ? parseJsonObject<T>(body, input.Bucket, input.Key) : undefined;
     }
 
     /**
@@ -213,6 +223,9 @@ export class S3Service {
      * List and JSON-parse every object under a bucket and optional prefix.
      * Auto-paginated. Objects without a body are skipped.
      * @template T - Expected type of each parsed object.
+     * @throws If any object is not valid JSON. The error names that object's
+     * key and never includes any of its content, unlike the native
+     * `SyntaxError`; objects after it are not fetched.
      */
     async getAllObjects<T>(bucket: string, prefix?: string): Promise<T[]> {
         this.logger.info('Getting all S3 objects', { input: { bucket, prefix } });
@@ -228,7 +241,7 @@ export class S3Service {
                     new GetObjectCommand({ Bucket: bucket, Key: object.Key })
                 );
                 const body = await response.Body?.transformToString();
-                if (body) bodies.push(JSON.parse(body) as T);
+                if (body) bodies.push(parseJsonObject<T>(body, bucket, object.Key));
             }
         }
         return bodies;

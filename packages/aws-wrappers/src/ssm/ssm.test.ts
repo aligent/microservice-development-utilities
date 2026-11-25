@@ -131,6 +131,91 @@ describe('SSMService', () => {
         });
     });
 
+    describe('getParameters with ARN and versioned names', () => {
+        const arn = 'arn:aws:ssm:ap-southeast-2:123456789012:parameter/app/a';
+
+        // SSM answers with the plain parameter name and reports the version or
+        // label separately in `Selector`; the requested ARN only shows in `ARN`.
+        const respondLikeSsm = (): void => {
+            ssmMock.on(GetParametersCommand).resolves({
+                Parameters: [
+                    { Name: '/app/a', ARN: arn, Value: 'by-arn' },
+                    {
+                        Name: '/app/b',
+                        ARN: 'arn:aws:ssm:ap-southeast-2:123456789012:parameter/app/b',
+                        Selector: ':3',
+                        Version: 3,
+                        Value: 'version-3',
+                    },
+                    {
+                        Name: '/app/c',
+                        ARN: 'arn:aws:ssm:ap-southeast-2:123456789012:parameter/app/c',
+                        Selector: ':prod',
+                        Value: 'label-prod',
+                    },
+                ],
+            });
+        };
+
+        it('resolves an alias given as an ARN', async () => {
+            respondLikeSsm();
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters({ byArn: arn });
+
+            expect(result.byArn).toBe('by-arn');
+        });
+
+        it('resolves aliases given as name:version and name:label', async () => {
+            respondLikeSsm();
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters({
+                byVersion: '/app/b:3',
+                byLabel: '/app/c:prod',
+            });
+
+            expect(result).toEqual({ byVersion: 'version-3', byLabel: 'label-prod' });
+        });
+
+        it('resolves an alias given as an ARN with a version selector', async () => {
+            respondLikeSsm();
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters({
+                byArnVersion: 'arn:aws:ssm:ap-southeast-2:123456789012:parameter/app/b:3',
+            });
+
+            expect(result.byArnVersion).toBe('version-3');
+        });
+
+        it('does not throw under required for an ARN or selector SSM resolved', async () => {
+            respondLikeSsm();
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters(
+                { byArn: arn, byVersion: '/app/b:3' },
+                { required: true }
+            );
+
+            expect(result).toEqual({ byArn: 'by-arn', byVersion: 'version-3' });
+        });
+
+        it('keeps a versioned and an unversioned request for the same parameter apart', async () => {
+            ssmMock.on(GetParametersCommand).resolves({
+                Parameters: [
+                    { Name: '/app/b', Value: 'latest' },
+                    { Name: '/app/b', Selector: ':3', Version: 3, Value: 'version-3' },
+                ],
+            });
+            const service = new SSMService({ client: new SSMClient({}) });
+
+            const result = await service.getParameters({ latest: '/app/b', pinned: '/app/b:3' });
+
+            expect(result).toEqual({ latest: 'latest', pinned: 'version-3' });
+        });
+    });
+
     describe('getParameters with required', () => {
         const respondWithExisting = (existing: Record<string, string>): void => {
             ssmMock.on(GetParametersCommand).callsFake(input => {

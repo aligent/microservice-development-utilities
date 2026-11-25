@@ -33,6 +33,30 @@ describe('BatchOperationError', () => {
         );
     });
 
+    it('uses the singular and omits the code list when a single entry has no code', () => {
+        const error = new BatchOperationError([], [{ id: 'a', code: undefined, message: 'boom' }]);
+
+        expect(error.message).toBe('Batch operation failed for 1 entry');
+    });
+
+    it('lists the code of a single failed entry', () => {
+        const error = new BatchOperationError([], [{ id: 'a', code: 'Throttled', message: 'x' }]);
+
+        expect(error.message).toBe('Batch operation failed for 1 entry (Throttled)');
+    });
+
+    it('omits the code list when no entry has a code', () => {
+        const error = new BatchOperationError(
+            [],
+            [
+                { id: 'a', code: undefined, message: undefined },
+                { id: 'b', code: undefined, message: undefined },
+            ]
+        );
+
+        expect(error.message).toBe('Batch operation failed for 2 entries');
+    });
+
     it('is exported from the package entry point', () => {
         expect(entryPoint.BatchOperationError).toBe(BatchOperationError);
     });

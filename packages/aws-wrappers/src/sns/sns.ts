@@ -17,8 +17,18 @@ import { redactInput } from '../util/redact.js';
 import { truncateCodepoints, truncateUtf8 } from '../util/truncate.js';
 
 const PUBLISH_BATCH_LIMIT = 10;
+
+/**
+ * The default `MaximumMessageSize` of an SNS topic. Topics can be raised to
+ * 1 MiB, but the wrapper does not know a topic's setting, so it cuts at the
+ * size every topic accepts. Message attributes count toward the topic limit
+ * too and are not truncated, so a message at this size plus attributes can
+ * still be rejected.
+ */
 const SNS_MESSAGE_MAX_BYTES = 256 * 1024;
-const SNS_SUBJECT_MAX_CHARS = 100;
+
+/** SNS requires a subject of *less than* 100 characters, so 99 is the maximum. */
+const SNS_SUBJECT_MAX_CHARS = 99;
 
 /**
  * Fields safe to log at INFO level for `publish`. Omits `Message`, `Subject`,
@@ -52,11 +62,14 @@ export class SNSService {
      * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SNSClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
-     * @param opts.truncate - When `true`, oversized `Message` / `Subject` are
-     * truncated (byte-safe / codepoint-safe) before sending instead of failing
-     * at the SDK. Defaults to `false` — the SDK throws on oversize, which is
-     * usually the right failure mode. Each `publish` call can override via
-     * its own `truncate` option.
+     * @param opts.truncate - When `true`, an oversized `Message` (above 256 KiB,
+     * the default topic limit — raising a topic's `MaximumMessageSize` does not
+     * raise this cut-off) or `Subject` (above 99 characters) is truncated
+     * (byte-safe / codepoint-safe) before sending instead of failing at the
+     * SDK. Truncating a structured `Message` such as JSON can leave it invalid.
+     * Defaults to `false` — the SDK throws on oversize, which is usually the
+     * right failure mode. Each `publish` call can override via its own
+     * `truncate` option.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SNSClient; truncate?: boolean }) {
         this.client = opts?.client ?? xray.captureAWSv3Client(new SNSClient());

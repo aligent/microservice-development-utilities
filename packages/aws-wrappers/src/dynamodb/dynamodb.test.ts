@@ -2,7 +2,9 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
     BatchGetCommand,
+    BatchGetCommandOutput,
     BatchWriteCommand,
+    BatchWriteCommandOutput,
     DeleteCommand,
     DynamoDBDocumentClient,
     GetCommand,
@@ -13,10 +15,25 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BatchOperationError } from '../util/batch-operation-error';
 import { DynamoDBService } from './dynamodb';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 const TableName = 'my-table';
+const UNPROCESSED_MESSAGE = 'Still unprocessed after 5 attempts';
+
+/**
+ * Runs the fake-timer backoff to completion and returns what the call threw,
+ * so the rejection is always handled before the timers advance.
+ */
+async function settle(promise: Promise<unknown>): Promise<unknown> {
+    const outcome = promise.then(
+        () => undefined,
+        (thrown: unknown) => thrown
+    );
+    await vi.runAllTimersAsync();
+    return outcome;
+}
 
 const buildService = () =>
     new DynamoDBService({ client: DynamoDBDocumentClient.from(new DynamoDBClient({})) });
@@ -75,25 +92,83 @@ describe('DynamoDBService', () => {
             expect(retryItems).toEqual([{ PutRequest: { Item: { pk: 'b' } } }]);
         });
 
-        it('throws after MAX_ATTEMPTS when UnprocessedItems never clear', async () => {
-            ddbMock.on(BatchWriteCommand).resolves({
-                UnprocessedItems: {
-                    [TableName]: [{ PutRequest: { Item: { pk: 'c' } } }],
-                },
-            });
+        it('throws a BatchOperationError after MAX_ATTEMPTS when UnprocessedItems never clear', async () => {
+            const unprocessed = [
+                { PutRequest: { Item: { pk: 'secret-1' } } },
+                { PutRequest: { Item: { pk: 'secret-2' } } },
+            ];
+            ddbMock
+                .on(BatchWriteCommand)
+                .resolves({ UnprocessedItems: { [TableName]: unprocessed } });
             const service = buildService();
 
-            const promise = service.batchWrite({
-                RequestItems: { [TableName]: [{ PutRequest: { Item: { pk: 'c' } } }] },
-            });
-
-            const expectation = expect(promise).rejects.toThrow(
-                'batchWrite failed after 5 attempts'
+            const error = await settle(
+                service.batchWrite({ RequestItems: { [TableName]: unprocessed } })
             );
-            await vi.runAllTimersAsync();
-            await expectation;
 
             expect(ddbMock.commandCalls(BatchWriteCommand)).toHaveLength(5);
+            expect(error).toBeInstanceOf(BatchOperationError);
+            const { failed, results } = error as BatchOperationError<BatchWriteCommandOutput>;
+            expect(failed).toEqual([
+                { id: `${TableName}[0]`, code: 'UnprocessedItems', message: UNPROCESSED_MESSAGE },
+                { id: `${TableName}[1]`, code: 'UnprocessedItems', message: UNPROCESSED_MESSAGE },
+            ]);
+            expect(results).toHaveLength(1);
+            expect(results[0]?.UnprocessedItems).toEqual({ [TableName]: unprocessed });
+        });
+
+        it('backs off between attempts but not after the final one', async () => {
+            const unprocessed = [{ PutRequest: { Item: { pk: 'c' } } }];
+            ddbMock
+                .on(BatchWriteCommand)
+                .resolves({ UnprocessedItems: { [TableName]: unprocessed } });
+            const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+            const service = buildService();
+
+            await settle(service.batchWrite({ RequestItems: { [TableName]: unprocessed } }));
+
+            expect(ddbMock.commandCalls(BatchWriteCommand)).toHaveLength(5);
+            expect(setTimeoutSpy).toHaveBeenCalledTimes(4);
+        });
+
+        it('keeps item data out of the error message and failed entries', async () => {
+            const unprocessed = [{ PutRequest: { Item: { pk: 'secret-1' } } }];
+            ddbMock
+                .on(BatchWriteCommand)
+                .resolves({ UnprocessedItems: { [TableName]: unprocessed } });
+            const service = buildService();
+
+            const error = await settle(
+                service.batchWrite({ RequestItems: { [TableName]: unprocessed } })
+            );
+
+            const { message, failed } = error as BatchOperationError;
+            expect(message).not.toContain('secret-1');
+            expect(JSON.stringify(failed)).not.toContain('secret-1');
+        });
+
+        it('warns about a retry only when one will follow, and once more on exhaustion', async () => {
+            const unprocessed = [{ PutRequest: { Item: { pk: 'c' } } }];
+            ddbMock
+                .on(BatchWriteCommand)
+                .resolves({ UnprocessedItems: { [TableName]: unprocessed } });
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            await settle(service.batchWrite({ RequestItems: { [TableName]: unprocessed } }));
+
+            const retryAttempts = warnSpy.mock.calls
+                .filter(([message]) => message === 'Retrying unprocessed DynamoDB items')
+                .map(([, context]) => (context as { attempt: number }).attempt);
+            expect(retryAttempts).toEqual([1, 2, 3, 4]);
+            expect(warnSpy).toHaveBeenLastCalledWith('DynamoDB batchWrite had rejected entries', {
+                failedCount: 1,
+                codes: ['UnprocessedItems'],
+            });
         });
     });
 
@@ -143,21 +218,116 @@ describe('DynamoDBService', () => {
             });
         });
 
-        it('throws after MAX_ATTEMPTS when UnprocessedKeys never clear', async () => {
+        it('throws a BatchOperationError after MAX_ATTEMPTS when UnprocessedKeys never clear', async () => {
+            ddbMock
+                .on(BatchGetCommand)
+                .resolvesOnce({
+                    Responses: { [TableName]: [{ pk: 'a' }] },
+                    UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'b' }, { pk: 'c' }] } },
+                })
+                .resolves({
+                    Responses: { [TableName]: [{ pk: 'b' }] },
+                    UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'c' }] } },
+                });
+            const service = buildService();
+
+            const error = await settle(
+                service.batchGet({
+                    RequestItems: {
+                        [TableName]: { Keys: [{ pk: 'a' }, { pk: 'b' }, { pk: 'c' }] },
+                    },
+                })
+            );
+
+            expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(5);
+            expect(error).toBeInstanceOf(BatchOperationError);
+            const { failed, results } = error as BatchOperationError<BatchGetCommandOutput>;
+            expect(failed).toEqual([
+                { id: `${TableName}[0]`, code: 'UnprocessedKeys', message: UNPROCESSED_MESSAGE },
+            ]);
+            expect(results).toHaveLength(1);
+            expect(results[0]?.UnprocessedKeys).toEqual({ [TableName]: { Keys: [{ pk: 'c' }] } });
+        });
+
+        it('carries the Responses merged so far on the error so retrieved items are not lost', async () => {
+            ddbMock
+                .on(BatchGetCommand)
+                .resolvesOnce({
+                    Responses: { [TableName]: [{ pk: 'a' }] },
+                    UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'b' }, { pk: 'c' }] } },
+                })
+                .resolvesOnce({
+                    Responses: { [TableName]: [{ pk: 'b' }] },
+                    UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'c' }] } },
+                })
+                .resolves({ UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'c' }] } } });
+            const service = buildService();
+
+            const error = await settle(
+                service.batchGet({
+                    RequestItems: {
+                        [TableName]: { Keys: [{ pk: 'a' }, { pk: 'b' }, { pk: 'c' }] },
+                    },
+                })
+            );
+
+            const { results } = error as BatchOperationError<BatchGetCommandOutput>;
+            expect(results[0]?.Responses).toEqual({ [TableName]: [{ pk: 'a' }, { pk: 'b' }] });
+        });
+
+        it('backs off between attempts but not after the final one', async () => {
             ddbMock.on(BatchGetCommand).resolves({
                 UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'c' }] } },
             });
+            const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
             const service = buildService();
 
-            const promise = service.batchGet({
-                RequestItems: { [TableName]: { Keys: [{ pk: 'c' }] } },
-            });
-
-            const expectation = expect(promise).rejects.toThrow('batchGet failed after 5 attempts');
-            await vi.runAllTimersAsync();
-            await expectation;
+            await settle(
+                service.batchGet({ RequestItems: { [TableName]: { Keys: [{ pk: 'c' }] } } })
+            );
 
             expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(5);
+            expect(setTimeoutSpy).toHaveBeenCalledTimes(4);
+        });
+
+        it('keeps key data out of the error message and failed entries', async () => {
+            ddbMock.on(BatchGetCommand).resolves({
+                UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'secret-1' }] } },
+            });
+            const service = buildService();
+
+            const error = await settle(
+                service.batchGet({ RequestItems: { [TableName]: { Keys: [{ pk: 'secret-1' }] } } })
+            );
+
+            const { message, failed } = error as BatchOperationError;
+            expect(message).not.toContain('secret-1');
+            expect(JSON.stringify(failed)).not.toContain('secret-1');
+        });
+
+        it('warns about a retry only when one will follow, and once more on exhaustion', async () => {
+            ddbMock.on(BatchGetCommand).resolves({
+                UnprocessedKeys: { [TableName]: { Keys: [{ pk: 'c' }] } },
+            });
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            await settle(
+                service.batchGet({ RequestItems: { [TableName]: { Keys: [{ pk: 'c' }] } } })
+            );
+
+            const retryAttempts = warnSpy.mock.calls
+                .filter(([message]) => message === 'Retrying unprocessed DynamoDB items')
+                .map(([, context]) => (context as { attempt: number }).attempt);
+            expect(retryAttempts).toEqual([1, 2, 3, 4]);
+            expect(warnSpy).toHaveBeenLastCalledWith('DynamoDB batchGet had rejected entries', {
+                failedCount: 1,
+                codes: ['UnprocessedKeys'],
+            });
         });
 
         it('emits a logger.warn line with the retried table names', async () => {

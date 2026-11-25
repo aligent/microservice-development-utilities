@@ -93,6 +93,23 @@ describe('S3Service', () => {
             expect(putCall?.args[0].input.Body).toBe(JSON.stringify(payload));
         });
 
+        it('names the object but never its content when getJsonObject meets malformed JSON', async () => {
+            s3Mock
+                .on(GetObjectCommand, { Bucket, Key: 'bad.json' })
+                .resolves({ Body: stringStream('{"password": hunter2}') });
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const error = await service
+                .getJsonObject({ Bucket, Key: 'bad.json' })
+                .catch((e: unknown) => e);
+
+            expect(error).toBeInstanceOf(Error);
+            const { message, cause } = error as Error;
+            expect(message).toContain(`s3://${Bucket}/bad.json`);
+            expect(message).not.toContain('hunter2');
+            expect(String(cause)).not.toContain('hunter2');
+        });
+
         it('returns undefined from getJsonObject when the response body is empty', async () => {
             s3Mock.on(GetObjectCommand).resolves({});
             const service = new S3Service({ client: new S3Client({}) });
@@ -429,6 +446,25 @@ describe('S3Service', () => {
             const items = await service.getAllObjects<{ id: number }>(Bucket);
 
             expect(items.map(i => i.id)).toEqual([1, 2, 3]);
+        });
+
+        it('getAllObjects names the failing object but never its content on malformed JSON', async () => {
+            s3Mock.on(ListObjectsV2Command).resolves({ Contents: [{ Key: 'ok' }, { Key: 'bad' }] });
+            s3Mock
+                .on(GetObjectCommand, { Bucket, Key: 'ok' })
+                .resolves({ Body: stringStream(JSON.stringify({ id: 1 })) });
+            s3Mock
+                .on(GetObjectCommand, { Bucket, Key: 'bad' })
+                .resolves({ Body: stringStream('{"password": hunter2}') });
+            const service = new S3Service({ client: new S3Client({}) });
+
+            const error = await service.getAllObjects(Bucket).catch((e: unknown) => e);
+
+            expect(error).toBeInstanceOf(Error);
+            const { message, cause } = error as Error;
+            expect(message).toContain(`s3://${Bucket}/bad`);
+            expect(message).not.toContain('hunter2');
+            expect(String(cause)).not.toContain('hunter2');
         });
     });
 

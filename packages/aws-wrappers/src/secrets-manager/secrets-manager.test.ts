@@ -198,6 +198,21 @@ describe('SecretsManagerService', () => {
             expect(result).toEqual(payload);
         });
 
+        it('names the secret but never the secret value when the JSON is malformed', async () => {
+            secretsMock
+                .on(GetSecretValueCommand, { SecretId: 'bad-json' })
+                .resolves({ SecretString: '{"password": hunter2}' });
+            const service = new SecretsManagerService({ client: new SecretsManagerClient({}) });
+
+            const error = await service.getJsonSecret('bad-json').catch((e: unknown) => e);
+
+            expect(error).toBeInstanceOf(Error);
+            const { message, cause } = error as Error;
+            expect(message).toContain('bad-json');
+            expect(message).not.toContain('hunter2');
+            expect(String(cause)).not.toContain('hunter2');
+        });
+
         it('propagates the underlying missing-SecretString error', async () => {
             secretsMock.on(GetSecretValueCommand, { SecretId: 'missing' }).resolves({});
             const service = new SecretsManagerService({ client: new SecretsManagerClient({}) });

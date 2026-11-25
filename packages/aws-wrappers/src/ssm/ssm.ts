@@ -20,6 +20,21 @@ import { redactInput } from '../util/redact.js';
 const GET_PARAMETERS_LIMIT = 10;
 
 /**
+ * Every string a caller may have used to request this parameter. SSM answers
+ * with the plain `Name` whatever was requested, so an ARN or a
+ * `name:version` / `name:label` selector can only be matched through `ARN`
+ * and `Selector`. A response carrying a `Selector` is keyed by its selector
+ * forms only, so it can't shadow a request for the unversioned parameter.
+ * The selector is accepted with or without its leading colon.
+ */
+function requestKeys({ Name, ARN, Selector }: Parameter): string[] {
+    const identifiers = [Name, ARN].filter((id): id is string => id !== undefined);
+    if (Selector === undefined) return identifiers;
+    const suffix = Selector.startsWith(':') ? Selector : `:${Selector}`;
+    return identifiers.map(id => `${id}${suffix}`);
+}
+
+/**
  * One failed entry per alias whose path SSM reported as invalid, so two
  * aliases sharing a missing path are both named.
  */
@@ -128,7 +143,9 @@ export class SSMService {
      * alias in `message`. Request-level SDK exceptions are not wrapped.
      *
      * @param aliases - Record mapping each desired local alias to its SSM
-     * parameter name (or ARN).
+     * parameter name, ARN, or a `name:version` / `name:label` selector. The
+     * value is matched back to the response by the name, ARN and selector SSM
+     * reports, so each of those forms resolves to its own parameter.
      * @param opts.required - Throw when any requested parameter does not
      * exist. Defaults to `false`.
      * @returns A record keyed by the same aliases, mapping each to the
@@ -141,7 +158,7 @@ export class SSMService {
     ): Promise<Record<K, string | undefined>> {
         this.logger.info('Fetching SSM parameters', { input: { aliases } });
         const names = Object.values(aliases) as string[];
-        const byPath = new Map<string, string | undefined>();
+        const byRequest = new Map<string, string | undefined>();
         const invalidPaths = new Set<string>();
         for (const batch of chunk(names, GET_PARAMETERS_LIMIT)) {
             const response = await this.client.send(
@@ -151,7 +168,7 @@ export class SSMService {
                 })
             );
             for (const parameter of response.Parameters ?? []) {
-                if (parameter.Name !== undefined) byPath.set(parameter.Name, parameter.Value);
+                for (const key of requestKeys(parameter)) byRequest.set(key, parameter.Value);
             }
             for (const name of response.InvalidParameters ?? []) invalidPaths.add(name);
         }
@@ -166,7 +183,7 @@ export class SSMService {
         }
         const result = {} as Record<K, string | undefined>;
         for (const alias of Object.keys(aliases) as K[]) {
-            result[alias] = byPath.get(aliases[alias]);
+            result[alias] = byRequest.get(aliases[alias]);
         }
         return result;
     }
