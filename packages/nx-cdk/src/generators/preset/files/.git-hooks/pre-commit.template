@@ -26,7 +26,7 @@ EXCLUDED_FILES_REGEX+='|.*\/step-functions\/.*\.(yml|yaml)$' # Ignore step funct
 EXCLUDED_FILES_REGEX+='|^\/?([^\/]*)$' # Ignore all root-level files
 AFFECTED_FILES=$(echo "$STAGED_FILES" | \
   grep -vE "$EXCLUDED_FILES_REGEX" | \
-  paste -sd,)
+  paste -sd, -)
 
 echo -e "${GREEN}\nAffected files: $AFFECTED_FILES\n${NO_COLOUR}"
 
