@@ -42,8 +42,7 @@ The preset generator scaffolds:
 - **Root configuration files**:
   - `eslint.config.mjs` - ESLint configuration
   - `prettier.config.mjs` - Prettier configuration
-  - `rolldown.config.base.mjs` - Base Rolldown configuration
-  - `vitest.config.base.mjs` - Base Vitest configuration
+  - `vite.config.base.mjs` - Base Vitest configuration
   - `vitest.global.setup.mjs` - Global Vitest setup
   - `tsconfig.json` - Root TypeScript configuration
   - `nx.json` - Nx workspace configuration
@@ -92,8 +91,7 @@ The service generator creates a new service in `services/<service-name>/` with:
   - `package.json` - Service-specific dependencies
   - `README.md` - Service documentation
   - `eslint.config.mjs` - ESLint configuration
-  - `rolldown.config.mjs` - Rolldown configuration
-  - `vitest.config.mjs` - Vitest configuration
+  - `vite.config.mjs` - Vite configuration (Lambda bundling and Vitest)
   - TypeScript configurations (`tsconfig.json`, `tsconfig.lib.json`, `tsconfig.spec.json`)
 
 - **Root updates**:

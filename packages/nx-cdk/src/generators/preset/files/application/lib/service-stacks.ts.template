@@ -17,7 +17,9 @@ export class ApplicationStage extends Stage {
         super(scope, id, {
             ...props,
             env: {
-                account: process.env.CDK_DEFAULT_ACCOUNT,
+                ...(process.env.CDK_DEFAULT_ACCOUNT && {
+                    account: process.env.CDK_DEFAULT_ACCOUNT,
+                }),
                 region: process.env.CDK_DEFAULT_REGION || 'ap-southeast-2',
             },
         });
