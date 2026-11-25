@@ -77,10 +77,10 @@ yarn nx g service <service-name>
 
 #### Options
 
-| Option    | Type    | Required | Default | Description                                                               |
-| --------- | ------- | -------- | ------- | ------------------------------------------------------------------------- |
-| `name`    | string  | Yes      | -       | The name of the service (cannot contain 'Stack' or 'Service' in the name) |
-| `example` | boolean | No       | `false` | Generate example code with sample resources                               |
+| Option    | Type    | Required | Default | Description                                                                                                                                      |
+| --------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`    | string  | Yes      | -       | The name of the service: lowercase kebab-case starting with a letter (e.g. `user-management`, `my-2fa`), and cannot contain 'Stack' or 'Service' |
+| `example` | boolean | No       | `false` | Generate example code with sample resources                                                                                                      |
 
 #### What it creates
 
@@ -98,7 +98,7 @@ The service generator creates a new service in `services/<service-name>/` with:
   - Adds the service to the root `tsconfig.json` references for proper TypeScript project references
 
 - **Application updates**:
-  - Adds the stack to the main CDK application
+  - Adds the stack to the main CDK application. If `application/lib/service-stacks.ts` does not exist the generator logs a warning and skips this step, so register the stack manually.
 
 #### Example
 
@@ -125,10 +125,10 @@ yarn nx g remove-service <service-name>
 
 #### Options
 
-| Option        | Type    | Required | Default | Description                                     |
-| ------------- | ------- | -------- | ------- | ----------------------------------------------- |
-| `name`        | string  | Yes      | -       | The name of the service to remove               |
-| `forceRemove` | boolean | No       | `false` | Skip dependency check when removing the project |
+| Option        | Type    | Required | Default | Description                                                           |
+| ------------- | ------- | -------- | ------- | --------------------------------------------------------------------- |
+| `name`        | string  | Yes      | -       | The name of the service to remove (lowercase alphanumeric and dashes) |
+| `forceRemove` | boolean | No       | `false` | Skip dependency check when removing the project                       |
 
 #### Dependency check
 
@@ -145,7 +145,6 @@ The remove generator performs the following cleanup:
 
 - **Root updates**:
   - Removes the service from the root `tsconfig.json` references
-  - Removes the service from the root `package.json` workspaces (if present)
 
 - **Service files**:
   - Deletes the entire `services/<service-name>/` directory

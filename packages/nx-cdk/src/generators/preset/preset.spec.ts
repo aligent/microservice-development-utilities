@@ -1,5 +1,6 @@
 import { Tree, readNxJson, visitNotIgnoredFiles } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
+import { execFileSync } from 'node:child_process';
 
 import { presetGenerator } from './preset';
 import { PresetGeneratorSchema } from './schema';
@@ -106,6 +107,31 @@ describe('preset generator', () => {
 
             const stacks = tree.read('application/lib/service-stacks.ts', 'utf-8');
             expect(stacks).toContain('...(process.env.CDK_DEFAULT_ACCOUNT && {');
+        });
+    });
+
+    describe('generated pre-commit hook', () => {
+        function evaluateCommands(hook: string) {
+            const commandsLine = hook.match(/^commands=\(.*\)$/m)?.[0];
+            if (!commandsLine) {
+                throw new Error('commands array not found in pre-commit hook');
+            }
+
+            const script = `AFFECTED_COMMAND=nx\n${commandsLine}\nprintf '%s\\n' "\${commands[@]}"`;
+            return execFileSync('bash', ['-c', script], { encoding: 'utf-8' })
+                .split('\n')
+                .filter(Boolean);
+        }
+
+        it('should separate commands with whitespace rather than commas', async () => {
+            await presetGenerator(tree, options);
+
+            const hook = tree.read('.git-hooks/pre-commit', 'utf-8') ?? '';
+
+            expect(evaluateCommands(hook)).toEqual([
+                'nx -t lint typecheck --parallel=3',
+                'nx -t test --configuration coverage',
+            ]);
         });
     });
 
