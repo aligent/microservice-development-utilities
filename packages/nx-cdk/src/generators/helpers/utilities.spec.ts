@@ -66,3 +66,36 @@ describe('service name schema patterns', () => {
         expect(new RegExp(readSchemaNamePattern('service')).test(name)).toBe(true);
     });
 });
+
+describe('generated workspace Nx versions', () => {
+    const majorOf = (version: string) => version.replace(/^\D*/, '').split('.')[0];
+
+    function readDependencies(file: string, field: 'dependencies' | 'devDependencies') {
+        const json = readJsonFile<Record<string, Record<string, string> | undefined>>(file);
+        return json[field] ?? {};
+    }
+
+    it('should pin nx and every @nx/* package to the Nx major the plugin runs on', () => {
+        const pluginDevkit = readDependencies(
+            join(__dirname, '../../../package.json'),
+            'dependencies'
+        )['@nx/devkit'];
+        if (pluginDevkit === undefined) {
+            throw new Error('@aligent/nx-cdk does not depend on @nx/devkit');
+        }
+        const workspaceDeps = readDependencies(
+            join(__dirname, 'configs/base-package/package.json'),
+            'devDependencies'
+        );
+
+        const nxPackages = Object.entries(workspaceDeps).filter(
+            ([name]) => name === 'nx' || name.startsWith('@nx/')
+        );
+        const behind = nxPackages
+            .filter(([, version]) => majorOf(version) !== majorOf(pluginDevkit))
+            .map(([name, version]) => `${name}@${version}`);
+
+        expect(nxPackages.length).toBeGreaterThan(0);
+        expect(behind).toEqual([]);
+    });
+});
