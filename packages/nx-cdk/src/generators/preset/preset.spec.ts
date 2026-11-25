@@ -77,4 +77,46 @@ describe('preset generator', () => {
         expect(packageJson).toBeDefined();
         expect(packageJson).toContain('@aligent/vite-plugin-handler');
     });
+
+    describe('generated CDK application', () => {
+        it('should pass the stage name to MicroserviceChecks', async () => {
+            await presetGenerator(tree, options);
+
+            const main = tree.read('application/bin/main.ts', 'utf-8');
+            expect(main).toContain('new MicroserviceChecks({ stageName })');
+        });
+
+        it('should import type-only symbols with the type modifier', async () => {
+            await presetGenerator(tree, options);
+
+            const main = tree.read('application/bin/main.ts', 'utf-8');
+            expect(main).toContain('type AspectOptions');
+            expect(main).toContain('type IAspect');
+        });
+
+        it('should not initialise a variable that every switch branch reassigns', async () => {
+            await presetGenerator(tree, options);
+
+            const main = tree.read('application/bin/main.ts', 'utf-8');
+            expect(main).toContain("let duration: 'SHORT' | 'MEDIUM' | 'LONG';");
+        });
+
+        it('should omit the stage account when CDK_DEFAULT_ACCOUNT is unset', async () => {
+            await presetGenerator(tree, options);
+
+            const stacks = tree.read('application/lib/service-stacks.ts', 'utf-8');
+            expect(stacks).toContain('...(process.env.CDK_DEFAULT_ACCOUNT && {');
+        });
+    });
+
+    it('should only list root config files in the README that were generated', async () => {
+        await presetGenerator(tree, options);
+
+        const readme = tree.read('README.md', 'utf-8') ?? '';
+        const listedFiles = readme.match(/[\w.-]+\.mjs/g) ?? [];
+        expect(listedFiles).not.toEqual([]);
+
+        const missing = listedFiles.filter(file => !tree.exists(file));
+        expect(missing).toEqual([]);
+    });
 });

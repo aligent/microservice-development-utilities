@@ -9,7 +9,7 @@ import {
     S3DefaultsAspect,
     StepFunctionsDefaultsAspect,
 } from '@aligent/cdk-aspects';
-import { App, AspectOptions, AspectPriority, Aspects, IAspect, Tags } from 'aws-cdk-lib';
+import { App, type AspectOptions, AspectPriority, Aspects, type IAspect, Tags } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { ApplicationStage } from '../lib/service-stacks.js';
 
@@ -64,7 +64,7 @@ const commonAspectsWithOptions: Array<{ aspect: IAspect; options: AspectOptions 
         options: { priority: AspectPriority.MUTATING },
     },
     { aspect: new StepFunctionsDefaultsAspect(), options: { priority: AspectPriority.MUTATING } },
-    { aspect: new MicroserviceChecks(), options: { priority: AspectPriority.READONLY } },
+    { aspect: new MicroserviceChecks({ stageName }), options: { priority: AspectPriority.READONLY } },
 ];
 
 /**
@@ -85,7 +85,7 @@ commonAspectsWithOptions.forEach(({ aspect, options }) => {
 });
 
 const defaultAspectsOptions: AspectOptions = { priority: AspectPriority.MUTATING };
-let duration: 'SHORT' | 'MEDIUM' | 'LONG' = 'SHORT';
+let duration: 'SHORT' | 'MEDIUM' | 'LONG';
 
 switch (stageName) {
     case 'prd':
