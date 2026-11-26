@@ -254,6 +254,21 @@ describe('remove generator', () => {
         );
     });
 
+    it('should still remove the service import when ApplicationStage is missing', async () => {
+        tree.write(
+            'application/lib/service-stacks.ts',
+            "import { COMPANIES, CompaniesStack } from '@services/companies';\nexport const unrelated = 1;\n"
+        );
+        tree.write('services/companies/package.json', '{}');
+        vi.spyOn(devkit.logger, 'warn').mockImplementation(() => undefined);
+
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
+
+        const stacks = tree.read('application/lib/service-stacks.ts', 'utf-8') ?? '';
+        expect(stacks).not.toContain('@services/companies');
+        expect(stacks).toContain('unrelated');
+    });
+
     it('should proceed when only the application depends on the service', async () => {
         vi.spyOn(devkit, 'createProjectGraphAsync').mockResolvedValue({
             nodes: {},

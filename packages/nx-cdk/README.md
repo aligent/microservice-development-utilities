@@ -142,6 +142,7 @@ The remove generator performs the following cleanup:
   - Removes the service's import declaration from `application/lib/service-stacks.ts`
   - Removes the stack instantiation from the `ApplicationStage` constructor
   - Removes the service from `application/package.json` `bundleDependencies`
+  - This step is best-effort: if `application/lib/service-stacks.ts` does not exist, or has no `ApplicationStage` class, the generator logs a warning and carries on, so remove the stack registration by hand. Any import it can still find is removed either way.
 
 - **Root updates**:
   - Removes the service from the root `tsconfig.json` references

@@ -8,7 +8,7 @@ import {
     updateJson,
 } from '@nx/devkit';
 import { join } from 'path';
-import { InMemoryFileSystemHost, Project } from 'ts-morph';
+import { InMemoryFileSystemHost, Project, type SourceFile } from 'ts-morph';
 import { ProjectType, SERVICES_SCOPE } from '../constants';
 import {
     BASE_COMPILER_OPTIONS,
@@ -252,24 +252,42 @@ export function removeServiceFromMainApplication(
         }
     }
 
-    const nameParts = splitInputName(serviceName);
-    const stackClassName = `${nameParts.join('')}Stack`;
+    const stackClassName = `${splitInputName(serviceName).join('')}Stack`;
+    removeStackInstantiation(stackSource, stackClassName, stacksRelativePath);
 
+    tree.write(stacksRelativePath, stackSource.getFullText());
+}
+
+/**
+ * Removes the statements in the ApplicationStage constructor that instantiate the given stack
+ * class. Warns and leaves the file as it is when ApplicationStage is missing, because the caller
+ * still has to save the import removal it has already made.
+ */
+function removeStackInstantiation(
+    stackSource: SourceFile,
+    stackClassName: string,
+    stacksPath: string
+) {
     const applicationStage = stackSource.getClass('ApplicationStage');
+
     if (!applicationStage) {
         logger.warn(
-            `ApplicationStage not found in ${stacksRelativePath}, remove the stack registration manually.`
+            `ApplicationStage not found in ${stacksPath}, remove the stack registration manually.`
         );
+        return;
     }
 
-    const stageConstructor = applicationStage?.getConstructors()[0];
-    for (const statement of stageConstructor?.getStatements() ?? []) {
+    const stageConstructor = applicationStage.getConstructors()[0];
+
+    if (!stageConstructor) {
+        return;
+    }
+
+    for (const statement of stageConstructor.getStatements()) {
         if (statement.getText().includes(`new ${stackClassName}(`)) {
             statement.remove();
         }
     }
-
-    tree.write(stacksRelativePath, stackSource.getFullText());
 }
 
 /**
