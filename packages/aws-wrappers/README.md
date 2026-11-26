@@ -40,7 +40,7 @@ try {
     if (error instanceof BatchOperationError) {
         // error.results — the raw SDK output of every chunk, including what succeeded
         //                 (empty for SSM, per-page deleted keys for S3 emptyBucket,
-//                 the single last output for DynamoDB)
+        //                 the single last output for DynamoDB)
         // error.failed  — [{ id, code, message }] for every rejected entry
         const failedIds = new Set(error.failed.map(entry => entry.id));
         await retry(entries.filter(entry => failedIds.has(entry.Id)));
@@ -55,6 +55,7 @@ try {
 - DynamoDB batch entries have no identifier either, and the key or item is caller data that must stay out of `failed`, so `id` is `<table>[<index>]`, the position within that table's still-unprocessed list — see the DynamoDB section.
 - The error has a stable `name` of `'BatchOperationError'`. If both the CJS and ESM builds of this package can be loaded in one process, check `error.name` instead of `instanceof`.
 - A warning is logged with the failure count and error codes, and no payload, at every log level.
+- **Don't log the error object itself.** `results` is an enumerable property, and the Powertools logger serialises every enumerable property of an error it is given, so `logger.error('…', error)` (or `{ error }`) writes `results` to the log. For the DynamoDB batch methods that holds your keys, items and the items you fetched. Log `error.name`, `error.message` and `error.failed` instead, and read `error.results` only to retry or recover.
 - Request-level SDK exceptions (throttling, access denied, network errors) are **not** wrapped. They propagate unchanged and immediately, so earlier chunks may already have been sent and the caller cannot tell which. Treat those as "outcome unknown" and make the operation safe to repeat.
 
 ### X-Ray outside Lambda
@@ -226,7 +227,7 @@ try {
 }
 ```
 
-`failed` has one entry per pending key or item, with `code` `UnprocessedKeys` or `UnprocessedItems`. Because the key or item is your data and must stay out of the error message and logs, `failed[].id` is `<table>[<index>]`, the position within `results[0].UnprocessedKeys[table].Keys` (or `results[0].UnprocessedItems[table]`). `results` does carry that data, as it is what you asked for or sent, so don't log the error's `results` wholesale.
+`failed` has one entry per pending key or item, with `code` `UnprocessedKeys` or `UnprocessedItems`. Because the key or item is your data and must stay out of the error message and logs, `failed[].id` is `<table>[<index>]`, the position within `results[0].UnprocessedKeys[table].Keys` (or `results[0].UnprocessedItems[table]`). `results` does carry that data, as it is what you asked for or sent, so don't log `results` or the error object itself: the Powertools logger serialises an error's enumerable properties, `results` included (see [Batch semantics](#batch-semantics)).
 
 ## Secrets Manager
 

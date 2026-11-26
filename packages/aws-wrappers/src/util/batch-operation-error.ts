@@ -25,6 +25,13 @@ export interface BatchFailedEntry {
  * `Responses` merged so far for `batchGet`) carrying what is still pending.
  * `failed` is the normalised list of rejected entries across all chunks.
  *
+ * Do not pass the error object itself to a logger. `results` is an enumerable
+ * property and the Powertools logger serialises every enumerable property of
+ * an error, so `logger.error('…', error)` writes `results` to the log — which
+ * for the DynamoDB batch methods holds the caller's keys and items. Log `name`,
+ * `message` and `failed`, which never carry a payload, and read `results` only
+ * to retry or recover.
+ *
  * Match on `name` rather than `instanceof` if both the CJS and ESM builds of
  * this package may be loaded in one process.
  */

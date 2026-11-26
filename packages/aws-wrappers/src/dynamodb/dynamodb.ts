@@ -360,7 +360,8 @@ export class DynamoDBService {
      * `failed` has one entry per pending key with `code: 'UnprocessedKeys'`
      * and an `id` of `<table>[<index>]`, the key's position in
      * `results[0].UnprocessedKeys[<table>].Keys`. The `failed` list never
-     * carries key values; `results` does, as it is data the caller requested.
+     * carries key values; `results` does, as it is data the caller requested,
+     * so don't log the error object itself (see {@link BatchOperationError}).
      * Request-level SDK exceptions propagate unchanged.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
@@ -414,7 +415,8 @@ export class DynamoDBService {
      * per pending write with `code: 'UnprocessedItems'` and an `id` of
      * `<table>[<index>]`, the write's position in
      * `results[0].UnprocessedItems[<table>]`. The `failed` list never carries
-     * item data; `results` does, as it is data the caller supplied.
+     * item data; `results` does, as it is data the caller supplied, so don't
+     * log the error object itself (see {@link BatchOperationError}).
      * Request-level SDK exceptions propagate unchanged.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
