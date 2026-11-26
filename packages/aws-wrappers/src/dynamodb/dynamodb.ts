@@ -389,7 +389,7 @@ export class DynamoDBService {
             if (pending.length === 0) return output;
             this.logger.warn('Retrying unprocessed DynamoDB items', {
                 attempt: attemptNumber,
-                tables: Object.keys(unprocessed),
+                tables: pending.map(({ table }) => table),
             });
             await sleep(backoffDelay(attemptNumber - 1, BATCH_GET_BASE_DELAY_MS));
             current = { ...input, RequestItems: unprocessed };
@@ -439,7 +439,7 @@ export class DynamoDBService {
             if (pending.length === 0) return response;
             this.logger.warn('Retrying unprocessed DynamoDB items', {
                 attempt: attemptNumber,
-                tables: Object.keys(unprocessed),
+                tables: pending.map(({ table }) => table),
             });
             await sleep(backoffDelay(attemptNumber - 1, BATCH_WRITE_BASE_DELAY_MS));
             current = { ...input, RequestItems: unprocessed };

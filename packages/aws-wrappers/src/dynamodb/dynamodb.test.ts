@@ -68,6 +68,17 @@ describe('DynamoDBService', () => {
             expect(ddbMock.commandCalls(BatchWriteCommand)).toHaveLength(1);
         });
 
+        it('treats an unprocessed table with no writes left as done', async () => {
+            ddbMock.on(BatchWriteCommand).resolves({ UnprocessedItems: { [TableName]: [] } });
+            const service = buildService();
+
+            await service.batchWrite({
+                RequestItems: { [TableName]: [{ PutRequest: { Item: { pk: 'a' } } }] },
+            });
+
+            expect(ddbMock.commandCalls(BatchWriteCommand)).toHaveLength(1);
+        });
+
         it('retries UnprocessedItems and succeeds when they clear', async () => {
             ddbMock
                 .on(BatchWriteCommand)
@@ -170,6 +181,35 @@ describe('DynamoDBService', () => {
                 codes: ['UnprocessedItems'],
             });
         });
+
+        it('names only the tables that still have writes in the retry warning', async () => {
+            ddbMock
+                .on(BatchWriteCommand)
+                .resolvesOnce({
+                    UnprocessedItems: {
+                        drained: [],
+                        [TableName]: [{ PutRequest: { Item: { pk: 'e' } } }],
+                    },
+                })
+                .resolves({});
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            const promise = service.batchWrite({
+                RequestItems: { [TableName]: [{ PutRequest: { Item: { pk: 'e' } } }] },
+            });
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(warnSpy).toHaveBeenCalledWith('Retrying unprocessed DynamoDB items', {
+                attempt: 1,
+                tables: [TableName],
+            });
+        });
     });
 
     describe('batchGet', () => {
@@ -183,6 +223,21 @@ describe('DynamoDBService', () => {
 
         it('returns immediately when there are no UnprocessedKeys', async () => {
             ddbMock.on(BatchGetCommand).resolves({ Responses: { [TableName]: [{ pk: 'a' }] } });
+            const service = buildService();
+
+            const result = await service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'a' }] } },
+            });
+
+            expect(result.Responses).toEqual({ [TableName]: [{ pk: 'a' }] });
+            expect(ddbMock.commandCalls(BatchGetCommand)).toHaveLength(1);
+        });
+
+        it('treats an unprocessed table with no keys left as done', async () => {
+            ddbMock.on(BatchGetCommand).resolves({
+                Responses: { [TableName]: [{ pk: 'a' }] },
+                UnprocessedKeys: { [TableName]: { Keys: [] } },
+            });
             const service = buildService();
 
             const result = await service.batchGet({
@@ -327,6 +382,35 @@ describe('DynamoDBService', () => {
             expect(warnSpy).toHaveBeenLastCalledWith('DynamoDB batchGet had rejected entries', {
                 failedCount: 1,
                 codes: ['UnprocessedKeys'],
+            });
+        });
+
+        it('names only the tables that still have keys in the retry warning', async () => {
+            ddbMock
+                .on(BatchGetCommand)
+                .resolvesOnce({
+                    UnprocessedKeys: {
+                        drained: { Keys: [] },
+                        [TableName]: { Keys: [{ pk: 'e' }] },
+                    },
+                })
+                .resolves({});
+            const logger = new Logger();
+            const warnSpy = vi.spyOn(logger, 'warn');
+            const service = new DynamoDBService({
+                client: DynamoDBDocumentClient.from(new DynamoDBClient({})),
+                logger,
+            });
+
+            const promise = service.batchGet({
+                RequestItems: { [TableName]: { Keys: [{ pk: 'e' }] } },
+            });
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(warnSpy).toHaveBeenCalledWith('Retrying unprocessed DynamoDB items', {
+                attempt: 1,
+                tables: [TableName],
             });
         });
 

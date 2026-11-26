@@ -107,7 +107,7 @@ describe('S3Service', () => {
             const { message, cause } = error as Error;
             expect(message).toContain(`s3://${Bucket}/bad.json`);
             expect(message).not.toContain('hunter2');
-            expect(String(cause)).not.toContain('hunter2');
+            expect(cause).toBeUndefined();
         });
 
         it('returns undefined from getJsonObject when the response body is empty', async () => {
@@ -464,7 +464,7 @@ describe('S3Service', () => {
             const { message, cause } = error as Error;
             expect(message).toContain(`s3://${Bucket}/bad`);
             expect(message).not.toContain('hunter2');
-            expect(String(cause)).not.toContain('hunter2');
+            expect(cause).toBeUndefined();
         });
     });
 

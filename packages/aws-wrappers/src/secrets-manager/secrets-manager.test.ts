@@ -210,7 +210,7 @@ describe('SecretsManagerService', () => {
             const { message, cause } = error as Error;
             expect(message).toContain('bad-json');
             expect(message).not.toContain('hunter2');
-            expect(String(cause)).not.toContain('hunter2');
+            expect(cause).toBeUndefined();
         });
 
         it('propagates the underlying missing-SecretString error', async () => {

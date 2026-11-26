@@ -25,13 +25,12 @@ const GET_PARAMETERS_LIMIT = 10;
  * `name:version` / `name:label` selector can only be matched through `ARN`
  * and `Selector`. A response carrying a `Selector` is keyed by its selector
  * forms only, so it can't shadow a request for the unversioned parameter.
- * The selector is accepted with or without its leading colon.
+ * `Selector` already carries its leading colon (`:3`, `:prod`).
  */
 function requestKeys({ Name, ARN, Selector }: Parameter): string[] {
     const identifiers = [Name, ARN].filter((id): id is string => id !== undefined);
     if (Selector === undefined) return identifiers;
-    const suffix = Selector.startsWith(':') ? Selector : `:${Selector}`;
-    return identifiers.map(id => `${id}${suffix}`);
+    return identifiers.map(id => `${id}${Selector}`);
 }
 
 /**
