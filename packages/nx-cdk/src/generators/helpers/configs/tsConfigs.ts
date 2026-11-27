@@ -24,7 +24,7 @@ export const TS_CONFIG_LIB_JSON: TsConfig = {
     extends: './tsconfig.json',
     compilerOptions: { rootDir: 'src', ...BASE_COMPILER_OPTIONS },
     include: ['src/**/*.ts'],
-    exclude: ['vitest.config.mjs', 'src/**/*.spec.ts', 'src/**/*.test.ts'],
+    exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
     references: [],
 } as const;
 
@@ -35,7 +35,6 @@ export const TS_CONFIG_SPEC_JSON: TsConfig = {
         types: ['vitest/globals', 'vitest/importMeta', 'node', 'vitest'],
     },
     include: [
-        'vitest.config.mjs',
         'src/**/*.test.ts',
         'src/**/*.spec.ts',
         'src/**/*.d.ts',

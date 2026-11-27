@@ -1,7 +1,7 @@
-import { createProjectGraphAsync, formatFiles, ProjectGraph, Tree, updateJson } from '@nx/devkit';
+import { createProjectGraphAsync, formatFiles, ProjectGraph, Tree } from '@nx/devkit';
 import { MAIN_APPLICATION_NAME, SERVICES_FOLDER, SERVICES_SCOPE } from '../constants';
 import {
-    assertValidServiceName,
+    assertSafeServicePath,
     removeBundleDependency,
     removeServiceFromMainApplication,
     removeTsConfigReference,
@@ -23,7 +23,7 @@ function findBlockingDependents(graph: ProjectGraph, projectName: string) {
 export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema) {
     const { name, forceRemove } = options;
 
-    assertValidServiceName(name);
+    assertSafeServicePath(name);
 
     const projectRoot = `${SERVICES_FOLDER}/${name}`;
     const projectName = `${SERVICES_SCOPE}/${name}`;
@@ -48,15 +48,6 @@ export async function removeGenerator(tree: Tree, options: RemoveGeneratorSchema
     removeBundleDependency(tree, name, MAIN_APPLICATION_NAME);
 
     tree.delete(projectRoot);
-
-    if (tree.exists('package.json')) {
-        updateJson(tree, 'package.json', json => {
-            if (Array.isArray(json.workspaces)) {
-                json.workspaces = json.workspaces.filter((w: string) => w !== projectRoot);
-            }
-            return json;
-        });
-    }
 
     await formatFiles(tree);
 }

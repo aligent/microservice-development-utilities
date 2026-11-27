@@ -150,26 +150,28 @@ describe('remove generator', () => {
             })
         );
 
+        const warn = vi.spyOn(devkit.logger, 'warn').mockImplementation(() => undefined);
+        const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
         await expect(
             removeGenerator(tree, { name: 'companies', forceRemove: true })
         ).resolves.not.toThrow();
         expect(tree.exists('services/companies')).toBe(false);
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining('application/lib/service-stacks.ts')
+        );
+        expect(consoleLog).not.toHaveBeenCalled();
     });
 
-    it('should remove workspace entry from root package.json', async () => {
-        tree.write(
-            'package.json',
-            JSON.stringify({
-                ...rootPackageJson,
-                workspaces: ['application', 'libs/*', 'services/companies'],
-            })
-        );
+    it('should leave the root package.json workspace globs untouched', async () => {
+        const workspaces = ['application', 'libs/*', 'services/*'];
+        tree.write('package.json', JSON.stringify({ ...rootPackageJson, workspaces }));
 
         await serviceGenerator(tree, { name: 'companies' });
         await removeGenerator(tree, { name: 'companies', forceRemove: true });
 
         const pkg = JSON.parse(tree.read('package.json', 'utf-8') ?? '{}');
-        expect(pkg.workspaces).not.toContain('services/companies');
+        expect(pkg.workspaces).toEqual(workspaces);
     });
 
     it('should throw when a project other than the application depends on the service', async () => {
@@ -218,6 +220,53 @@ describe('remove generator', () => {
         await expect(
             removeGenerator(tree, { name: '../../outside-workspace', forceRemove: true })
         ).rejects.toThrow(/Invalid service name/);
+    });
+
+    it.each(['../x', 'a/b', 'A', ''])('should reject the unsafe name "%s"', async name => {
+        await expect(removeGenerator(tree, { name, forceRemove: true })).rejects.toThrow(
+            /Invalid service name/
+        );
+    });
+
+    it.each(['a-', 'a--b', '2fa'])(
+        'should remove an existing service whose name is not a valid identifier: "%s"',
+        async name => {
+            tree.write(`services/${name}/package.json`, '{}');
+
+            await removeGenerator(tree, { name, forceRemove: true });
+
+            expect(tree.exists(`services/${name}`)).toBe(false);
+        }
+    );
+
+    it('should warn when ApplicationStage is missing from service-stacks.ts', async () => {
+        tree.write('application/lib/service-stacks.ts', 'export const unrelated = 1;');
+        tree.write('services/companies/package.json', '{}');
+        const warn = vi.spyOn(devkit.logger, 'warn').mockImplementation(() => undefined);
+
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
+
+        expect(tree.exists('services/companies')).toBe(false);
+        expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+                'ApplicationStage not found in application/lib/service-stacks.ts'
+            )
+        );
+    });
+
+    it('should still remove the service import when ApplicationStage is missing', async () => {
+        tree.write(
+            'application/lib/service-stacks.ts',
+            "import { COMPANIES, CompaniesStack } from '@services/companies';\nexport const unrelated = 1;\n"
+        );
+        tree.write('services/companies/package.json', '{}');
+        vi.spyOn(devkit.logger, 'warn').mockImplementation(() => undefined);
+
+        await removeGenerator(tree, { name: 'companies', forceRemove: true });
+
+        const stacks = tree.read('application/lib/service-stacks.ts', 'utf-8') ?? '';
+        expect(stacks).not.toContain('@services/companies');
+        expect(stacks).toContain('unrelated');
     });
 
     it('should proceed when only the application depends on the service', async () => {

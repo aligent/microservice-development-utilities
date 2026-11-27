@@ -1,4 +1,4 @@
-import { Tree } from '@nx/devkit';
+import { logger, Tree } from '@nx/devkit';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { serviceGenerator } from './generator';
 import { ServiceGeneratorSchema } from './schema';
@@ -81,5 +81,58 @@ describe('service generator', () => {
         await serviceGenerator(tree, options);
 
         expect(tree.exists('services/.gitkeep')).toBe(true);
+    });
+
+    describe('service stacks registration', () => {
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('should warn through the Nx logger when service-stacks.ts does not exist', async () => {
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+            const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+            await serviceGenerator(tree, { name: 'test' });
+
+            expect(warn).toHaveBeenCalledWith(
+                expect.stringContaining('application/lib/service-stacks.ts')
+            );
+            expect(consoleLog).not.toHaveBeenCalled();
+        });
+
+        it('should throw a clear error naming the file when ApplicationStage is missing', async () => {
+            tree.write('application/lib/service-stacks.ts', 'export const unrelated = 1;');
+
+            await expect(serviceGenerator(tree, { name: 'test' })).rejects.toThrow(
+                'Unable to find ApplicationStage in application/lib/service-stacks.ts'
+            );
+        });
+    });
+
+    describe('generated tsconfigs', () => {
+        it('should not type-check the generated vite config', async () => {
+            await serviceGenerator(tree, { name: 'test' });
+
+            const tsConfigSpec = JSON.parse(
+                tree.read('services/test/tsconfig.spec.json', 'utf-8') ?? '{}'
+            );
+
+            // The base tsconfig enables checkJs, and the config imports a file outside the service rootDir
+            expect(tsConfigSpec.include).not.toContain('vite.config.mjs');
+        });
+
+        it('should only reference config files that were generated', async () => {
+            await serviceGenerator(tree, { name: 'test' });
+
+            const referenced = ['tsconfig.lib.json', 'tsconfig.spec.json']
+                .flatMap(file => {
+                    const config = JSON.parse(tree.read(`services/test/${file}`, 'utf-8') ?? '{}');
+                    return [...(config.include ?? []), ...(config.exclude ?? [])];
+                })
+                .filter((entry: string) => /^[\w.-]+\.config\.m?[jt]s$/.test(entry));
+
+            const missing = referenced.filter(file => !tree.exists(`services/test/${file}`));
+            expect(missing).toEqual([]);
+        });
     });
 });

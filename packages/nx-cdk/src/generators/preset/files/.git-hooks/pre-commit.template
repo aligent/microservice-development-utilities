@@ -38,7 +38,7 @@ fi
 
 # Prepare the affected commands for static analysis targets
 AFFECTED_COMMAND="yarn nx affected --files=$AFFECTED_FILES --nxBail --tui=false"
-commands=("$AFFECTED_COMMAND -t lint typecheck --parallel=3", "$AFFECTED_COMMAND -t test --configuration coverage")
+commands=("$AFFECTED_COMMAND -t lint typecheck --parallel=3" "$AFFECTED_COMMAND -t test --configuration coverage")
 failures=()
 
 # Loop over commands, execute and push failure message if we see one
