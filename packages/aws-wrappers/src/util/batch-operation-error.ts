@@ -4,7 +4,8 @@ import type { LoggerInterface } from '@aws-lambda-powertools/logger/types';
  * One entry a batch operation rejected. Deliberately limited to identifier,
  * code and message so the error never carries message bodies, attributes or
  * any other payload the caller sent. For S3 the identifier is the object key;
- * for SSM it is the parameter path.
+ * for SSM it is the parameter path; for DynamoDB it is `<table>[<index>]`,
+ * since a key or item is caller data.
  */
 export interface BatchFailedEntry {
     id: string | undefined;
@@ -19,8 +20,17 @@ export interface BatchFailedEntry {
  * `results` holds the raw SDK output of every chunk, so the outputs of the
  * entries that succeeded (message ids, sequence numbers) stay readable. The
  * exceptions are `S3.emptyBucket`, whose `results` are per-page deleted keys,
- * and `SSM.getParameters`, whose `results` are empty.
+ * `SSM.getParameters`, whose `results` are empty, and the DynamoDB batch
+ * methods, whose `results` hold a single output (the last response, with the
+ * `Responses` merged so far for `batchGet`) carrying what is still pending.
  * `failed` is the normalised list of rejected entries across all chunks.
+ *
+ * Do not pass the error object itself to a logger. `results` is an enumerable
+ * property and the Powertools logger serialises every enumerable property of
+ * an error, so `logger.error('…', error)` writes `results` to the log — which
+ * for the DynamoDB batch methods holds the caller's keys and items. Log `name`,
+ * `message` and `failed`, which never carry a payload, and read `results` only
+ * to retry or recover.
  *
  * Match on `name` rather than `instanceof` if both the CJS and ESM builds of
  * this package may be loaded in one process.
@@ -32,10 +42,15 @@ export class BatchOperationError<TResult = unknown> extends Error {
         readonly results: TResult[],
         readonly failed: BatchFailedEntry[]
     ) {
-        super(
-            `Batch operation failed for ${failed.length} entries (${distinctCodes(failed).join(', ')})`
-        );
+        super(failureMessage(failed));
     }
+}
+
+function failureMessage(failed: readonly BatchFailedEntry[]): string {
+    const noun = failed.length === 1 ? 'entry' : 'entries';
+    const codes = distinctCodes(failed);
+    const suffix = codes.length === 0 ? '' : ` (${codes.join(', ')})`;
+    return `Batch operation failed for ${failed.length} ${noun}${suffix}`;
 }
 
 /**
@@ -116,7 +131,21 @@ export function throwIfAny<TResult>(
     failed: BatchFailedEntry[]
 ): TResult[] {
     if (failed.length === 0) return results;
+    return throwBatchFailure(logger, operation, results, failed);
+}
 
+/**
+ * The warn-and-throw half of {@link throwIfAny}, for callers that already know
+ * `failed` is non-empty and need the compiler to see that the call never
+ * returns. The same rule applies: build `failed` by copying id, code and
+ * message explicitly.
+ */
+export function throwBatchFailure<TResult>(
+    logger: LoggerInterface,
+    operation: string,
+    results: TResult[],
+    failed: BatchFailedEntry[]
+): never {
     logger.warn(`${operation} had rejected entries`, {
         failedCount: failed.length,
         codes: distinctCodes(failed),

@@ -323,11 +323,40 @@ describe('SNSService', () => {
             });
 
             const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input;
-            expect(sent?.Subject?.length).toBe(100);
+            expect(sent?.Subject?.length).toBe(99);
             expect(warnSpy).toHaveBeenCalledWith(
                 'Truncated SNS publish input',
                 expect.objectContaining({ fields: expect.arrayContaining(['Subject']) })
             );
+        });
+
+        it('truncates Subject below the SNS limit of 100 characters, counting codepoints', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}), truncate: true });
+
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: 'ok',
+                Subject: '😀'.repeat(150),
+            });
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input.Subject ?? '';
+            expect(Array.from(sent)).toHaveLength(99);
+        });
+
+        it('leaves a Subject of 99 characters untouched', async () => {
+            snsMock.on(PublishCommand).resolves({ MessageId: 'mid' });
+            const service = new SNSService({ client: new SNSClient({}), truncate: true });
+            const Subject = 'a'.repeat(99);
+
+            await service.publish({
+                TopicArn: 'arn:aws:sns:us-east-1:0:topic',
+                Message: 'ok',
+                Subject,
+            });
+
+            const sent = snsMock.commandCalls(PublishCommand)[0]?.args[0].input.Subject;
+            expect(sent).toBe(Subject);
         });
 
         it('omits Message, Subject, MessageAttributes, and PhoneNumber from the INFO log', async () => {

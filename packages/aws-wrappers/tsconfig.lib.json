@@ -6,9 +6,10 @@
         "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
         "types": ["node"],
         // This package is rollup-bundled as tsconfigs-extend assumes. `target`
-        // is pinned deliberately to ES2022 guarantee compatibility for Node 18
-        // consumers. It also keeps class emission as real `class` syntax
-        // (not ES5 IIFEs), which bundlers can't tree-shake as cleanly.
+        // is pinned deliberately to ES2022 to guarantee compatibility for the
+        // Node 20+ consumers in `engines`. It also keeps class emission as
+        // real `class` syntax (not ES5 IIFEs), which bundlers can't tree-shake
+        // as cleanly.
         "target": "ES2022",
         "checkJs": false
     },

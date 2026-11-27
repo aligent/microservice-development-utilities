@@ -17,6 +17,7 @@ import { SQSService } from './sqs';
 
 const sqsMock = mockClient(SQSClient);
 const QueueUrl = 'https://sqs.us-east-1.amazonaws.com/0/queue';
+const SQS_MAX_BYTES = 1024 * 1024;
 
 type BatchEntry = { Id?: string };
 type BatchInput = { Entries?: BatchEntry[] };
@@ -164,7 +165,7 @@ describe('SQSService', () => {
                 logger,
                 truncate: true,
             });
-            const input = { QueueUrl, MessageBody: 'x'.repeat(262_144) };
+            const input = { QueueUrl, MessageBody: 'x'.repeat(SQS_MAX_BYTES) };
 
             await service.sendMessage(input);
 
@@ -173,24 +174,49 @@ describe('SQSService', () => {
             expect(warnSpy).not.toHaveBeenCalled();
         });
 
+        it('does not truncate a body above the old 256 KiB limit but within the 1 MiB SQS limit', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const service = new SQSService({ client: new SQSClient({}), truncate: true });
+            const body = 'x'.repeat(300_000);
+
+            await service.sendMessage({ QueueUrl, MessageBody: body });
+
+            const sent = sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input.MessageBody;
+            expect(sent).toBe(body);
+        });
+
         it('truncates oversized MessageBody when the instance opts in to truncation', async () => {
             sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
             const service = new SQSService({ client: new SQSClient({}), truncate: true });
 
-            const oversized = 'x'.repeat(300_000);
+            const oversized = 'x'.repeat(SQS_MAX_BYTES + 1000);
             await service.sendMessage({ QueueUrl, MessageBody: oversized });
 
             const sent =
                 sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input.MessageBody ?? '';
-            expect(Buffer.byteLength(sent, 'utf8')).toBeLessThanOrEqual(262_144);
+            expect(Buffer.byteLength(sent, 'utf8')).toBeLessThanOrEqual(SQS_MAX_BYTES);
             expect(sent.length).toBeLessThan(oversized.length);
+        });
+
+        it('does not split a multi-byte codepoint when truncating at the byte limit', async () => {
+            sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
+            const service = new SQSService({ client: new SQSClient({}), truncate: true });
+
+            // One leading byte shifts the 4-byte emoji so the limit lands mid-codepoint.
+            await service.sendMessage({ QueueUrl, MessageBody: 'x' + '😀'.repeat(300_000) });
+
+            const sent =
+                sqsMock.commandCalls(SendMessageCommand)[0]?.args[0].input.MessageBody ?? '';
+            expect(Buffer.byteLength(sent, 'utf8')).toBeLessThanOrEqual(SQS_MAX_BYTES);
+            expect(sent).not.toContain('�');
+            expect(sent.slice(1)).toBe('😀'.repeat((sent.length - 1) / 2));
         });
 
         it('passes oversized MessageBody through unchanged when truncation is off', async () => {
             sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
             const service = new SQSService({ client: new SQSClient({}) });
 
-            const oversized = 'x'.repeat(300_000);
+            const oversized = 'x'.repeat(SQS_MAX_BYTES + 1000);
             await service.sendMessage({ QueueUrl, MessageBody: oversized });
 
             const sent =
@@ -202,7 +228,7 @@ describe('SQSService', () => {
             sqsMock.on(SendMessageCommand).resolves({ MessageId: 'mid' });
             const service = new SQSService({ client: new SQSClient({}) });
 
-            const oversized = 'x'.repeat(300_000);
+            const oversized = 'x'.repeat(SQS_MAX_BYTES + 1000);
             await service.sendMessage({ QueueUrl, MessageBody: oversized }, { truncate: true });
 
             const sent =
@@ -221,7 +247,7 @@ describe('SQSService', () => {
                 truncate: true,
             });
 
-            await service.sendMessage({ QueueUrl, MessageBody: 'x'.repeat(300_000) });
+            await service.sendMessage({ QueueUrl, MessageBody: 'x'.repeat(SQS_MAX_BYTES + 1000) });
 
             expect(warnSpy).toHaveBeenCalledWith(
                 'Truncated SQS sendMessage input',

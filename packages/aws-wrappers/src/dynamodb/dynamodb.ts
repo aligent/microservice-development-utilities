@@ -30,6 +30,7 @@ import {
     UpdateCommandOutput,
 } from '@aws-sdk/lib-dynamodb';
 import xray from 'aws-xray-sdk-core';
+import { BatchFailedEntry, throwBatchFailure } from '../util/batch-operation-error.js';
 import { redactInput } from '../util/redact.js';
 
 const BATCH_WRITE_MAX_ATTEMPTS = 5;
@@ -46,6 +47,45 @@ function summariseTables(input: BatchGetCommandInput | BatchWriteCommandInput): 
     tables: string[];
 } {
     return { tables: Object.keys(input.RequestItems ?? {}) };
+}
+
+interface PendingTable {
+    table: string;
+    count: number;
+}
+
+/**
+ * The tables that still have unprocessed keys or writes. Tables whose list is
+ * empty are dropped, so an empty result means there is nothing left to retry.
+ */
+function pendingCounts<TUnprocessed>(
+    unprocessed: Record<string, TUnprocessed>,
+    countOf: (entry: TUnprocessed) => number | undefined
+): PendingTable[] {
+    return Object.entries(unprocessed)
+        .map(([table, entry]) => ({ table, count: countOf(entry) ?? 0 }))
+        .filter(({ count }) => count > 0);
+}
+
+/**
+ * One failed entry per request still unprocessed after the final attempt. The
+ * `id` is the table name plus the position within that table's unprocessed
+ * list — deliberately not the key or item, which is caller data and must not
+ * reach the error message or the warning. The position indexes into the
+ * `UnprocessedKeys` / `UnprocessedItems` the error carries in `results`.
+ */
+function unprocessedEntries(
+    pending: readonly PendingTable[],
+    code: 'UnprocessedKeys' | 'UnprocessedItems',
+    attempts: number
+): BatchFailedEntry[] {
+    return pending.flatMap(({ table, count }) =>
+        Array.from({ length: count }, (_, index) => ({
+            id: `${table}[${index}]`,
+            code,
+            message: `Still unprocessed after ${attempts} attempts`,
+        }))
+    );
 }
 
 /**
@@ -306,64 +346,113 @@ export class DynamoDBService {
     /**
      * Batch-get items from one or more DynamoDB tables, retrying
      * `UnprocessedKeys` with jittered exponential backoff. Up to 5 attempts
-     * (200ms base delay). Throws when keys remain unprocessed after the final
-     * attempt. `Responses` are merged across attempts, keyed by table name.
+     * (200ms base delay). `Responses` are merged across attempts, keyed by
+     * table name.
      *
      * Note: this method is intentionally **not** generic. `BatchGet`'s
      * `Responses` field is a multi-table `Record<string, item[]>` whose item
      * shapes can differ per table — no single `T` can soundly describe it.
      * Callers should narrow the result type at the call site.
+     *
+     * @throws {@link BatchOperationError} when keys remain unprocessed after
+     * the final attempt. `results` holds one output: the merged `Responses`
+     * retrieved so far, plus the still-pending `UnprocessedKeys` to retry.
+     * `failed` has one entry per pending key with `code: 'UnprocessedKeys'`
+     * and an `id` of `<table>[<index>]`, the key's position in
+     * `results[0].UnprocessedKeys[<table>].Keys`. The `failed` list never
+     * carries key values; `results` does, as it is data the caller requested,
+     * so don't log the error object itself (see {@link BatchOperationError}).
+     * Request-level SDK exceptions propagate unchanged.
      */
     async batchGet(input: BatchGetCommandInput): Promise<BatchGetCommandOutput> {
         this.logger.info('Batch getting DynamoDB items', {
             input: redactInput(this.logger, input, summariseTables),
         });
 
-        let current = input;
         const mergedResponses: Record<string, Array<Record<string, unknown>>> = {};
-        for (let attempt = 0; attempt < BATCH_GET_MAX_ATTEMPTS; attempt++) {
-            const response = await this.client.send(new BatchGetCommand(current));
+        const attempt = async (request: BatchGetCommandInput) => {
+            const response = await this.client.send(new BatchGetCommand(request));
             for (const [table, items] of Object.entries(response.Responses ?? {})) {
                 mergedResponses[table] = [...(mergedResponses[table] ?? []), ...items];
             }
-            const unprocessed = response.UnprocessedKeys;
-            if (!unprocessed || Object.keys(unprocessed).length === 0) {
-                return { ...response, Responses: mergedResponses };
-            }
+            const unprocessed = response.UnprocessedKeys ?? {};
+            return {
+                output: { ...response, Responses: mergedResponses },
+                unprocessed,
+                pending: pendingCounts(unprocessed, ({ Keys }) => Keys?.length),
+            };
+        };
+
+        let current = input;
+        for (let attemptNumber = 1; attemptNumber < BATCH_GET_MAX_ATTEMPTS; attemptNumber++) {
+            const { output, unprocessed, pending } = await attempt(current);
+            if (pending.length === 0) return output;
             this.logger.warn('Retrying unprocessed DynamoDB items', {
-                attempt: attempt + 1,
-                tables: Object.keys(unprocessed),
+                attempt: attemptNumber,
+                tables: pending.map(({ table }) => table),
             });
-            if (attempt < BATCH_GET_MAX_ATTEMPTS - 1)
-                await sleep(backoffDelay(attempt, BATCH_GET_BASE_DELAY_MS));
+            await sleep(backoffDelay(attemptNumber - 1, BATCH_GET_BASE_DELAY_MS));
             current = { ...input, RequestItems: unprocessed };
         }
-        throw new Error(`batchGet failed after ${BATCH_GET_MAX_ATTEMPTS} attempts`);
+
+        const { output, pending } = await attempt(current);
+        if (pending.length === 0) return output;
+        return throwBatchFailure(
+            this.logger,
+            'DynamoDB batchGet',
+            [output],
+            unprocessedEntries(pending, 'UnprocessedKeys', BATCH_GET_MAX_ATTEMPTS)
+        );
     }
 
     /**
      * Batch-write items to DynamoDB, retrying `UnprocessedItems` with jittered
-     * exponential backoff. Up to 5 attempts (200ms base delay). Throws when
-     * items remain unprocessed after the final attempt.
+     * exponential backoff. Up to 5 attempts (200ms base delay).
+     *
+     * @throws {@link BatchOperationError} when items remain unprocessed after
+     * the final attempt. `results` holds one output: the last response, whose
+     * `UnprocessedItems` are the writes still to retry. `failed` has one entry
+     * per pending write with `code: 'UnprocessedItems'` and an `id` of
+     * `<table>[<index>]`, the write's position in
+     * `results[0].UnprocessedItems[<table>]`. The `failed` list never carries
+     * item data; `results` does, as it is data the caller supplied, so don't
+     * log the error object itself (see {@link BatchOperationError}).
+     * Request-level SDK exceptions propagate unchanged.
      */
     async batchWrite(input: BatchWriteCommandInput): Promise<BatchWriteCommandOutput> {
         this.logger.info('Batch writing DynamoDB items', {
             input: redactInput(this.logger, input, summariseTables),
         });
+        const attempt = async (request: BatchWriteCommandInput) => {
+            const response = await this.client.send(new BatchWriteCommand(request));
+            const unprocessed = response.UnprocessedItems ?? {};
+            return {
+                response,
+                unprocessed,
+                pending: pendingCounts(unprocessed, writes => writes.length),
+            };
+        };
+
         let current = input;
-        for (let attempt = 0; attempt < BATCH_WRITE_MAX_ATTEMPTS; attempt++) {
-            const response = await this.client.send(new BatchWriteCommand(current));
-            const unprocessed = response.UnprocessedItems;
-            if (!unprocessed || Object.keys(unprocessed).length === 0) return response;
+        for (let attemptNumber = 1; attemptNumber < BATCH_WRITE_MAX_ATTEMPTS; attemptNumber++) {
+            const { response, unprocessed, pending } = await attempt(current);
+            if (pending.length === 0) return response;
             this.logger.warn('Retrying unprocessed DynamoDB items', {
-                attempt: attempt + 1,
-                tables: Object.keys(unprocessed),
+                attempt: attemptNumber,
+                tables: pending.map(({ table }) => table),
             });
-            if (attempt < BATCH_WRITE_MAX_ATTEMPTS - 1)
-                await sleep(backoffDelay(attempt, BATCH_WRITE_BASE_DELAY_MS));
+            await sleep(backoffDelay(attemptNumber - 1, BATCH_WRITE_BASE_DELAY_MS));
             current = { ...input, RequestItems: unprocessed };
         }
-        throw new Error(`batchWrite failed after ${BATCH_WRITE_MAX_ATTEMPTS} attempts`);
+
+        const { response, pending } = await attempt(current);
+        if (pending.length === 0) return response;
+        return throwBatchFailure(
+            this.logger,
+            'DynamoDB batchWrite',
+            [response],
+            unprocessedEntries(pending, 'UnprocessedItems', BATCH_WRITE_MAX_ATTEMPTS)
+        );
     }
 
     /**

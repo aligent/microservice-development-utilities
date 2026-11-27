@@ -27,7 +27,13 @@ import { redactInput } from '../util/redact.js';
 import { truncateUtf8 } from '../util/truncate.js';
 
 const SQS_BATCH_LIMIT = 10;
-const SQS_MESSAGE_BODY_MAX_BYTES = 256 * 1024;
+
+/**
+ * The SQS maximum message size. A queue's own `MaximumMessageSize` may be set
+ * lower, and the wrapper cannot see it, so a queue configured below this still
+ * rejects a body truncated to it.
+ */
+const SQS_MESSAGE_BODY_MAX_BYTES = 1024 * 1024;
 
 /**
  * Fields safe to log at INFO level for `sendMessage`. Omits `MessageBody` and
@@ -69,9 +75,13 @@ export class SQSService {
      * which picks up `POWERTOOLS_SERVICE_NAME` from the environment.
      * @param opts.client - Optional pre-configured `SQSClient`. When supplied,
      * the wrapper does not apply X-Ray instrumentation.
-     * @param opts.truncate - When `true`, oversized `MessageBody` is truncated
-     * (byte-safe) before sending instead of failing at the SDK. Defaults to
-     * `false`. Each `sendMessage` call can override via its own `truncate`
+     * @param opts.truncate - When `true`, a `MessageBody` above 1 MiB is
+     * truncated (byte-safe) before sending instead of failing at the SDK. This
+     * is the SQS maximum; a queue configured with a lower `MaximumMessageSize`
+     * is not known to the wrapper. Message attributes count toward the limit
+     * too and are not truncated.
+     * Truncating a structured body such as JSON can leave it invalid. Defaults
+     * to `false`. Each `sendMessage` call can override via its own `truncate`
      * option.
      */
     constructor(opts?: { logger?: LoggerInterface; client?: SQSClient; truncate?: boolean }) {

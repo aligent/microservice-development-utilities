@@ -17,6 +17,7 @@ import {
     UpdateSecretCommandOutput,
 } from '@aws-sdk/client-secrets-manager';
 import xray from 'aws-xray-sdk-core';
+import { parseJson } from '../util/json.js';
 import { redactInput } from '../util/redact.js';
 
 /**
@@ -105,12 +106,14 @@ export class SecretsManagerService {
      * @param secretId - The ARN or friendly name of the secret.
      * @template T - Expected shape of the parsed secret.
      * @returns The parsed secret value.
-     * @throws If the secret has no `SecretString` or the value is not valid JSON.
+     * @throws If the secret has no `SecretString`, or the value is not valid
+     * JSON. The latter error names the secret and never includes any of its
+     * value, unlike the native `SyntaxError`.
      */
     async getJsonSecret<T>(secretId: string): Promise<T> {
         this.logger.info('Fetching JSON secret', { input: { secretId } });
         const secretString = await this.fetchSecretString(secretId);
-        return JSON.parse(secretString) as T;
+        return parseJson<T>(secretString, `Secret '${secretId}'`);
     }
 
     /**
