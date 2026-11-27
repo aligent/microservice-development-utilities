@@ -1,6 +1,6 @@
 {
   "name": "@aligent/nx-cdk",
-  "version": "0.10.8",
+  "version": "0.10.9",
   "type": "commonjs",
   "main": "./src/index.js",
   "typings": "./src/index.d.ts",
