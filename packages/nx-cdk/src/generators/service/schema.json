@@ -13,7 +13,7 @@
             },
             "x-prompt": "What is the name of the service?",
             "pattern": "^(?!.*[Ss]tack|.*[Ss]ervice)[a-z][a-z0-9]*(-[a-z0-9]+)*$",
-            "patternErrorMessage": "Service name must be lowercase kebab-case starting with a letter (e.g. 'my-service-2'), and cannot contain '[Ss]tack' or '[Ss]ervice'"
+            "patternErrorMessage": "Service name must be lowercase kebab-case starting with a letter (e.g. 'order-sync-2'), and cannot contain 'stack' or 'service'"
         },
         "example": {
             "type": "boolean",
