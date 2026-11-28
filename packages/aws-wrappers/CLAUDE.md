@@ -212,7 +212,7 @@ Don't write code until each of these is answered. Defaults in **bold**.
 ### When changing an existing service
 
 - Is this change additive (new method) or modifying an existing public method?
-- If modifying: is the package already published? If yes, this is a SemVer-major change — flag it before implementing.
+- If modifying: is the package already published? If yes, this is a breaking change — flag it before implementing. While the package is on `0.x`, its version plan uses `minor` (e.g. `0.5.x` → `0.6.0`), not `major`, which would publish `1.0.0`.
 - Does it touch any of the locked-in conventions above? If yes, surface to the user first.
 - Will any of the existing tests need to change? If yes, that's a load-bearing signal — verify whether the existing test behaviour was load-bearing for a downstream caller.
 

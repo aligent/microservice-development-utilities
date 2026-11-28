@@ -80,6 +80,9 @@
         "projects": ["packages/*"],
         "projectsRelationship": "independent",
         "versionPlans": true,
+        "version": {
+            "adjustSemverBumpsForZeroMajorVersion": false
+        },
         "releaseTag": {
             "pattern": "release/{projectName}/{version}"
         }

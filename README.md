@@ -152,3 +152,4 @@ Each package that ships generated API docs keeps a `docs/modules.md` index file 
 
 - Nx is responsible for removing the version plans after a release. This is because **having multiple version plan files may produce unpredictable results**. For this reason make sure not to commit more than one version plan file.
 - Always use the provided command to generate version plan files for uniqueness and correctness.
+- The bump in a version plan is applied as written, including for `0.x` packages: `minor` takes `0.5.11` to `0.6.0` and `major` takes it to `1.0.0`. Nx would otherwise downgrade bumps for `0.x` versions (`major` → minor, `minor` → patch), so `nx.json` sets `release.version.adjustSemverBumpsForZeroMajorVersion` to `false`.
